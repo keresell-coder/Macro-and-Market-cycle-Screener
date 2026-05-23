@@ -19,9 +19,11 @@ def test_weekly_report_workflow_defaults_to_live_data_with_sample_option() -> No
     workflow = WORKFLOW.read_text(encoding="utf-8")
 
     assert "default: live" in workflow
+    assert "github.event.inputs.data_mode" in workflow
     assert "|| 'live'" in workflow
     assert "- sample" in workflow
     assert "DATA_MODE:" in workflow
+    assert "python -m cycle_screener.refresh" in workflow
     assert "--fail-on-numeric-sample-fallback" in workflow
     assert "FRED_API_KEY: ${{ secrets.FRED_API_KEY }}" in workflow
     assert "EIA_API_KEY: ${{ secrets.EIA_API_KEY }}" in workflow

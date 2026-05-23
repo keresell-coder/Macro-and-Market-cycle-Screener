@@ -28,7 +28,7 @@ jobs:
     name: Build static report
     runs-on: ubuntu-latest
     env:
-      DATA_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.data_mode || 'live' }}
+      DATA_MODE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.data_mode || 'live' }}
       FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
       EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
     steps:
@@ -77,6 +77,7 @@ jobs:
           if [ "$DATA_MODE" = "sample" ]; then
             args+=(--sample)
           else
+            python -m cycle_screener.refresh
             args+=(--fail-on-numeric-sample-fallback)
           fi
           if [ -s previous_report_state.json ]; then
