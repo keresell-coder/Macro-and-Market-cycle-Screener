@@ -271,8 +271,8 @@ Status: recommended next.
 
 Goal: validate the first GitHub Pages deployment and reduce reliance on sample research evidence.
 
-- Verify that `keresell-coder/Macro-and-Market-cycle-Screener` deploys the static report at `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`.
-- Confirm the scheduled weekly Saturday 07:15 UTC workflow runs in live mode and blocks numeric sample fallback.
+- Verify that `keresell-coder/Macro-and-Market-cycle-Screener` deploys the static report at `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`. First manual live deployment is verified.
+- Confirm the scheduled weekly Saturday 07:15 UTC workflow runs in live mode and blocks numeric sample fallback. Manual live run is verified; the next scheduled run should be monitored.
 - Add reviewed public/manual CSV research evidence for priority subsectors.
 - Add source-specific confidence details beyond the current health summary.
 - Keep private notes and any manual/licensed source material out of public exports.

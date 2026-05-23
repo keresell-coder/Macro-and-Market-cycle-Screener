@@ -15,7 +15,7 @@ Build a private-first research dashboard that identifies Oslo Bors-linked subsec
 - Static report site: `exports/site/index.html`.
 - GitHub Pages workflow: `.github/workflows/weekly-report.yml`.
 - GitHub repository: `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener`.
-- Expected GitHub Pages URL after successful deployment: `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`.
+- Live GitHub Pages report: `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`.
 - Manual reports folder: `data/manual_reports/`.
 - Scoring version shown in public methodology: `score-v1-public-cycle-radar`.
 
@@ -159,9 +159,19 @@ Sprint 3 static report state and change engine is implemented locally:
   - tests cover fallback visibility and the strict guard;
   - generated static-site QA is wired into the GitHub workflow.
 - GitHub repository setup status:
-  - local project is intended to be pushed to `keresell-coder/Macro-and-Market-cycle-Screener`;
-  - GitHub Pages should deploy from GitHub Actions;
-  - after the first successful workflow run, the static HTML report should be accessible from other devices at the Pages URL above.
+  - local project is initialized as a git repository on branch `main`;
+  - remote `origin` points to `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener.git`;
+  - initial project commit and follow-up workflow fix have been pushed;
+  - GitHub Pages is enabled with GitHub Actions as the build/deploy source;
+  - first manual live workflow deployment completed successfully;
+  - the static HTML report is accessible from other devices at the Pages URL above.
+- Latest GitHub Pages verification on 2026-05-24:
+  - public report URL returned HTTP 200;
+  - public `data/report_state.json` returned HTTP 200;
+  - `numeric_mode`: `live_numeric`;
+  - `live_indicator_count`: 17;
+  - numeric `sample_fallback` count: 0;
+  - research page failures: 1, UBS public insights page returned 403 and remains a visible source failure.
 
 ## Verification Commands
 
@@ -179,7 +189,7 @@ HOME="$PWD/.streamlit_home" STREAMLIT_BROWSER_GATHER_USAGE_STATS=false .venv/bin
 
 ## Next Likely Improvements
 
-- Verify the first GitHub Actions live deployment and Pages URL after pushing the repository.
+- Monitor the next scheduled Saturday 07:15 UTC live workflow run.
 - Add source-specific confidence detail beyond the first research facts table.
 - Add a private notes layer that is explicitly excluded from public/static exports.
 - Replace deterministic market-cycle proxy history with reviewed public/licensed subsector price, constituent, and valuation data.

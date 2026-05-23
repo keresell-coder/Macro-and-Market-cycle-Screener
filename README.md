@@ -113,11 +113,13 @@ Sprint 5 adds `.github/workflows/weekly-report.yml`.
 
 The scheduled workflow runs weekly on Saturdays at 07:15 UTC and now defaults to `live` mode using keyless public connectors. Live builds fail if numeric indicators fall back to deterministic `sample_fallback` rows. Manual dispatch still allows `sample` mode for deterministic debugging. Optional secrets can be added later as `FRED_API_KEY` and `EIA_API_KEY`; Codex does not have those keys.
 
-To use it, configure GitHub Pages to deploy from GitHub Actions, then run the workflow manually from the Actions tab. Once Pages is active, the static report should be available at:
+GitHub Pages is enabled and the live static report is available at:
 
 ```text
 https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/
 ```
+
+The first verified live deployment reported 17 live numeric indicators, 0 numeric `sample_fallback` indicators, and one visible research-page failure for the UBS public insights page returning 403.
 
 Details are in `docs/github_pages_setup.md`.
 
