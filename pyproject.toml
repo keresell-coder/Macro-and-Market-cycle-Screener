@@ -1,0 +1,33 @@
+[project]
+name = "oslo-cycle-radar"
+version = "0.1.0"
+description = "Explainable macro and subsector cycle opportunity radar for Oslo Bors-linked investing."
+requires-python = ">=3.11"
+dependencies = [
+  "beautifulsoup4>=4.12",
+  "duckdb>=1.0",
+  "openpyxl>=3.1",
+  "pandas>=2.2",
+  "plotly>=5.22",
+  "requests>=2.31",
+  "streamlit>=1.36",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
