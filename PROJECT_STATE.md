@@ -194,9 +194,12 @@ Sprint 3 static report state and change engine is implemented locally:
 - Latest GitHub Pages verification on 2026-05-24:
   - public report URL returned HTTP 200;
   - public `data/report_state.json` returned HTTP 200;
+  - `schema_version`: `2026-05-24-sprint8`;
   - `numeric_mode`: `live_numeric`;
-  - `live_indicator_count`: 17 before Sprint 8 deployment;
+  - `live_indicator_count`: 22;
   - numeric `sample_fallback` count: 0;
+  - Sprint 8 OECD CLI mirror indicators present: `g20_cli`, `g7_cli`, `us_cli`, `china_cli`, and `europe_cli`, latest observed at 2026-04-30;
+  - Growth framework coverage status: `partial`;
   - research page failures: 1, UBS public insights page returned 403 and remains a visible source failure.
 
 ## Verification Commands

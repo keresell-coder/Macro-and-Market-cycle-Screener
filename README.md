@@ -123,7 +123,7 @@ GitHub Pages is enabled and the live static report is available at:
 https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/
 ```
 
-The latest verified live deployment reported live numeric mode, 0 numeric `sample_fallback` indicators, and one visible research-page failure for the UBS public insights page returning 403.
+The latest verified live deployment reported schema `2026-05-24-sprint8`, live numeric mode, 22 live indicators, 0 numeric `sample_fallback` indicators, and one visible research-page failure for the UBS public insights page returning 403.
 
 Details are in `docs/github_pages_setup.md`.
 

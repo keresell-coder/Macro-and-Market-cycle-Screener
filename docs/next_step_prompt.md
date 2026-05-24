@@ -35,7 +35,7 @@ Current implementation:
 - GitHub Actions workflow runs weekly Saturday 07:15 UTC. Scheduled runs default to live keyless public data and fail if numeric `sample_fallback` is used. Manual sample mode remains available.
 - GitHub repository: `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener`.
 - Live Pages URL: `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`.
-- Manual live GitHub Actions deployment succeeded and published `numeric_mode=live_numeric` with 0 numeric `sample_fallback` indicators after Sprint 7. Sprint 8 deployment verification may still need to be completed if this prompt is used before commit/push/deploy.
+- Latest manual live GitHub Actions deployment succeeded after Sprint 8 and published schema `2026-05-24-sprint8`, `numeric_mode=live_numeric`, 22 live indicators, 0 numeric `sample_fallback` indicators, and Sprint 8 CLI mirror indicators present.
 - Research evidence layer exists, but structured research evidence falls back to sample evidence unless reviewed CSV files are added locally.
 - UBS public research page scan currently returns 403 and should be treated as a visible source failure, not bypassed.
 
