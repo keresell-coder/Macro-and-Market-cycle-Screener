@@ -288,7 +288,7 @@ Goal: add robust keyless leading-growth signals.
 - Added monthly OECD CLI proxies for G20, G7, United States, China, and major Europe through the public DB.nomics mirror of OECD data.
 - Kept World Bank annual growth as background context, not a PMI substitute.
 - Added parser and report-state tests; the existing source-status, freshness, and strict live fallback guard cover the new indicators.
-- Local live verification shows 22 live numeric indicators with 0 numeric `sample_fallback` rows.
+- Sprint 8 local live verification showed 22 live numeric indicators with 0 numeric `sample_fallback` rows.
 
 Additional OECD direct-API retest on 2026-05-24:
 
@@ -312,12 +312,15 @@ Goal: put historical line charts back at the top of the static report before the
 
 ### Sprint 10: Credit, liquidity, and financial conditions
 
+Status: implemented locally on 2026-05-24.
+
 Goal: add the biggest missing macro-cycle dimension.
 
-- Add keyless or configured-key credit/liquidity sources where terms and endpoint reliability are acceptable.
-- Candidate first sources include Chicago Fed NFCI through FRED public CSV, selected public credit-spread proxies, and BIS credit/property series after connector testing.
-- Use configured GitHub Actions secrets for FRED/EIA only through environment variables and expand charted series histories toward 30 years where endpoints support it.
-- Add a dedicated liquidity/credit signal group and update framework coverage only after live data is connected and tested.
+- Added Chicago Fed NFCI and St. Louis Fed Financial Stress Index through the official public FRED CSV endpoint.
+- Added source-status rows, freshness metadata, parser tests, a source-registry note, and strict live fallback behavior for the new indicators.
+- Expanded supported histories toward 30 years for several source families and fixed chart windows to use whole-month 10-30 year ranges.
+- Added a dedicated non-scoring liquidity/credit signal group and a liquidity/credit chart view after live data was connected and tested.
+- Local Sprint 10 live verification shows 24 live numeric indicators, 0 numeric `sample_fallback` rows, schema `2026-05-24-sprint10`, and chart layer version `sprint10-credit-liquidity-chart-layer`.
 
 ### Sprint 11: Valuation and market internals reality check
 

@@ -19,29 +19,26 @@ Current project intent:
 Build a private-first Oslo-linked Macro and Market-cycle Opportunity Radar that gets as close as practical to the reviewed global macro/market-cycle framework while using only open, reliable, credible, robust, keyless or no-credential data sources. It should be a research radar and starting point for further single-stock work, not an automatic stock-picking or investment-advice engine.
 
 Current implementation:
-- Python/Streamlit local dashboard.
-- DuckDB storage with SQLite fallback.
+- Python/Streamlit local dashboard with DuckDB storage and SQLite fallback.
 - Deterministic sample mode and keyless live public-data mode.
-- Keyless live numeric indicator refresh using World Bank, DB.nomics mirror of OECD CLI data, Norges Bank, Statistics Norway, and selected public market chart data; API keys are optional future connector inputs only.
-- Latest local live verification before Sprint 9: 22/22 numeric indicators covered, 1,568 observations, 0 numeric `sample_fallback` rows.
+- Keyless live numeric indicator refresh using World Bank Pink Sheet, World Bank Indicators, DB.nomics mirror of OECD CLI data, FRED public CSV financial-conditions proxies, Norges Bank, Statistics Norway, and selected public market chart data.
+- Latest local live verification after Sprint 10: 24/24 numeric indicators covered, 7,732 observations, 0 numeric `sample_fallback` rows.
 - Explainable subsector scoring and signal heatmap.
 - Research evidence layer with highlighted drilldown conclusions, visible "Why now?", "Key debates", "Catalysts", "Risks", source evidence, and reviewed/unreviewed labels.
 - Sector price, relative price, valuation proxy, and driver charts use deterministic market-cycle sample data until reviewed public or licensed subsector market data is connected.
 - Public-safe report-state JSON and change-comparison engine.
-- Static HTML report site under `exports/site/` with Historical Charts, Latest Radar, Source Health, Contradicting Evidence, Changes Since Last Report, Archive, and Methodology views.
-- Public report state includes `chart_layer`, source freshness, source-health summaries, scoring version `score-v1-public-cycle-radar`, market-cycle summaries, source statuses, `contradicting_evidence`, and reviewed public research facts.
-- Public report state also includes `framework_coverage`, based on the reviewed macro/market-cycle knowledge-base document.
-- Public proxy labels have been cleaned up: the legacy internal `global_pmi` slug is displayed publicly as `global_growth_proxy` / "Global annual GDP growth proxy"; it is not PMI or OECD CLI data.
-- Sprint 8 is implemented: monthly OECD CLI proxies for G20, G7, United States, China, and major Europe are loaded from the public DB.nomics mirror. Direct OECD SDMX access is documented/keyless but currently returns a Cloudflare challenge from this environment, so it is marked blocked and not bypassed.
-- Sprint 9 is implemented locally: the static report opens with a global historical chart view, followed by regional views and sector/subsector drilldowns. Chart metadata includes source, vintage/freshness, frequency, data class, proxy/sample/missing status, and scoring inclusion.
-- Chart-window metadata is implemented: x-axes use the shortest available series range in each view, are capped at 30 years, and keep a displayed minimum of 10 years while short-history series are flagged.
-- `FRED_API_KEY` and `EIA_API_KEY` are configured locally in `.env` and as GitHub Actions repository secrets. Do not print, commit, or publish the key values.
-- The OECD direct API was retested on 2026-05-24 using the official API page's CLI CSV pattern and dataflow endpoint. It still returned HTTP 403/security verification from this environment, including browser automation. Do not bypass it; no manual action is needed while DB.nomics mirror access remains acceptable.
+- Static HTML report site under `exports/site/` with Historical Charts, Liquidity And Credit, Latest Radar, Source Health, Contradicting Evidence, Changes Since Last Report, Archive, and Methodology views.
+- Public report state includes `chart_layer`, `signal_groups`, source freshness, source-health summaries, scoring version `score-v1-public-cycle-radar`, market-cycle summaries, source statuses, `contradicting_evidence`, framework coverage, and reviewed public research facts.
+- Sprint 7 proxy labels are cleaned up: the legacy internal `global_pmi` slug is displayed publicly as `global_growth_proxy` / "Global annual GDP growth proxy"; it is not PMI or OECD CLI data.
+- Sprint 8 monthly OECD CLI proxies for G20, G7, United States, China, and major Europe are loaded from the public DB.nomics mirror. Direct OECD SDMX access is documented/keyless but returned a Cloudflare challenge from this environment and is not bypassed.
+- Sprint 9 added the historical chart layer with global, regional, and sector/subsector drilldowns.
+- Sprint 10 added Chicago Fed NFCI and St. Louis Fed Financial Stress Index through public FRED CSV, a dedicated non-scoring liquidity/credit signal group, expanded supported chart histories toward 30 years, and chart layer version `sprint10-credit-liquidity-chart-layer`.
+- Chart windows use the shortest available series range in each view, are capped at 30 years, keep a displayed minimum of 10 years, and flag short-history series.
+- `FRED_API_KEY` and `EIA_API_KEY` are configured locally in `.env` and as GitHub Actions repository secrets. Do not print, commit, or publish the key values. Current FRED public CSV indicators do not require a key.
 - Static-site QA command serves the generated site locally and performs screenshot checks where Playwright is available.
 - GitHub Actions workflow for weekly/static GitHub Pages deployment. Scheduled runs are live by default and fail if numeric live data uses deterministic `sample_fallback`; manual sample mode remains available.
 - GitHub repository: `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener`.
 - Live GitHub Pages URL after deployment: `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`.
-- Latest manual live GitHub Actions deployment after Sprint 9 published schema `2026-05-24-sprint9`, `numeric_mode=live_numeric`, 22 live indicators, 0 numeric `sample_fallback` indicators, chart layer version `sprint9-historical-chart-layer`, and 159 chart-layer series.
 - Remaining known non-OK source statuses: UBS public research page blocks scanning with 403; structured research evidence falls back to sample evidence when no reviewed CSV files exist.
 
 Important constraints:
@@ -53,5 +50,5 @@ Important constraints:
 - The GitHub Pages target should be static HTML/JSON/assets generated by scheduled GitHub Actions, not a hosted Streamlit app.
 
 My next requested task is:
-Implement Sprint 10 from `docs/open_data_expansion_plan.md`: Credit, Liquidity, And Financial Conditions. Add one or two robust keyless or configured-key credit/liquidity series first, wire them into source status, freshness, source health, chart-layer metadata, tests, docs, and strict live fallback behavior. Expand charted source histories toward 30 years where endpoints support it, enforce the chart x-axis policy of maximum 30 years / shortest available series range per view / minimum displayed 10 years, then only add scoring coverage after live data is connected and tested. Preserve static GitHub Pages HTML/JSON/assets, run local tests and static-site QA, commit/push, dispatch the live workflow, and verify Pages still shows `live_numeric` with 0 numeric `sample_fallback`.
+Implement Sprint 11 from `docs/open_data_expansion_plan.md`: Valuation And Market Internals Reality Check. Add one or two robust open valuation/market-internals proxies first, keep all broad proxies clearly labeled, keep true Oslo subsector valuation multiples out of scoring unless reviewed public or licensed data is available, wire source status/freshness/tests/docs, preserve static GitHub Pages output, run local tests and static-site QA, commit/push, dispatch the live workflow, and verify Pages still shows `live_numeric` with 0 numeric `sample_fallback`.
 ```

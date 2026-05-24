@@ -144,6 +144,7 @@ def _render_page(
   <nav class="site-nav" aria-label="Static report views">
     <a href="{escape(home_href)}">Top</a>
     <a href="#historical-charts">Historical Charts</a>
+    <a href="#liquidity-credit">Liquidity/Credit</a>
     <a href="#source-health">Source Health</a>
     <a href="#contradicting-evidence">Contradicting Evidence</a>
     <a href="#latest-radar">Latest Radar</a>
@@ -165,6 +166,14 @@ def _render_page(
         <h2>Global View And Drilldown</h2>
       </div>
       {_render_chart_layer(report_state)}
+    </section>
+
+    <section id="liquidity-credit" class="section">
+      <div class="section-heading">
+        <p class="eyebrow">Liquidity And Credit</p>
+        <h2>Financial Conditions Signal Group</h2>
+      </div>
+      {_render_signal_groups(report_state)}
     </section>
 
     <section id="source-health" class="section">
@@ -574,6 +583,47 @@ def _render_source_health(report_state: dict[str, Any]) -> str:
     return status_cards + "".join(alerts) + table
 
 
+def _render_signal_groups(report_state: dict[str, Any]) -> str:
+    groups = list(report_state.get("signal_groups", []))
+    if not groups:
+        return '<p class="empty-state">No signal-group metadata is available in this report snapshot.</p>'
+
+    cards = []
+    for group in groups:
+        indicators = list(group.get("indicators", []))
+        rows = []
+        for item in indicators:
+            rows.append(
+                "<tr>"
+                f"<td><strong>{escape(str(item.get('indicator_name', item.get('indicator_slug', ''))))}</strong><span>{escape(str(item.get('display_slug', '')))}</span></td>"
+                f"<td>{escape(str(item.get('latest_observed_at', '')))}</td>"
+                f"<td>{_fmt(item.get('latest_value'), 3)}</td>"
+                f"<td>{_signed(item.get('tailwind_score'))}</td>"
+                f"<td>{escape(str(item.get('source_category', '')).replace('_', ' '))}</td>"
+                f"<td>{escape(str(item.get('freshness_status', '')).replace('_', ' '))}</td>"
+                "</tr>"
+            )
+        table = (
+            '<div class="table-wrap"><table class="freshness-table">'
+            "<thead><tr><th>Indicator</th><th>Latest observation</th><th>Latest value</th><th>Tailwind</th><th>Data class</th><th>Freshness</th></tr></thead>"
+            f"<tbody>{''.join(rows) or '<tr><td colspan=\"6\">No liquidity or credit indicators available.</td></tr>'}</tbody></table></div>"
+        )
+        cards.append(
+            '<article class="lead-item lead-item--wide">'
+            f"<h4>{escape(str(group.get('title', 'Signal group')))}</h4>"
+            '<dl class="mini-stats mini-stats--wide">'
+            f"<div><dt>Status</dt><dd>{escape(str(group.get('status', 'unknown')).replace('_', ' '))}</dd></div>"
+            f"<div><dt>Condition</dt><dd>{escape(str(group.get('summary_label', 'unknown')))}</dd></div>"
+            f"<div><dt>Tailwind</dt><dd>{_signed(group.get('tailwind_score'))}</dd></div>"
+            f"<div><dt>Macro read</dt><dd>{escape(str(group.get('macro_confirmation', 'unknown')))}</dd></div>"
+            "</dl>"
+            f"<p class=\"muted\">{escape(str(group.get('methodology_note', '')))}</p>"
+            f"{table}"
+            "</article>"
+        )
+    return f'<div class="lead-grid lead-grid--single">{"".join(cards)}</div>'
+
+
 def _render_contradicting_evidence(report_state: dict[str, Any]) -> str:
     records = list(report_state.get("contradicting_evidence", []))
     if not records:
@@ -913,7 +963,9 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .heatmap th:first-child { min-width: 190px; }
 .heatmap td { min-width: 110px; font-variant-numeric: tabular-nums; }
 .lead-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.lead-grid--single { grid-template-columns: 1fr; }
 .lead-item { padding: 16px; }
+.lead-item--wide { overflow: hidden; }
 .lead-item p, .lead-item li { color: #35423b; line-height: 1.45; }
 .lead-item ul { margin: 12px 0 0; padding-left: 18px; }
 .evidence-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -950,6 +1002,7 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .chart-notes li, .chart-missing li { margin: 6px 0; line-height: 1.45; }
 .source-name { color: var(--muted); font-weight: 700; }
 .mini-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 14px 0 0; }
+.mini-stats--wide { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .mini-stats div { background: #f1f4ef; border-radius: 6px; padding: 9px; }
 .mini-stats dt { color: var(--muted); font-size: 12px; }
 .mini-stats dd { margin: 4px 0 0; font-weight: 800; }

@@ -34,6 +34,8 @@ INDICATORS: tuple[IndicatorDefinition, ...] = (
     IndicatorDefinition("rates_pressure", "US 10-year Treasury yield proxy", "yahoo_chart", "^TNX", "%", "lower_tailwind", "Global rates headwind proxy."),
     IndicatorDefinition("norges_bank_policy_rate", "Norges Bank policy rate", "norges_bank_csv", "IR/B.KPRA.RR", "%", "lower_tailwind", "Norwegian rate pressure."),
     IndicatorDefinition("norway_cpi", "Norway CPI", "ssb_cpi", "03013/TOTAL/KpiIndMnd", "index", "lower_tailwind", "Inflation pressure proxy."),
+    IndicatorDefinition("chicago_fed_nfci", "Chicago Fed NFCI", "fred_public", "NFCI", "index", "lower_tailwind", "US financial-conditions proxy from the public FRED CSV endpoint; positive values indicate tighter-than-average conditions."),
+    IndicatorDefinition("st_louis_financial_stress", "St. Louis Fed Financial Stress Index", "fred_public", "STLFSI4", "index", "lower_tailwind", "US financial-stress proxy from the public FRED CSV endpoint; higher values indicate more financial stress."),
     IndicatorDefinition("food_price_pressure", "Fish meal price proxy", "world_bank_commodity", "FISH_MEAL", "USD/metric ton", "mixed", "Seafood demand and input-cost proxy."),
     IndicatorDefinition("nasdaq_proxy", "NASDAQ Composite chart proxy", "yahoo_chart", "^IXIC", "index", "mixed", "Global technology and AI sentiment proxy from a public market chart endpoint."),
     IndicatorDefinition("oil_curve_pressure", "Brent-WTI spread proxy", "derived_public", "brent-wti", "USD/bbl", "higher_tailwind", "Oil-market pressure proxy derived from public Brent and WTI series."),

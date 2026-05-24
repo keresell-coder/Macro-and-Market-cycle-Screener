@@ -23,6 +23,8 @@ This is a research radar, not an investment recommendation engine. It ranks subs
 - Public report labels that distinguish annual GDP growth proxies, broad market/chart proxies, sample-backed market-cycle proxies, and missing dimensions instead of implying true PMI, inventory, or valuation-multiple data.
 - Monthly OECD Composite Leading Indicator growth proxies for G20, G7, United States, China, and major Europe, accessed through the public DB.nomics mirror because the direct OECD SDMX endpoint is blocked from this environment.
 - Historical chart layer at the top of the static report with a global view first, regional drilldowns, and sector/subsector drilldowns using existing live proxies and sample-backed market-cycle histories.
+- Sprint 10 liquidity/credit layer with Chicago Fed NFCI and St. Louis Fed Financial Stress Index from public FRED CSV, shown in charts and in a dedicated non-scoring financial-conditions signal group.
+- Expanded chart-source histories toward 30 years where endpoints support it, while enforcing the 10-30 year common x-axis policy and flagging short-history series.
 - Chart metadata for source, vintage/freshness, frequency, data class, proxy/sample/missing status, and scoring inclusion.
 - Chart x-axis policy using the shortest available series range in each view, capped at 30 years, with a minimum displayed range of 10 years where short-history series are flagged.
 - Contradicting Evidence summary in the static report, generated from existing recovery, macro, momentum, valuation-proxy, confidence, and sample-backed market-cycle components.
@@ -32,7 +34,7 @@ This is a research radar, not an investment recommendation engine. It ranks subs
 - Static-site QA command that serves the generated site locally and runs browser/screenshot checks when Playwright is available.
 - Manual report folder for documents you are entitled to use.
 
-Next planned sprint: add FRED/EIA-backed or keyless credit/liquidity and financial-conditions indicators, expand chart histories toward the 10-30 year x-axis policy, then show new series in the historical chart layer before including them in scoring.
+Next planned sprint: valuation and market-internals reality check, keeping broad public proxies clearly labeled unless true subsector data is reviewed or licensed.
 
 ## Quick Start
 
@@ -54,9 +56,9 @@ The default live refresh does not require API keys:
 python -m cycle_screener.refresh
 ```
 
-Current keyless sources include World Bank commodity and annual GDP growth proxy data, DB.nomics mirror access to OECD monthly CLI data, Norges Bank FX and policy-rate data, Statistics Norway CPI data, and limited public market chart data for traded proxies. If a live numeric source fails, missing series are filled from deterministic sample data and marked in source status.
+Current keyless sources include World Bank commodity and annual GDP growth proxy data, DB.nomics mirror access to OECD monthly CLI data, FRED public CSV financial-conditions/stress proxies, Norges Bank FX and policy-rate data, Statistics Norway CPI data, and limited public market chart data for traded proxies. If a live numeric source fails, missing series are filled from deterministic sample data and marked in source status.
 
-The live refresh was verified locally without `FRED_API_KEY` or `EIA_API_KEY`: 22/22 numeric indicators were covered with 0 numeric `sample_fallback` rows. Research evidence may still fall back to sample evidence when no local reviewed CSV files exist.
+The live refresh was verified locally without `FRED_API_KEY` or `EIA_API_KEY`: 24/24 numeric indicators were covered with 0 numeric `sample_fallback` rows. Research evidence may still fall back to sample evidence when no local reviewed CSV files exist.
 
 Optional future connectors may use:
 
@@ -135,7 +137,7 @@ GitHub Pages is enabled and the live static report is available at:
 https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/
 ```
 
-The latest verified live deployment reported schema `2026-05-24-sprint9`, live numeric mode, 22 live indicators, 0 numeric `sample_fallback` indicators, chart layer version `sprint9-historical-chart-layer`, 159 chart-layer series, and one visible research-page failure for the UBS public insights page returning 403. GitHub Actions repository secrets for `FRED_API_KEY` and `EIA_API_KEY` are configured, and a manual live workflow run completed green after they were added.
+The latest local Sprint 10 live verification reported schema `2026-05-24-sprint10`, live numeric mode, 24 live indicators, 0 numeric `sample_fallback` indicators, chart layer version `sprint10-credit-liquidity-chart-layer`, 168 chart-layer series, and one visible research-page failure for the UBS public insights page returning 403. GitHub Actions repository secrets for `FRED_API_KEY` and `EIA_API_KEY` are configured, though the current Sprint 10 FRED public CSV indicators do not require a key.
 
 Details are in `docs/github_pages_setup.md`.
 

@@ -8,18 +8,18 @@ Build a private-first research dashboard that identifies Oslo Bors-linked subsec
 
 ## Current Implementation
 
-- Python project with Streamlit dashboard, DuckDB storage, keyless public live-data connectors, deterministic sample fallback, static HTML export, static report site, Sprint 6 source-health monitoring, Sprint 7 proxy-label cleanup, Sprint 8 OECD CLI growth proxies, Sprint 9 historical chart layer, GitHub Pages workflow, and tests.
+- Python project with Streamlit dashboard, DuckDB storage, keyless public live-data connectors, deterministic sample fallback, static HTML export, static report site, Sprint 6 source-health monitoring, Sprint 7 proxy-label cleanup, Sprint 8 OECD CLI growth proxies, Sprint 9 historical chart layer, Sprint 10 credit/liquidity proxies, GitHub Pages workflow, and tests.
 - Main app: `dashboard/app.py`.
 - Core package: `src/cycle_screener/`.
 - Static export: `exports/opportunity_radar.html`.
 - Static report site: `exports/site/index.html`.
-- Static report chart layer: global historical chart view first, then regional and sector/subsector drilldown using live public indicator histories and clearly labeled sample-backed subsector histories.
+- Static report chart layer: global historical chart view first, then liquidity/credit, regional, and sector/subsector drilldown using live public indicator histories and clearly labeled sample-backed subsector histories.
 - GitHub Pages workflow: `.github/workflows/weekly-report.yml`.
 - GitHub repository: `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener`.
 - Live GitHub Pages report: `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`.
 - Manual reports folder: `data/manual_reports/`.
 - Scoring version shown in public methodology: `score-v1-public-cycle-radar`.
-- Report-state schema version: `2026-05-24-sprint9`.
+- Report-state schema version: `2026-05-24-sprint10`.
 - Saved knowledge-base reference: `docs/knowledge_base/global_macro_market_cycle_knowledge_base.md`.
 - Reviewed knowledge-base assessment: `docs/knowledge_base_review.md`.
 - Open-data expansion plan: `docs/open_data_expansion_plan.md`.
@@ -51,6 +51,7 @@ Build a private-first research dashboard that identifies Oslo Bors-linked subsec
 - Reviewed and unreviewed research evidence is clearly labeled. Unreviewed claims do not affect numeric scoring.
 - Public export excludes private notes and manual reports.
 - Public static report now opens its analytical content with Historical Charts before Source Health, Contradicting Evidence, and Latest Radar.
+- Public static report includes a dedicated Liquidity And Credit signal-group section after Historical Charts. The Sprint 10 signal group is non-scoring and uses live FRED public CSV financial-conditions/stress proxies.
 
 ## Data And Scoring Notes
 
@@ -80,15 +81,17 @@ Implemented and verified on 2026-05-23; expanded on 2026-05-24:
   - World Bank Pink Sheet monthly commodity prices for Brent, WTI, natural gas, copper, aluminum, food/input proxies, and oil price pressure inputs.
   - World Bank Indicators API for global and China growth proxies.
   - DB.nomics public API mirror for OECD monthly Composite Leading Indicators covering G20, G7, United States, China, and major Europe.
+  - FRED public CSV for Chicago Fed NFCI and St. Louis Fed Financial Stress Index.
   - Norges Bank CSV API for USD/NOK, EUR/NOK, and policy-rate data.
   - Statistics Norway API for CPI.
   - Yahoo chart data for NASDAQ, heating oil, and US 10-year yield market proxies where no official keyless endpoint is currently wired.
 - Live refresh was verified with `FRED_API_KEY=` and `EIA_API_KEY=`:
-  - 1,568 observations after Sprint 8;
-  - 22/22 indicators covered;
+  - 7,732 observations after Sprint 10;
+  - 24/24 indicators covered;
   - 0 numeric `sample_fallback` rows;
-  - latest live dates range from 2024-12-31 for annual World Bank growth proxies to 2026-05-31 for FX/rates/market proxies;
+  - latest live dates range from 2024-12-31 for annual World Bank growth proxies to 2026-05-31 for FX/rates/market/credit-liquidity proxies;
   - OECD CLI mirror observations are current through 2026-04-30 in local verification.
+  - Chicago Fed NFCI and St. Louis Fed Financial Stress Index observations are current through 2026-05-31 in local verification.
 - Remaining non-OK statuses after live verification:
   - UBS public research page returns 403 and is skipped.
   - Structured research evidence falls back to sample evidence when no local reviewed CSV files exist.
@@ -97,6 +100,7 @@ Important live-data caveats:
 
 - Yahoo chart data is used only for broad market proxies where no official keyless endpoint is currently wired: NASDAQ, heating oil, and US 10-year yield proxy.
 - World Bank growth proxies are annual and therefore naturally less fresh than monthly/daily market and macro series.
+- FRED public CSV is used only for selected open financial-conditions/stress proxies in Sprint 10. No FRED key is required for these CSV downloads. A connector fallback uses the same official CSV URL through `curl` if the Python HTTP path is unreliable.
 - The legacy internal `global_pmi` slug is retained for compatibility, but public report state displays it as `global_growth_proxy` with label "Global annual GDP growth proxy"; it is not PMI or OECD CLI data.
 - The official OECD SDMX API is documented and keyless, but direct local requests currently return a Cloudflare challenge. A 2026-05-24 retest of the official OECD CLI CSV example and dataflow endpoint returned HTTP 403/security verification in local and browser automation. The Sprint 8 implementation does not bypass that block; it uses the public DB.nomics mirror of OECD `DSD_STES@DF_CLI` and labels it accordingly.
 - Numeric scoring uses live indicators after a live refresh, but subsector market-cycle charts still use deterministic proxy histories.
@@ -142,6 +146,7 @@ Sprint 3 static report state and change engine is implemented locally:
   - per-indicator source freshness and source-health summaries;
   - framework coverage metadata across growth, inflation, rates, credit, earnings, valuation, market internals, subsector market-cycle data, and research evidence;
   - historical chart-layer metadata for global, regional, and sector/subsector views;
+  - a dedicated non-scoring liquidity/credit signal group based on live public financial-conditions proxies;
   - latest market-cycle summary per subsector;
   - reviewed public research facts only.
 - Change tracking covers:
@@ -198,6 +203,17 @@ Sprint 3 static report state and change engine is implemented locally:
   - local live static verification shows schema `2026-05-24-sprint9`, `live_numeric`, 22 live indicators, 0 numeric `sample_fallback`, and 159 chart-layer series;
   - chart x-axis policy is now defined in report-state metadata: use the shortest available series range in each view, clamp it to a 10-30 year display window, and end at the latest date common to included series so data aligns with the x-axis; short-history series are flagged until Sprint 10 expands source fetch windows;
   - true subsector valuation multiples and licensed market histories remain missing unless reviewed public or licensed data is connected.
+- Sprint 10 credit, liquidity, and financial conditions is implemented locally:
+  - added two narrow keyless FRED public CSV indicators: `chicago_fed_nfci` and `st_louis_financial_stress`;
+  - wired the existing FRED CSV parser into live refresh, source-status rows, freshness metadata, chart metadata, and parser tests;
+  - added a FRED connector fallback that still uses the official public CSV endpoint via `curl` if Python requests are unreliable;
+  - expanded supported source histories toward 30 years for World Bank Pink Sheet, DB.nomics OECD CLI, FRED public CSV, Norges Bank, Statistics Norway, Yahoo chart data where available, and derived public series;
+  - fixed chart-window logic to enforce the 10-30 year policy using whole-month windows;
+  - added a dedicated Liquidity And Credit static-site section with a non-scoring financial-conditions signal group;
+  - added a dedicated liquidity/credit chart view and included the new FRED series in global and US chart views;
+  - updated framework coverage from missing to partial for Liquidity and credit;
+  - local live static verification shows schema `2026-05-24-sprint10`, `live_numeric`, 24 live indicators, 0 numeric `sample_fallback`, chart layer version `sprint10-credit-liquidity-chart-layer`, and 168 chart-layer series;
+  - BIS credit/property data, lending standards, credit spreads beyond the first stress proxy, true valuation multiples, and licensed market histories remain missing until reviewed public or licensed data is connected.
 - GitHub repository setup status:
   - local project is initialized as a git repository on branch `main`;
   - remote `origin` points to `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener.git`;
@@ -217,6 +233,16 @@ Sprint 3 static report state and change engine is implemented locally:
   - Sprint 8 OECD CLI mirror indicators present: `g20_cli`, `g7_cli`, `us_cli`, `china_cli`, and `europe_cli`, latest observed at 2026-04-30;
   - Growth framework coverage status: `partial`;
   - research page failures: 1, UBS public insights page returned 403 and remains a visible source failure.
+- Latest local live verification on 2026-05-24 after Sprint 10:
+  - strict live static build passed;
+  - `schema_version`: `2026-05-24-sprint10`;
+  - `numeric_mode`: `live_numeric`;
+  - `live_indicator_count`: 24;
+  - numeric `sample_fallback` count: 0;
+  - chart layer version: `sprint10-credit-liquidity-chart-layer`;
+  - chart-layer series count: 168;
+  - liquidity/credit signal group status: `connected`;
+  - `chicago_fed_nfci` and `st_louis_financial_stress` are live numeric, current, and each have 361 monthly observations in the report-state freshness metadata.
 - Latest GitHub Actions secrets status on 2026-05-24:
   - `FRED_API_KEY` and `EIA_API_KEY` were added as GitHub repository secrets by the user;
   - a manual live workflow run after adding secrets completed green;
@@ -239,9 +265,7 @@ HOME="$PWD/.streamlit_home" STREAMLIT_BROWSER_GATHER_USAGE_STATS=false .venv/bin
 ## Next Likely Improvements
 
 - Monitor the next scheduled Saturday 07:15 UTC live workflow run.
-- Add FRED/EIA-backed or keyless credit/liquidity sources now that the chart layer is in place, so new signals have a visible historical context immediately.
-- Expand chart-source histories during Sprint 10 so each chart view can use the 10-30 year x-axis policy with real long histories, not only 10-year axes around shorter current fetch windows.
-- Continue the sprint sequence in `docs/open_data_expansion_plan.md`: credit/liquidity indicators, valuation/market internals reality check, reviewed research evidence, and archive/monitoring maturity.
+- Continue the sprint sequence in `docs/open_data_expansion_plan.md`: Sprint 11 valuation/market internals reality check, Sprint 12 reviewed research evidence, and Sprint 13 archive/monitoring maturity.
 - Add source-specific confidence detail beyond the first research facts table.
 - Add a private notes layer that is explicitly excluded from public/static exports.
 - Replace deterministic market-cycle proxy history with reviewed public/licensed subsector price, constituent, and valuation data.
@@ -269,7 +293,7 @@ On 2026-05-23, GitHub Pages and GitHub Actions were evaluated as a feasible targ
 - Change tracking should include rank deltas, score deltas, signal deltas, source-status changes, and later research-fact changes.
 - Static Pages must not contain private notes, credentials, manual reports, raw licensed data, or paywalled content.
 - GitHub Pages cannot run Python server-side, so all Python work must occur during the Actions build step.
-- Roadmap update: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, Sprint 7, Sprint 8, Sprint 9, and the keyless live-data connector upgrade have been implemented locally. GitHub Pages is live. The next roadmap step is Sprint 10 in `docs/open_data_expansion_plan.md`: Credit, Liquidity, And Financial Conditions.
+- Roadmap update: Sprint 1 through Sprint 10 and the keyless live-data connector upgrade have been implemented locally. GitHub Pages is live. The next roadmap step is Sprint 11 in `docs/open_data_expansion_plan.md`: Valuation And Market Internals Reality Check.
 
 ## Continuation Prompt
 

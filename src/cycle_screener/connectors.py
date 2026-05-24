@@ -3,8 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from io import BytesIO, StringIO
+import subprocess
 from typing import Iterable
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -14,6 +15,8 @@ from .config import Settings
 from .indicators import IndicatorDefinition, INDICATORS
 from .sample_data import generate_sample_observations, generate_sample_research_mentions
 from .sources import SOURCE_DEFINITIONS, RESEARCH_KEYWORDS
+
+SOURCE_HISTORY_MONTHS = 30 * 12 + 1
 
 
 @dataclass(frozen=True)
@@ -36,6 +39,7 @@ def fetch_indicator_observations(settings: Settings, sample: bool = False) -> tu
         ("world_bank_commodity", _fetch_world_bank_commodities),
         ("world_bank_indicator", _fetch_world_bank_indicators),
         ("dbnomics_oecd_cli", _fetch_dbnomics_oecd_cli),
+        ("fred_public", _fetch_fred_public_csv),
         ("norges_bank_csv", _fetch_norges_bank_csv),
         ("ssb_cpi", _fetch_ssb_cpi),
         ("yahoo_chart", _fetch_yahoo_chart),
@@ -186,7 +190,7 @@ def _fetch_norges_bank_csv(indicators: Iterable[IndicatorDefinition], settings: 
     frames = []
     statuses = []
     for indicator in indicators:
-        start = "2020-01-01" if indicator.source_key.startswith("EXR/") else "2020-01"
+        start = "1995-01-01" if indicator.source_key.startswith("EXR/") else "1995-01"
         try:
             response = requests.get(
                 f"https://data.norges-bank.no/api/data/{indicator.source_key}",
@@ -213,7 +217,7 @@ def _fetch_ssb_cpi(indicators: Iterable[IndicatorDefinition], settings: Settings
                 "query": [
                     {"code": "Konsumgrp", "selection": {"filter": "item", "values": ["TOTAL"]}},
                     {"code": "ContentsCode", "selection": {"filter": "item", "values": ["KpiIndMnd"]}},
-                    {"code": "Tid", "selection": {"filter": "top", "values": ["72"]}},
+                    {"code": "Tid", "selection": {"filter": "top", "values": [str(SOURCE_HISTORY_MONTHS)]}},
                 ],
                 "response": {"format": "CSV"},
             }
@@ -241,7 +245,7 @@ def _fetch_yahoo_chart(indicators: Iterable[IndicatorDefinition], settings: Sett
     for indicator in indicators:
         try:
             symbol = quote(indicator.source_key, safe="")
-            response = session.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}", params={"range": "8y", "interval": "1mo"}, timeout=(5, settings.request_timeout_seconds))
+            response = session.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}", params={"range": "30y", "interval": "1mo"}, timeout=(5, settings.request_timeout_seconds))
             response.raise_for_status()
             result = response.json()["chart"]["result"][0]
             timestamps = result["timestamp"]
@@ -251,7 +255,7 @@ def _fetch_yahoo_chart(indicators: Iterable[IndicatorDefinition], settings: Sett
                 for ts, close in zip(timestamps, closes)
                 if close is not None
             ]
-            frame = _finalize_indicator_frame(pd.DataFrame(rows).tail(72), indicator, "yahoo_chart")
+            frame = _finalize_indicator_frame(pd.DataFrame(rows), indicator, "yahoo_chart")
             if indicator.slug == "rates_pressure":
                 frame["value"] = frame["value"] / 10.0
             frames.append(frame)
@@ -272,7 +276,7 @@ def _monthly_last(frame: pd.DataFrame, indicator: IndicatorDefinition, source: s
     frame = frame.copy()
     frame["observed_at"] = pd.to_datetime(frame["observed_at"], errors="coerce")
     frame["value"] = pd.to_numeric(frame["value"].replace("..", pd.NA), errors="coerce")
-    frame = frame.dropna(subset=["observed_at", "value"]).set_index("observed_at")["value"].resample("ME").last().dropna().tail(72).reset_index()
+    frame = frame.dropna(subset=["observed_at", "value"]).set_index("observed_at")["value"].resample("ME").last().dropna().tail(SOURCE_HISTORY_MONTHS).reset_index()
     frame["observed_at"] = frame["observed_at"].dt.date.astype(str)
     return _finalize_indicator_frame(frame, indicator, source)
 
@@ -281,7 +285,7 @@ def _finalize_indicator_frame(frame: pd.DataFrame, indicator: IndicatorDefinitio
     result = frame.copy()
     result["value"] = pd.to_numeric(result["value"].replace("…", pd.NA), errors="coerce")
     result["observed_at"] = pd.to_datetime(result["observed_at"], errors="coerce")
-    result = result.dropna(subset=["observed_at", "value"]).sort_values("observed_at").tail(72)
+    result = result.dropna(subset=["observed_at", "value"]).sort_values("observed_at").tail(SOURCE_HISTORY_MONTHS)
     if result.empty:
         raise ValueError("No numeric observations.")
     result["indicator_slug"] = indicator.slug
@@ -310,7 +314,6 @@ def _fetch_fred_public_csv(indicators: Iterable[IndicatorDefinition], settings: 
 
 def _fetch_fred_batch(indicators: list[IndicatorDefinition], settings: Settings) -> tuple[pd.DataFrame | None, str | None]:
     session = requests.Session()
-    session.headers.update({"User-Agent": "OsloCycleRadar/0.1 public data refresh"})
     try:
         response = session.get(
             "https://fred.stlouisfed.org/graph/fredgraph.csv",
@@ -319,6 +322,25 @@ def _fetch_fred_batch(indicators: list[IndicatorDefinition], settings: Settings)
         )
         response.raise_for_status()
         return pd.read_csv(StringIO(response.text)), None
+    except Exception as exc:
+        curl_frame, curl_error = _fetch_fred_batch_with_curl(indicators, settings)
+        if curl_frame is not None:
+            return curl_frame, None
+        return None, f"{exc}; curl fallback failed: {curl_error}"
+
+
+def _fetch_fred_batch_with_curl(indicators: list[IndicatorDefinition], settings: Settings) -> tuple[pd.DataFrame | None, str | None]:
+    url = "https://fred.stlouisfed.org/graph/fredgraph.csv?" + urlencode({"id": ",".join(indicator.source_key for indicator in indicators)})
+    timeout_seconds = max(settings.request_timeout_seconds, 20)
+    try:
+        result = subprocess.run(
+            ["curl", "--fail", "--silent", "--show-error", "--location", "--max-time", str(timeout_seconds), url],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds + 5,
+        )
+        return pd.read_csv(StringIO(result.stdout)), None
     except Exception as exc:
         return None, str(exc)
 
@@ -332,7 +354,7 @@ def _append_fred_series(raw: pd.DataFrame, indicator: IndicatorDefinition, frame
         statuses.append(_status(f"fred_public:{indicator.slug}", "failed", f"Could not parse {indicator.name} from public FRED CSV: {exc}"))
 
 
-def _fred_csv_to_monthly_frame(csv_data: str | pd.DataFrame, indicator: IndicatorDefinition, max_months: int = 72) -> pd.DataFrame:
+def _fred_csv_to_monthly_frame(csv_data: str | pd.DataFrame, indicator: IndicatorDefinition, max_months: int = SOURCE_HISTORY_MONTHS) -> pd.DataFrame:
     frame = pd.read_csv(StringIO(csv_data)) if isinstance(csv_data, str) else csv_data.copy()
     if frame.shape[1] < 2 or "observation_date" not in frame:
         raise ValueError("FRED CSV did not include observation_date and value columns.")
@@ -353,7 +375,7 @@ def _fred_csv_to_monthly_frame(csv_data: str | pd.DataFrame, indicator: Indicato
     return monthly[["indicator_slug", "observed_at", "value", "source", "unit"]]
 
 
-def _dbnomics_series_to_monthly_frame(payload: dict, indicator: IndicatorDefinition, max_months: int = 72) -> pd.DataFrame:
+def _dbnomics_series_to_monthly_frame(payload: dict, indicator: IndicatorDefinition, max_months: int = SOURCE_HISTORY_MONTHS) -> pd.DataFrame:
     docs = payload.get("series", {}).get("docs", [])
     if not docs:
         raise ValueError("DB.nomics response did not include a series document.")
@@ -417,7 +439,7 @@ def _extra_public_series(series_id: str, settings_timeout: int) -> pd.Series:
 
 
 def _derived_series_frame(indicator: IndicatorDefinition, series: pd.Series, source: str) -> pd.DataFrame:
-    series = series.dropna().tail(96)
+    series = series.dropna().tail(SOURCE_HISTORY_MONTHS)
     if series.empty:
         raise ValueError("Derived series had no overlapping numeric observations.")
     frame = series.reset_index()

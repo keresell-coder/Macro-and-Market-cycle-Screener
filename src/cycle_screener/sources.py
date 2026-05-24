@@ -14,7 +14,7 @@ class SourceDefinition:
 
 
 SOURCE_DEFINITIONS: tuple[SourceDefinition, ...] = (
-    SourceDefinition("fred_public", "FRED public CSV downloads", "https://fred.stlouisfed.org/graph/fredgraph.csv", "download", "public", "Keyless public CSV downloads for macro, rates, commodities, FX, and market proxies."),
+    SourceDefinition("fred_public", "FRED public CSV downloads", "https://fred.stlouisfed.org/graph/fredgraph.csv", "download", "public", "Keyless public CSV downloads for selected macro, rates, financial-conditions, stress, FX, and market proxies, including Chicago Fed NFCI and St. Louis Fed Financial Stress Index."),
     SourceDefinition("fred", "FRED API", "https://fred.stlouisfed.org/docs/api/fred/", "api", "free_key", "Optional API path for richer FRED metadata; not required for the default refresh."),
     SourceDefinition("world_bank", "World Bank Indicators", "https://api.worldbank.org/v2/", "api", "public", "Global macro indicators."),
     SourceDefinition("world_bank_commodities", "World Bank Pink Sheet", "https://www.worldbank.org/en/research/commodity-markets", "download", "public", "Monthly commodity prices for energy, metals, agriculture, and food/input proxies."),

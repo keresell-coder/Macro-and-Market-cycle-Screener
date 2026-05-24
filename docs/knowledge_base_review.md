@@ -48,7 +48,7 @@ The current project implements these knowledge-base ideas well enough for a firs
 The current implementation does not yet cover the full framework. The main gaps are:
 
 - Growth: monthly OECD CLI proxies for G20, G7, United States, China, and major Europe are now included through the public DB.nomics mirror of OECD data. The legacy internal `global_pmi` slug remains for annual World Bank GDP growth background context and is displayed publicly as `global_growth_proxy`.
-- Credit and financial cycle: there is no live high-yield spread, investment-grade spread, lending standards, loan growth, default, credit-to-GDP, property-price, or refinancing-wall series.
+- Credit and financial cycle: Sprint 10 adds live public FRED CSV proxies for Chicago Fed NFCI and the St. Louis Fed Financial Stress Index, plus a non-scoring liquidity/credit signal group. There is still no high-yield spread, investment-grade spread, lending standards, loan growth, default, credit-to-GDP, property-price, or refinancing-wall series.
 - Earnings and margins: there is no live earnings-revisions, EPS, margin, backlog, order-intake, or analyst-estimate feed.
 - Valuation: the scoring field named `valuation_proxy` is a public-data screening proxy derived from indicator percentiles and deterministic market-cycle sample data, not true subsector valuation multiples.
 - Market internals and positioning: there is no breadth, new-high/new-low, volatility, fund-flow, CFTC positioning, margin-debt, or short-interest layer.
@@ -60,14 +60,14 @@ The current implementation does not yet cover the full framework. The main gaps 
 
 Recommended next implementation work, in order:
 
-1. Add keyless credit/liquidity sources where feasible.
-   - Sprint 9 added the historical chart layer first: a global view, regional drilldowns, and sector/subsector drilldowns using existing live and sample-backed histories. The next blind spot is credit/liquidity, and new series should appear in the chart layer before they are added to scoring. FRED and EIA keys are now configured locally and in GitHub Actions secrets, so configured-key public connectors can be used where appropriate.
+1. Add valuation and market-internals reality checks.
+   - Sprint 10 added the first live liquidity/credit proxies through FRED public CSV and kept them non-scoring. The next blind spot is valuation and market internals, but the project should keep any broad public proxies clearly labeled and avoid implying true Oslo subsector multiples or institutional market-internals data.
 
-2. Add a dedicated liquidity/credit signal group.
-   - Once at least one robust live credit/liquidity source is connected and tested, the dashboard should identify whether liquidity/credit signals confirm or contradict growth, macro, and market signals.
+2. Extend credit/liquidity only after connector testing.
+   - BIS credit/property data, lending standards, and broader credit-spread proxies remain useful candidates, but should be added only after source-specific connector tests pass.
 
 3. Expand and align chart histories.
-   - Chart x-axes should use the shortest available series range in each view, cap at 30 years, and avoid compressing below 10 years. Sprint 10 should expand fetch windows where sources allow it and flag any short-history series that cannot meet the policy.
+   - Sprint 10 expanded supported source histories toward 30 years and fixed chart windows to use whole-month 10-30 year ranges. Future sources should preserve this policy and continue flagging short-history series.
 
 4. Keep improving the cycle-dimension coverage matrix.
    - Public report state already marks covered, proxied, missing, sample-backed, limited, or blocked dimensions. Future source additions should update coverage only after live data is connected and tested.
@@ -85,7 +85,7 @@ Feasible without paid data or credentials:
 - Better naming and labeling of existing proxies. Implemented in Sprint 7 for annual GDP growth, oil-price, heating-oil, broad market-chart, and valuation-proxy labels.
 - OECD CLI ingestion via a public mirror. Implemented in Sprint 8 through DB.nomics because direct OECD SDMX access is documented but blocked from this environment.
 - Static historical line-chart views using existing live/proxy/sample-backed histories, provided chart panels clearly show source, vintage, proxy/sample/missing status, and scoring inclusion. Implemented in Sprint 9.
-- FRED public CSV ingestion for selected free public macro/credit/rates series, where terms and endpoint reliability are acceptable.
+- FRED public CSV ingestion for selected free public macro/credit/rates series, where terms and endpoint reliability are acceptable. Implemented first for Chicago Fed NFCI and St. Louis Fed Financial Stress Index in Sprint 10.
 - More transparent methodology and coverage metadata in report state.
 - Contradicting-evidence summaries from existing signal components. Implemented in Sprint 7 static reports.
 - Public/manual reviewed research CSV ingestion using the existing schema.
@@ -129,3 +129,4 @@ The biggest risk remains semantic overreach, but Sprint 7 reduced it. Annual GDP
 - Static reports now include a "Contradicting Evidence" section and avoid presenting annual World Bank GDP growth as PMI data.
 - Sprint 8 public report state now includes monthly OECD CLI mirror indicators for G20, G7, United States, China, and major Europe, and Growth coverage is marked `partial`.
 - Sprint 9 public report state now includes a historical chart layer with global, regional, and sector/subsector views; chart metadata includes source, freshness, frequency, data class, proxy/sample/missing status, scoring inclusion, and chart-window policy metadata for 10-30 year aligned x-axes.
+- Sprint 10 public report state now includes Chicago Fed NFCI and St. Louis Fed Financial Stress Index from public FRED CSV, a dedicated non-scoring liquidity/credit signal group, expanded supported source histories toward 30 years, and Liquidity and credit framework coverage marked `partial`.

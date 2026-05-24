@@ -123,17 +123,22 @@ Goal: reintroduce historical line charts as the first analytical layer in the st
 
 ### Sprint 10: Credit, Liquidity, And Financial Conditions
 
+Status: implemented locally on 2026-05-24.
+
 Goal: add the most important missing framework dimension.
 
-- Add one or two robust keyless or configured-key credit/liquidity series first, not a broad fragile catalog.
-- Candidate first series:
-  - Chicago Fed NFCI through FRED public CSV;
-  - selected FRED public credit spread or stress proxies if stable;
-  - BIS credit-to-non-financial-sector or property-price series via BIS bulk/API after connector testing.
-- Use the configured GitHub Actions secrets `FRED_API_KEY` and `EIA_API_KEY` only through environment variables; do not commit keys.
-- Expand historical fetch windows for charted macro/credit series toward 30 years where endpoints support it, then align chart x-axes to the shortest available series range in each view with a maximum of 30 years and a displayed minimum of 10 years.
-- Add a dedicated liquidity/credit signal group.
-- Update framework coverage from "missing" only after live data is connected and tested.
+- Added two narrow keyless FRED public CSV series rather than a broad fragile catalog:
+  - Chicago Fed NFCI (`NFCI`);
+  - St. Louis Fed Financial Stress Index (`STLFSI4`).
+- Wired FRED public CSV into live refresh with source-status rows, freshness metadata, parser tests, and strict live fallback behavior.
+- Added a connector fallback that still uses the official public FRED CSV endpoint via `curl` if the Python HTTP request path is unreliable.
+- Expanded historical fetch windows toward 30 years where endpoints support it for World Bank Pink Sheet, DB.nomics OECD CLI, FRED public CSV, Norges Bank, Statistics Norway, Yahoo chart data, and derived public series.
+- Enforced chart x-axis policy using whole-month windows: maximum 30 years, shortest available series range per view, and no displayed axis shorter than 10 years; short-history series remain flagged.
+- Added the new series to the historical chart layer first, including a dedicated liquidity/credit chart view and global/US chart context.
+- Added a dedicated non-scoring Liquidity And Credit signal group after live data was connected and tested.
+- Updated framework coverage from `missing` to `partial` for Liquidity and credit.
+- Local live static verification shows schema `2026-05-24-sprint10`, `live_numeric`, 24 live indicators, 0 numeric `sample_fallback`, chart layer version `sprint10-credit-liquidity-chart-layer`, and 168 chart-layer series.
+- BIS credit/property data, bank lending standards, broader credit spreads, and property-cycle indicators remain candidates for later connector testing.
 - Acceptance: the dashboard can identify whether liquidity/credit signals confirm or contradict macro and market signals and can show those signals in the historical chart layer.
 
 ### Sprint 11: Valuation And Market Internals Reality Check
@@ -182,4 +187,4 @@ These can be handled only through reviewed manual inputs, licensed data that the
 
 ## Current Priority
 
-The next implementation sprint should start with Sprint 10: Credit, Liquidity, And Financial Conditions. Sprint 9 added the static historical chart layer first, so future credit/liquidity source families have an immediate global and regional chart context when connected.
+The next implementation sprint should start with Sprint 11: Valuation And Market Internals Reality Check. Sprint 10 added the first live public liquidity/credit proxies and a non-scoring signal group; future credit families such as BIS credit/property data should be added only after connector testing.

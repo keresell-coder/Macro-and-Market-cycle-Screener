@@ -33,8 +33,10 @@ MARKET_COLUMNS = (
     "driver_pressure",
 )
 
-REPORT_STATE_VERSION = "2026-05-24-sprint9"
+REPORT_STATE_VERSION = "2026-05-24-sprint10"
 SCORING_METHODOLOGY_VERSION = "score-v1-public-cycle-radar"
+CREDIT_LIQUIDITY_INDICATORS = ("chicago_fed_nfci", "st_louis_financial_stress")
+MACRO_CONFIRMATION_INDICATORS = ("g20_cli", "us_cli", "europe_cli", "nasdaq_proxy")
 
 
 def build_report_state(store: RadarStore | None = None) -> dict[str, Any]:
@@ -68,13 +70,14 @@ def build_report_state(store: RadarStore | None = None) -> dict[str, Any]:
             "scoring_version": SCORING_METHODOLOGY_VERSION,
             "report_state_version": REPORT_STATE_VERSION,
             "framework_reference": "docs/knowledge_base/global_macro_market_cycle_knowledge_base.md",
-            "framework_coverage": "Partial implementation of a broader macro and market-cycle framework. Current scoring covers public macro, rates, FX, commodity, OECD CLI growth proxies, market-proxy, source-health, and reviewed-public-research evidence. The static report now adds a historical chart layer using existing live public series plus explicitly sample-backed subsector proxy histories. Annual World Bank GDP growth remains slow-moving background context, while monthly OECD CLI data is accessed through the public DB.nomics mirror because the direct OECD SDMX endpoint is not reliably reachable from this environment. The model does not yet include full credit, earnings-revisions, true valuation-multiple, positioning, or licensed subsector market data.",
+            "framework_coverage": "Partial implementation of a broader macro and market-cycle framework. Current scoring covers public macro, rates, FX, commodity, OECD CLI growth proxies, market-proxy, source-health, and reviewed-public-research evidence. Sprint 10 adds a non-scoring liquidity/credit signal group and historical charts for Chicago Fed NFCI and the St. Louis Fed Financial Stress Index via public FRED CSV. Annual World Bank GDP growth remains slow-moving background context, while monthly OECD CLI data is accessed through the public DB.nomics mirror because the direct OECD SDMX endpoint is not reliably reachable from this environment. The model does not yet include earnings revisions, true valuation multiples, positioning, BIS credit/property-cycle data, or licensed subsector market data.",
             "implementation_boundary": "Opportunity scores are research triage signals, not cycle-state labels, return forecasts, or investment advice. Missing dimensions should be treated as explicit blind spots rather than neutral evidence.",
             "scoring": "Transparent subsector scoring from public/free indicators, explicitly labeled proxies, and visible sample fallbacks when present.",
             "research_policy": "Only reviewed public research facts are included in public report state. Unreviewed and manual evidence remain local.",
             "not_investment_advice": True,
         },
         "chart_layer": chart_layer,
+        "signal_groups": _signal_groups(observations, source_freshness),
         "subsectors": subsectors,
         "contradicting_evidence": contradicting_evidence,
         "source_status": source_status_records,
@@ -270,6 +273,126 @@ def _source_health_summary(source_freshness: list[dict[str, Any]], source_status
     }
 
 
+def _signal_groups(observations: pd.DataFrame, source_freshness: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    freshness_lookup = {str(item.get("indicator_slug", "")): item for item in source_freshness}
+    credit_metrics = _indicator_signal_metrics(observations, CREDIT_LIQUIDITY_INDICATORS)
+    macro_metrics = _indicator_signal_metrics(observations, MACRO_CONFIRMATION_INDICATORS)
+    indicators = []
+    for slug in CREDIT_LIQUIDITY_INDICATORS:
+        metric = credit_metrics.get(slug, {})
+        freshness = freshness_lookup.get(slug, {})
+        indicators.append(
+            {
+                "indicator_slug": slug,
+                "display_slug": str(freshness.get("display_slug") or slug),
+                "indicator_name": str(freshness.get("indicator_name") or slug),
+                "latest_observed_at": str(freshness.get("latest_observed_at") or ""),
+                "source": str(freshness.get("source") or ""),
+                "source_category": str(freshness.get("source_category") or "missing"),
+                "freshness_status": str(freshness.get("freshness_status") or "missing"),
+                "latest_value": _rounded_or_zero(metric.get("latest"), 4),
+                "percentile": _rounded_or_zero(metric.get("percentile"), 3),
+                "momentum": _rounded_or_zero(metric.get("momentum"), 3),
+                "tailwind_score": _rounded_or_zero(metric.get("tailwind_score"), 3),
+            }
+        )
+
+    credit_tailwind = _mean_float([item.get("tailwind_score") for item in credit_metrics.values()])
+    macro_tailwind = _mean_float([item.get("tailwind_score") for item in macro_metrics.values()])
+    fallback_used = any(
+        freshness_lookup.get(slug, {}).get("has_sample_fallback")
+        or freshness_lookup.get(slug, {}).get("source_category") == "numeric_sample_fallback"
+        for slug in CREDIT_LIQUIDITY_INDICATORS
+    )
+    live_count = sum(1 for slug in CREDIT_LIQUIDITY_INDICATORS if freshness_lookup.get(slug, {}).get("source_category") == "live_numeric")
+    if fallback_used:
+        status = "sample_fallback"
+    elif live_count == len(CREDIT_LIQUIDITY_INDICATORS):
+        status = "connected"
+    elif live_count:
+        status = "partial"
+    else:
+        status = "missing"
+
+    return [
+        {
+            "group_id": "liquidity_credit",
+            "title": "Liquidity and credit conditions",
+            "status": status,
+            "scoring_inclusion": False,
+            "summary_label": _liquidity_label(credit_tailwind),
+            "tailwind_score": _rounded(credit_tailwind, 3),
+            "macro_confirmation": _confirmation_label(credit_tailwind, macro_tailwind),
+            "macro_tailwind_reference": _rounded(macro_tailwind, 3),
+            "methodology_note": "Non-scoring Sprint 10 signal group. Lower NFCI and lower St. Louis financial stress are treated as easier liquidity/credit conditions; higher values are treated as tighter or more stressed.",
+            "indicators": indicators,
+        }
+    ]
+
+
+def _indicator_signal_metrics(observations: pd.DataFrame, slugs: tuple[str, ...]) -> dict[str, dict[str, float]]:
+    if observations.empty:
+        return {}
+    indicator_lookup = indicator_by_slug()
+    frame = observations.copy()
+    frame["observed_at_sort"] = pd.to_datetime(frame["observed_at"], errors="coerce")
+    frame["value"] = pd.to_numeric(frame["value"], errors="coerce")
+    frame = frame.dropna(subset=["observed_at_sort", "value"]).sort_values(["indicator_slug", "observed_at_sort"])
+    metrics: dict[str, dict[str, float]] = {}
+    for slug in slugs:
+        group = frame[frame["indicator_slug"].astype(str) == slug]["value"].astype(float).tail(120)
+        if group.empty:
+            continue
+        latest = float(group.iloc[-1])
+        percentile = float((group <= latest).mean())
+        if len(group) >= 7:
+            recent = float(group.tail(3).mean())
+            prior = float(group.iloc[-6:-3].mean())
+            denominator = abs(prior) if abs(prior) > 1e-9 else 1.0
+            momentum = max(min(((recent - prior) / denominator) * 8, 1.0), -1.0)
+        else:
+            momentum = 0.0
+        higher_is = indicator_lookup[slug].higher_is if slug in indicator_lookup else "mixed"
+        metrics[slug] = {
+            "latest": latest,
+            "percentile": percentile,
+            "momentum": momentum,
+            "tailwind_score": _tailwind_score(percentile, momentum, higher_is),
+        }
+    return metrics
+
+
+def _tailwind_score(percentile: float, momentum: float, higher_is: str) -> float:
+    if higher_is == "higher_tailwind":
+        value = (percentile - 0.5) * 1.4 + momentum * 0.6
+    elif higher_is == "lower_tailwind":
+        value = (0.5 - percentile) * 1.4 - momentum * 0.6
+    else:
+        value = (0.5 - abs(percentile - 0.5)) * 0.6 + momentum * 0.4
+    return max(min(value, 1.0), -1.0)
+
+
+def _mean_float(values: list[object]) -> float:
+    numeric = [float(value) for value in values if value is not None]
+    return sum(numeric) / len(numeric) if numeric else 0.0
+
+
+def _liquidity_label(score: float) -> str:
+    if score >= 0.25:
+        return "easier/liquidity tailwind"
+    if score <= -0.25:
+        return "tighter/stress headwind"
+    return "mixed/neutral"
+
+
+def _confirmation_label(credit_tailwind: float, macro_tailwind: float) -> str:
+    if abs(credit_tailwind) < 0.15 or abs(macro_tailwind) < 0.15:
+        return "mixed or not decisive"
+    if credit_tailwind * macro_tailwind > 0:
+        return "confirming macro signal"
+    return "contradicting macro signal"
+
+
 def _framework_coverage() -> list[dict[str, str]]:
     return [
         {
@@ -292,9 +415,9 @@ def _framework_coverage() -> list[dict[str, str]]:
         },
         {
             "dimension": "Liquidity and credit",
-            "status": "missing",
-            "current_coverage": "No direct live credit or financial-conditions series in scoring.",
-            "main_gap": "Needs terms-compliant credit spreads, NFCI/financial conditions, lending standards, loan growth, or credit-to-GDP data.",
+            "status": "partial",
+            "current_coverage": "Sprint 10 adds Chicago Fed NFCI and the St. Louis Fed Financial Stress Index through public FRED CSV. They are shown in the historical chart layer and in a dedicated non-scoring liquidity/credit signal group.",
+            "main_gap": "No BIS credit/property-cycle data, bank lending standards, default series, or broader credit-spread catalog yet; these should be added only after connector testing.",
         },
         {
             "dimension": "Earnings and margins",
@@ -323,8 +446,8 @@ def _framework_coverage() -> list[dict[str, str]]:
         {
             "dimension": "Historical chart layer",
             "status": "partial",
-            "current_coverage": "Static global, regional, and sector/subsector historical chart views using existing live public indicators and clearly labeled sample-backed subsector histories.",
-            "main_gap": "No new credit/liquidity family yet; no true subsector market histories or true valuation multiples until reviewed public or licensed data is connected.",
+            "current_coverage": "Static global, liquidity/credit, regional, and sector/subsector historical chart views using existing live public indicators, Sprint 10 FRED financial-conditions proxies, and clearly labeled sample-backed subsector histories.",
+            "main_gap": "No true subsector market histories or true valuation multiples until reviewed public or licensed data is connected.",
         },
         {
             "dimension": "Research evidence",
@@ -492,4 +615,10 @@ def _data_as_of(observations: pd.DataFrame, market_cycle: pd.DataFrame) -> str:
 
 
 def _rounded(value: object, digits: int) -> float:
+    return round(float(value), digits)
+
+
+def _rounded_or_zero(value: object, digits: int) -> float:
+    if value is None:
+        return 0.0
     return round(float(value), digits)

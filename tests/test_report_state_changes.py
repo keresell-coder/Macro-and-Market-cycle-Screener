@@ -33,7 +33,7 @@ def test_report_state_contains_public_safe_snapshot() -> None:
     assert state["source_freshness"]
     assert state["source_health"]
     assert state["chart_layer"]
-    assert state["chart_layer"]["version"] == "sprint9-historical-chart-layer"
+    assert state["chart_layer"]["version"] == "sprint10-credit-liquidity-chart-layer"
     assert state["chart_layer"]["chart_window_policy"]["minimum_years"] == 10
     assert state["chart_layer"]["chart_window_policy"]["maximum_years"] == 30
     assert state["chart_layer"]["views"][0]["view_id"] == "global"
@@ -42,14 +42,18 @@ def test_report_state_contains_public_safe_snapshot() -> None:
     assert state["chart_layer"]["views"][0]["chart_window"]["year_span"] <= 30
     assert state["chart_layer"]["views"][0]["chart_window"]["shortest_available_years"] <= state["chart_layer"]["views"][0]["chart_window"]["year_span"]
     assert any(view["view_id"] == "norway_oslo" for view in state["chart_layer"]["views"])
+    assert any(view["view_id"] == "liquidity_credit" for view in state["chart_layer"]["views"])
     assert any(sector["subsectors"] for sector in state["chart_layer"]["sector_views"])
     assert "contradicting_evidence" in state
+    assert state["signal_groups"]
+    assert state["signal_groups"][0]["group_id"] == "liquidity_credit"
+    assert state["signal_groups"][0]["scoring_inclusion"] is False
     assert state["research_facts"]
     assert state["methodology"]["scoring_version"]
     assert state["methodology"]["framework_reference"].endswith("global_macro_market_cycle_knowledge_base.md")
     assert "credit" in state["methodology"]["framework_coverage"].lower()
     assert state["framework_coverage"]
-    assert any(item["dimension"] == "Liquidity and credit" and item["status"] == "missing" for item in state["framework_coverage"])
+    assert any(item["dimension"] == "Liquidity and credit" and item["status"] == "partial" for item in state["framework_coverage"])
     assert any(
         item["indicator_slug"] == "global_pmi"
         and item["display_slug"] == "global_growth_proxy"
@@ -59,6 +63,7 @@ def test_report_state_contains_public_safe_snapshot() -> None:
     assert any(item["dimension"] == "Growth" and item["status"] == "partial" for item in state["framework_coverage"])
     assert any(item["dimension"] == "Historical chart layer" and item["status"] == "partial" for item in state["framework_coverage"])
     assert any(item["indicator_slug"] == "g20_cli" and "OECD CLI" in item["indicator_name"] for item in state["source_freshness"])
+    assert any(item["indicator_slug"] == "chicago_fed_nfci" and item["source_category"] == "deterministic_sample" for item in state["source_freshness"])
     global_series = state["chart_layer"]["views"][0]["series"][0]
     assert {"source", "latest_observed_at", "frequency", "data_class", "proxy_status", "scoring_inclusion"}.issubset(global_series)
 
@@ -124,6 +129,8 @@ def test_build_static_site_writes_report_json(tmp_path) -> None:
     site_html = site_index.read_text(encoding="utf-8")
     assert "Historical Charts" in site_html
     assert "Global View And Drilldown" in site_html
+    assert "Liquidity And Credit" in site_html
+    assert "Financial Conditions Signal Group" in site_html
     assert "Chart window:" in site_html
     assert "Regional Drilldown" in site_html
     assert "Sector And Subsector Drilldown" in site_html

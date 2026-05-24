@@ -40,6 +40,19 @@ def test_fred_public_csv_parser_returns_monthly_observations() -> None:
     assert set(frame["source"]) == {"fred_public"}
 
 
+def test_fred_public_csv_parser_preserves_long_chart_history() -> None:
+    indicator = IndicatorDefinition("chicago_fed_nfci", "Chicago Fed NFCI", "fred_public", "NFCI", "index", "lower_tailwind", "Financial conditions")
+    rows = ["observation_date,NFCI"]
+    for observed_at in pd.date_range("1994-01-05", periods=380, freq="ME"):
+        rows.append(f"{observed_at.date().isoformat()},-0.1")
+
+    frame = _fred_csv_to_monthly_frame("\n".join(rows), indicator)
+
+    assert len(frame) == 361
+    assert frame["observed_at"].iloc[0] == "1995-08-31"
+    assert frame["observed_at"].iloc[-1] == "2025-08-31"
+
+
 def test_dbnomics_oecd_cli_parser_returns_monthly_observations() -> None:
     indicator = IndicatorDefinition("g20_cli", "G20 OECD CLI", "dbnomics_oecd_cli", "G20.M.LI...AA...H", "index", "higher_tailwind", "CLI")
     payload = {

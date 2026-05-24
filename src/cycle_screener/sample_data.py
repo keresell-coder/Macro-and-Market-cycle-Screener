@@ -23,11 +23,12 @@ def generate_sample_observations(months: int = 72) -> pd.DataFrame:
             cycle = math.sin(idx / 7.5 + phase)
             long_cycle = math.cos(idx / 18 + phase / 2)
             value = base + trend * idx + amplitude * cycle + amplitude * 0.35 * long_cycle
+            value_floor = -5 if indicator.slug in {"chicago_fed_nfci", "st_louis_financial_stress", "oil_curve_pressure"} else 0.01
             rows.append(
                 {
                     "indicator_slug": indicator.slug,
                     "observed_at": observed_at.date().isoformat(),
-                    "value": round(max(value, 0.01), 4),
+                    "value": round(max(value, value_floor), 4),
                     "source": indicator.source,
                     "unit": indicator.unit,
                 }
@@ -545,6 +546,8 @@ def _base_for(slug: str) -> float:
         "rates_pressure": 100,
         "norges_bank_policy_rate": 4.2,
         "norway_cpi": 3.4,
+        "chicago_fed_nfci": -0.35,
+        "st_louis_financial_stress": -0.55,
         "food_price_pressure": 100,
         "nasdaq_proxy": 100,
         "oil_curve_pressure": 50,
@@ -564,6 +567,8 @@ def _trend_for(slug: str) -> float:
         "rates_pressure": -0.06,
         "norges_bank_policy_rate": -0.01,
         "norway_cpi": -0.015,
+        "chicago_fed_nfci": -0.004,
+        "st_louis_financial_stress": -0.006,
         "nasdaq_proxy": 0.18,
         "oil_curve_pressure": 0.04,
     }.get(slug, 0.02)
@@ -572,7 +577,7 @@ def _trend_for(slug: str) -> float:
 def _amplitude_for(slug: str) -> float:
     if slug in {"us_crude_stocks", "us_distillate_stocks"}:
         return 18_000
-    if slug in {"usd_nok", "eur_nok", "us_natural_gas", "norges_bank_policy_rate", "norway_cpi"}:
+    if slug in {"usd_nok", "eur_nok", "us_natural_gas", "norges_bank_policy_rate", "norway_cpi", "chicago_fed_nfci", "st_louis_financial_stress"}:
         return 0.65
     if slug in {"global_pmi", "china_growth_proxy", "oil_curve_pressure", "g20_cli", "g7_cli", "us_cli", "china_cli", "europe_cli"}:
         return 3.5

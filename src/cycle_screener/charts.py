@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import math
 from typing import Any
 
 import pandas as pd
@@ -9,7 +10,7 @@ from .indicators import IndicatorDefinition, indicator_by_slug, public_indicator
 from .taxonomy import SUBSECTORS, Subsector
 
 
-CHART_LAYER_VERSION = "sprint9-historical-chart-layer"
+CHART_LAYER_VERSION = "sprint10-credit-liquidity-chart-layer"
 CHART_MIN_YEARS = 10
 CHART_MAX_YEARS = 30
 CHART_MAX_MONTHS = CHART_MAX_YEARS * 12 + 1
@@ -24,6 +25,8 @@ CHART_VIEW_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "g20_cli",
             "g7_cli",
             "global_pmi",
+            "chicago_fed_nfci",
+            "st_louis_financial_stress",
             "brent",
             "us_natural_gas",
             "copper",
@@ -37,7 +40,14 @@ CHART_VIEW_DEFINITIONS: tuple[dict[str, Any], ...] = (
         "title": "United States proxy history",
         "scope": "United States",
         "description": "US-linked leading, rates, market, oil, gas, and product-fuel proxies that are already available in the live public dataset.",
-        "indicator_slugs": ("us_cli", "rates_pressure", "nasdaq_proxy", "wti", "us_natural_gas", "us_distillate_stocks"),
+        "indicator_slugs": ("us_cli", "chicago_fed_nfci", "st_louis_financial_stress", "rates_pressure", "nasdaq_proxy", "wti", "us_natural_gas", "us_distillate_stocks"),
+    },
+    {
+        "view_id": "liquidity_credit",
+        "title": "Liquidity and credit proxy history",
+        "scope": "Liquidity/credit",
+        "description": "Narrow first Sprint 10 credit/liquidity layer using public FRED CSV financial-conditions and financial-stress proxies before broader BIS or credit-spread connectors are added.",
+        "indicator_slugs": ("chicago_fed_nfci", "st_louis_financial_stress", "rates_pressure", "g20_cli", "nasdaq_proxy"),
     },
     {
         "view_id": "europe",
@@ -97,7 +107,7 @@ def build_chart_layer(
         "version": CHART_LAYER_VERSION,
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "summary": "Historical chart layer built from existing live public indicators and explicitly sample-backed subsector market-cycle histories.",
-        "normalization": "Most chart lines are indexed to 100 at the first available observation inside each chart window. Near-zero or sign-changing series are range-normalized around 100 to avoid distorted chart scales. Chart x-axes target a common overlapping history, are capped at 30 years, and are not compressed below 10 years; series with shorter available history are flagged in metadata until longer source histories are fetched.",
+        "normalization": "Most chart lines are indexed to 100 at the first available observation inside each chart window. Near-zero or sign-changing series are range-normalized around 100 to avoid distorted chart scales. Chart x-axes target a common overlapping history, are capped at 30 years, and are not compressed below 10 years; series with shorter available history are flagged in metadata.",
         "chart_window_policy": {
             "minimum_years": CHART_MIN_YEARS,
             "maximum_years": CHART_MAX_YEARS,
@@ -350,9 +360,9 @@ def _apply_common_chart_window(series: list[dict[str, Any]]) -> dict[str, Any]:
         }
 
     shortest_available_years = min(span["available_years"] for span in spans)
-    target_years = min(max(shortest_available_years, CHART_MIN_YEARS), CHART_MAX_YEARS)
+    target_months = min(max(math.ceil(shortest_available_years * 12), CHART_MIN_YEARS * 12), CHART_MAX_YEARS * 12)
     window_end = min(span["end"] for span in spans)
-    window_start = window_end - pd.DateOffset(years=target_years)
+    window_start = window_end - pd.DateOffset(months=target_months)
 
     for item in series:
         item["points"] = [
@@ -477,6 +487,8 @@ def _indicator_proxy_status(indicator: IndicatorDefinition | None, source_catego
         return "annual_background_proxy"
     if indicator.source == "yahoo_chart":
         return "public_market_chart_proxy"
+    if indicator.source == "fred_public":
+        return "live_public_financial_conditions_proxy"
     if indicator.source == "derived_public":
         return "derived_public_proxy"
     return "live_public_proxy"
@@ -492,6 +504,7 @@ def _source_label(source_slug: str, configured_source: str) -> str:
         "ssb": "Statistics Norway API",
         "ssb_cpi": "Statistics Norway API",
         "yahoo_chart": "Public market chart data",
+        "fred_public": "FRED public CSV",
         "derived_public": "Derived from public source series",
         "sample": "Deterministic sample data",
         "sample_fallback": "Deterministic sample fallback",
@@ -526,6 +539,11 @@ def _coverage_notes() -> list[dict[str, str]]:
             "dimension": "Subsector price and valuation history",
             "status": "sample_backed",
             "note": "Uses deterministic proxy histories until reviewed public or licensed subsector market data is connected.",
+        },
+        {
+            "dimension": "Liquidity and credit charts",
+            "status": "partial",
+            "note": "Sprint 10 adds Chicago Fed NFCI and St. Louis Fed Financial Stress Index from public FRED CSV to the global, US, and dedicated liquidity/credit chart views.",
         },
         {
             "dimension": "True valuation multiples",
