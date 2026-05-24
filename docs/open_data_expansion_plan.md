@@ -116,7 +116,7 @@ Goal: reintroduce historical line charts as the first analytical layer in the st
   - regional views for global, United States, Europe, China, and Norway/Oslo-linked context where live data exists;
   - sector/subsector views using current scoring-proxy histories and deterministic sample-backed subsector market-cycle histories until reviewed public/licensed market data is connected.
 - Added chart metadata for source, vintage/freshness, frequency, data class, proxy/sample/missing status, and scoring inclusion.
-- Added chart-window policy metadata: chart x-axes target the shortest common overlap, are capped at 30 years, and are not compressed below a 10-year displayed range; short-history series are flagged until longer histories are fetched.
+- Added chart-window policy metadata: chart x-axes use the shortest available series range in each view, are capped at 30 years, and are not compressed below a 10-year displayed range; short-history series are flagged until longer histories are fetched.
 - Treated metrics and multiples conservatively: true valuation multiples remain missing; market-cycle valuation history is labeled as a sample-backed valuation proxy.
 - Updated static-site navigation, source-health display, methodology/framework coverage, tests, and QA text while preserving static GitHub Pages HTML/JSON/assets.
 - Acceptance: the report opens with a global historical chart view, supports regional and sector/subsector drilldown, and does not imply true PMI, true subsector multiples, or true licensed market data when only proxies or sample histories are present.
@@ -131,7 +131,7 @@ Goal: add the most important missing framework dimension.
   - selected FRED public credit spread or stress proxies if stable;
   - BIS credit-to-non-financial-sector or property-price series via BIS bulk/API after connector testing.
 - Use the configured GitHub Actions secrets `FRED_API_KEY` and `EIA_API_KEY` only through environment variables; do not commit keys.
-- Expand historical fetch windows for charted macro/credit series toward 30 years where endpoints support it, then align chart x-axes to the shortest common range with a maximum of 30 years and a displayed minimum of 10 years.
+- Expand historical fetch windows for charted macro/credit series toward 30 years where endpoints support it, then align chart x-axes to the shortest available series range in each view with a maximum of 30 years and a displayed minimum of 10 years.
 - Add a dedicated liquidity/credit signal group.
 - Update framework coverage from "missing" only after live data is connected and tested.
 - Acceptance: the dashboard can identify whether liquidity/credit signals confirm or contradict macro and market signals and can show those signals in the historical chart layer.

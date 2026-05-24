@@ -67,7 +67,7 @@ Recommended next implementation work, in order:
    - Once at least one robust live credit/liquidity source is connected and tested, the dashboard should identify whether liquidity/credit signals confirm or contradict growth, macro, and market signals.
 
 3. Expand and align chart histories.
-   - Chart x-axes should target the shortest common overlap, cap at 30 years, and avoid compressing below 10 years. Sprint 10 should expand fetch windows where sources allow it and flag any short-history series that cannot meet the policy.
+   - Chart x-axes should use the shortest available series range in each view, cap at 30 years, and avoid compressing below 10 years. Sprint 10 should expand fetch windows where sources allow it and flag any short-history series that cannot meet the policy.
 
 4. Keep improving the cycle-dimension coverage matrix.
    - Public report state already marks covered, proxied, missing, sample-backed, limited, or blocked dimensions. Future source additions should update coverage only after live data is connected and tested.

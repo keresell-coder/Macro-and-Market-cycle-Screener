@@ -24,7 +24,7 @@ This is a research radar, not an investment recommendation engine. It ranks subs
 - Monthly OECD Composite Leading Indicator growth proxies for G20, G7, United States, China, and major Europe, accessed through the public DB.nomics mirror because the direct OECD SDMX endpoint is blocked from this environment.
 - Historical chart layer at the top of the static report with a global view first, regional drilldowns, and sector/subsector drilldowns using existing live proxies and sample-backed market-cycle histories.
 - Chart metadata for source, vintage/freshness, frequency, data class, proxy/sample/missing status, and scoring inclusion.
-- Chart x-axis policy targeting the shortest common range, capped at 30 years, with a minimum displayed range of 10 years where short-history series are flagged.
+- Chart x-axis policy using the shortest available series range in each view, capped at 30 years, with a minimum displayed range of 10 years where short-history series are flagged.
 - Contradicting Evidence summary in the static report, generated from existing recovery, macro, momentum, valuation-proxy, confidence, and sample-backed market-cycle components.
 - Framework coverage metadata showing which macro-cycle dimensions are implemented, proxied, sample-backed, or missing.
 - Scoring methodology versioning shown in the static Methodology view.

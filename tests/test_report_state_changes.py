@@ -40,6 +40,7 @@ def test_report_state_contains_public_safe_snapshot() -> None:
     assert state["chart_layer"]["views"][0]["series"]
     assert state["chart_layer"]["views"][0]["chart_window"]["year_span"] >= 10
     assert state["chart_layer"]["views"][0]["chart_window"]["year_span"] <= 30
+    assert state["chart_layer"]["views"][0]["chart_window"]["shortest_available_years"] <= state["chart_layer"]["views"][0]["chart_window"]["year_span"]
     assert any(view["view_id"] == "norway_oslo" for view in state["chart_layer"]["views"])
     assert any(sector["subsectors"] for sector in state["chart_layer"]["sector_views"])
     assert "contradicting_evidence" in state

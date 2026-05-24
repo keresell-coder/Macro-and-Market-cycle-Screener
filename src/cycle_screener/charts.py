@@ -101,7 +101,7 @@ def build_chart_layer(
         "chart_window_policy": {
             "minimum_years": CHART_MIN_YEARS,
             "maximum_years": CHART_MAX_YEARS,
-            "alignment": "Use the shortest common overlap among series with at least 10 years of available history. If the common overlap is shorter, keep a 10-year x-axis and flag short-history series. Cap every chart window at 30 years.",
+            "alignment": "Use the shortest available series range in the view, clamped to a 10-30 year display window. End the window at the latest date common to the included series so the data aligns with the x-axis.",
         },
         "global_view_id": "global",
         "series_count": series_count,
@@ -349,15 +349,10 @@ def _apply_common_chart_window(series: list[dict[str, Any]]) -> dict[str, Any]:
             "short_history_series": [],
         }
 
-    eligible = [span for span in spans if span["available_years"] >= CHART_MIN_YEARS]
-    anchor_spans = eligible or spans
-    window_end = min(span["end"] for span in anchor_spans) if eligible else max(span["end"] for span in spans)
-    overlap_start = max(span["start"] for span in anchor_spans)
-    min_start = window_end - pd.DateOffset(years=CHART_MIN_YEARS)
-    max_start = window_end - pd.DateOffset(years=CHART_MAX_YEARS)
-    window_start = max(overlap_start, max_start)
-    if window_start > min_start:
-        window_start = min_start
+    shortest_available_years = min(span["available_years"] for span in spans)
+    target_years = min(max(shortest_available_years, CHART_MIN_YEARS), CHART_MAX_YEARS)
+    window_end = min(span["end"] for span in spans)
+    window_start = window_end - pd.DateOffset(years=target_years)
 
     for item in series:
         item["points"] = [
@@ -383,6 +378,7 @@ def _apply_common_chart_window(series: list[dict[str, Any]]) -> dict[str, Any]:
         "minimum_years": CHART_MIN_YEARS,
         "maximum_years": CHART_MAX_YEARS,
         "minimum_years_satisfied": year_span >= CHART_MIN_YEARS,
+        "shortest_available_years": round(shortest_available_years, 2),
         "short_history_series": short_history,
     }
 

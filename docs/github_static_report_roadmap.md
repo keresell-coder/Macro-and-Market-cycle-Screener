@@ -306,7 +306,7 @@ Goal: put historical line charts back at the top of the static report before the
 - Added regional drilldowns for global, United States, Europe, China, and Norway/Oslo-linked context where live series exist.
 - Added sector/subsector drilldowns using current scoring proxy histories and deterministic sample-backed market-cycle histories.
 - Carried source, freshness, frequency, data class, proxy/sample/missing status, and scoring inclusion metadata into chart panels and report-state JSON.
-- Added chart-window policy metadata: x-axes target the shortest common overlap, are capped at 30 years, and keep a minimum displayed range of 10 years while flagging short-history series.
+- Added chart-window policy metadata: x-axes use the shortest available series range in each view, are capped at 30 years, and keep a minimum displayed range of 10 years while flagging short-history series.
 - Kept metrics and multiples honest: true multiples require reviewed public/licensed data; current subsector valuation histories are labeled as sample-backed valuation proxies or missing.
 - Preserved static GitHub Pages deployment: generated HTML/JSON/assets only, no hosted Streamlit.
 

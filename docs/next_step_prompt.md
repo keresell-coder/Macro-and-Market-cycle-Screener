@@ -34,7 +34,7 @@ Current implementation:
 - Sprint 8 open growth indicators are implemented: monthly OECD CLI proxies for G20, G7, United States, China, and major Europe are loaded from the public DB.nomics mirror. Direct OECD SDMX access is documented/keyless but currently returns a Cloudflare challenge from this environment, so it is marked blocked and not bypassed.
 - Sprint 9 historical chart layer is implemented locally: the static report opens with a global chart view, then regional views for United States, Europe, China, and Norway/Oslo-linked context, plus sector/subsector drilldowns using existing live proxy histories and sample-backed subsector market-cycle histories.
 - Chart metadata includes source, vintage/freshness, frequency, data class, proxy/sample/missing status, and scoring inclusion.
-- Chart-window metadata is implemented: x-axes target the shortest common range, are capped at 30 years, and keep a displayed minimum of 10 years while short-history series are flagged.
+- Chart-window metadata is implemented: x-axes use the shortest available series range in each view, are capped at 30 years, and keep a displayed minimum of 10 years while short-history series are flagged.
 - True valuation multiples and licensed subsector market histories remain missing until reviewed public or licensed data is connected.
 - `FRED_API_KEY` and `EIA_API_KEY` are configured locally in `.env` and as GitHub Actions repository secrets. Do not print, commit, or publish the key values.
 - GitHub Actions workflow runs weekly Saturday 07:15 UTC. Scheduled runs default to live keyless public data and fail if numeric `sample_fallback` is used. Manual sample mode remains available.
@@ -62,7 +62,7 @@ Scope:
 2. Prioritize Chicago Fed NFCI through FRED, selected public credit-spread or stress proxies if stable, and BIS credit/property series only after connector testing.
 3. Add source-status rows, freshness metadata, source registry notes, parser tests, and strict live fallback behavior.
 4. Expand charted macro/credit source histories toward 30 years where endpoints support it.
-5. Enforce chart x-axis policy: maximum 30 years, shortest common range where possible, and no displayed axis shorter than 10 years; flag short-history series.
+5. Enforce chart x-axis policy: maximum 30 years, shortest available series range per view, and no displayed axis shorter than 10 years; flag short-history series.
 6. Add the new series to the historical chart layer first.
 7. Add a dedicated liquidity/credit signal group only after live data is connected and tested.
 8. Update framework coverage, methodology, source-health display, tests, and docs.
