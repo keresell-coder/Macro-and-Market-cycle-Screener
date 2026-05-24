@@ -265,29 +265,59 @@ Implemented Sprint 6 details:
 - Add tests and a strict live-build guard that fail if a live build uses numeric `sample_fallback` without explicit handling.
 - Add generated-page QA with a local static server and browser screenshot checks where the browser runtime is available.
 
-### Sprint 7: Deployment validation and research evidence maturity
+### Sprint 7: Proxy label cleanup and coverage honesty
 
 Status: recommended next.
 
-Goal: validate the first scheduled GitHub Pages run and reduce the remaining gap between the broad macro-cycle knowledge base and the implemented radar.
+Goal: reduce semantic overreach before adding more sources.
 
 - Verify that `keresell-coder/Macro-and-Market-cycle-Screener` deploys the static report at `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`. First manual live deployment is verified.
 - Confirm the scheduled weekly Saturday 07:15 UTC workflow runs in live mode and blocks numeric sample fallback. Manual live run is verified; the next scheduled run should be monitored.
 - Rename or replace misleading proxy labels, especially `global_pmi`, which currently uses annual World Bank GDP growth rather than true PMI data.
 - Add a true "contradicting evidence" summary to the static report.
+- Ensure report-state and static Methodology explain all proxied, missing, and sample-backed dimensions.
+
+### Sprint 8: Open growth and leading indicators
+
+Goal: add robust keyless leading-growth signals.
+
+- Test OECD SDMX/Data Explorer access for Composite Leading Indicators.
+- Add a small curated CLI set if the endpoint proves stable.
+- Keep World Bank annual growth as background context, not a PMI substitute.
+- Add tests for parsing, freshness, source status, and live fallback guard.
+
+### Sprint 9: Credit, liquidity, and financial conditions
+
+Goal: add the biggest missing macro-cycle dimension.
+
 - Add keyless credit/liquidity sources where terms and endpoint reliability are acceptable.
+- Candidate first sources include Chicago Fed NFCI through FRED public CSV, selected public credit-spread proxies, and BIS credit/property series after connector testing.
+- Add a dedicated liquidity/credit signal group and update framework coverage only after live data is connected and tested.
+
+### Sprint 10: Valuation and market internals reality check
+
+Goal: improve market-pricing context without pretending to have institutional data.
+
+- Evaluate open, terms-compliant sources for broad valuation proxies and market internals.
+- Add only robust public proxies at first.
+- Keep true Oslo subsector valuation multiples out of scoring unless reviewed public/licensed data is available.
+
+### Sprint 11: Reviewed research evidence
+
+Goal: reduce reliance on sample research evidence.
+
 - Add reviewed public/manual CSV research evidence for priority subsectors.
 - Add source-specific confidence details beyond the current health summary.
 - Keep private notes and any manual/licensed source material out of public exports.
+
+### Sprint 12: Archive, monitoring, and deployment maturity
+
+Goal: harden the recurring weekly operating process.
+
 - Decide whether CI should install Playwright for mandatory screenshot artifacts, or keep screenshot capture optional.
 - Improve archive navigation once multiple weekly reports exist.
+- Consider saving compact public history JSON in Pages output, not raw databases.
 
 ## Recommendation
 
-Proceed with this path after the current local dashboard stabilizes:
-
-1. Build the research evidence layer first, using the feasible `market-researcher` concepts.
-2. Then build static report state and change tracking.
-3. Then add GitHub Actions and Pages.
-
-This keeps the project practical: the weekly report can be useful before the full research automation layer exists.
+Proceed with the open-data expansion sequence in `docs/open_data_expansion_plan.md`. The priority is to add credible open indicators while preserving the existing public/private boundary and source-health guardrails.

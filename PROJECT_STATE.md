@@ -20,6 +20,7 @@ Build a private-first research dashboard that identifies Oslo Bors-linked subsec
 - Scoring version shown in public methodology: `score-v1-public-cycle-radar`.
 - Saved knowledge-base reference: `docs/knowledge_base/global_macro_market_cycle_knowledge_base.md`.
 - Reviewed knowledge-base assessment: `docs/knowledge_base_review.md`.
+- Open-data expansion plan: `docs/open_data_expansion_plan.md`.
 
 ## Current Dashboard Behavior
 
@@ -197,10 +198,10 @@ HOME="$PWD/.streamlit_home" STREAMLIT_BROWSER_GATHER_USAGE_STATS=false .venv/bin
 - Rename or replace misleading proxy labels, especially `global_pmi`, which currently uses annual World Bank GDP growth rather than true PMI data.
 - Add a true "contradicting evidence" summary to the static report.
 - Add keyless credit/liquidity sources where terms and endpoint reliability are acceptable, such as selected FRED public CSV series.
+- Implement the sprint sequence in `docs/open_data_expansion_plan.md`: proxy label cleanup, OECD CLI/open growth indicators, credit/liquidity indicators, valuation/market internals reality check, reviewed research evidence, and archive/monitoring maturity.
 - Add source-specific confidence detail beyond the first research facts table.
 - Add a private notes layer that is explicitly excluded from public/static exports.
 - Replace deterministic market-cycle proxy history with reviewed public/licensed subsector price, constituent, and valuation data.
-- Push the repository to GitHub, enable Pages source "GitHub Actions", and manually dispatch the weekly report workflow.
 - Decide whether to install Playwright in CI for mandatory static-site screenshots, or keep screenshot capture optional.
 - Add richer archive navigation if weekly report history becomes large.
 
@@ -225,7 +226,7 @@ On 2026-05-23, GitHub Pages and GitHub Actions were evaluated as a feasible targ
 - Change tracking should include rank deltas, score deltas, signal deltas, source-status changes, and later research-fact changes.
 - Static Pages must not contain private notes, credentials, manual reports, raw licensed data, or paywalled content.
 - GitHub Pages cannot run Python server-side, so all Python work must occur during the Actions build step.
-- Roadmap update: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, and the keyless live-data connector upgrade have been implemented locally. GitHub Pages still needs repository-level enablement and a manual workflow run.
+- Roadmap update: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, and the keyless live-data connector upgrade have been implemented and deployed. GitHub Pages is live. The next roadmap is the open-data expansion sequence in `docs/open_data_expansion_plan.md`.
 
 ## Continuation Prompt
 

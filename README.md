@@ -141,6 +141,7 @@ Rows with unknown subsectors are dropped, confidence is clipped to 0-100%, and u
 - `docs/github_pages_setup.md` explains how to enable the GitHub Pages workflow and optional secrets.
 - `docs/knowledge_base/global_macro_market_cycle_knowledge_base.md` stores the AI-drafted macro/market-cycle knowledge-base reference supplied for project planning.
 - `docs/knowledge_base_review.md` records the project-specific review of that knowledge base, including implementable, difficult, and out-of-scope items.
+- `docs/open_data_expansion_plan.md` defines the open/keyless source expansion plan and next sprint sequence.
 - `docs/continuation_prompt.md` contains a copy/paste prompt for starting fresh chats in this project.
 - `docs/next_step_prompt.md` contains a copy/paste prompt for the immediate next implementation step.
 - `src/cycle_screener/taxonomy.py` defines subsectors, drivers, proxies, and confidence levels.
