@@ -64,7 +64,14 @@ export FRED_API_KEY="..."
 export EIA_API_KEY="..."
 ```
 
-Codex does not have these keys.
+For local use, create a private `.env` file in the project folder:
+
+```text
+FRED_API_KEY=...
+EIA_API_KEY=...
+```
+
+The app loads this file automatically, and `.env` is ignored by git. For GitHub Actions, add the same values as repository secrets named `FRED_API_KEY` and `EIA_API_KEY`; never commit real keys.
 
 ## Static Export
 

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import os
+
 import pandas as pd
 
 from cycle_screener.connectors import _dbnomics_series_to_monthly_frame, _derive_public_indicators, _fred_csv_to_monthly_frame
+from cycle_screener.config import _load_dotenv_file
 from cycle_screener.config import Settings
 from cycle_screener.indicators import IndicatorDefinition
 from cycle_screener.publication import is_public_export_path
@@ -147,3 +150,22 @@ def test_public_export_allowlist_blocks_private_paths() -> None:
     assert not is_public_export_path("data/private_notes/thesis.md")
     assert not is_public_export_path("data/raw_licensed/vendor.csv")
     assert not is_public_export_path("data/research_evidence/research_facts.csv")
+
+
+def test_local_dotenv_loader_preserves_existing_environment(tmp_path, monkeypatch) -> None:
+    dotenv = tmp_path / ".env"
+    dotenv.write_text(
+        "FRED_API_KEY=from_file\n"
+        "EIA_API_KEY='quoted_eia_key'\n"
+        "REQUEST_TIMEOUT_SECONDS=30\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("FRED_API_KEY", "from_environment")
+    monkeypatch.delenv("EIA_API_KEY", raising=False)
+    monkeypatch.delenv("REQUEST_TIMEOUT_SECONDS", raising=False)
+
+    _load_dotenv_file(dotenv)
+
+    assert os.environ["FRED_API_KEY"] == "from_environment"
+    assert os.environ["EIA_API_KEY"] == "quoted_eia_key"
+    assert os.environ["REQUEST_TIMEOUT_SECONDS"] == "30"

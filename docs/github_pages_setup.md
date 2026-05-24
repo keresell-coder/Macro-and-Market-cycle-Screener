@@ -43,7 +43,7 @@ If you later add connectors that need API access, add repository secrets named:
 - `FRED_API_KEY`
 - `EIA_API_KEY`
 
-Then manually run the workflow with `data_mode` set to `live`. Without those secrets, current live mode still uses keyless public data; if a live numeric source fails, fallback rows are marked as `sample_fallback` in source status and should be treated as a visible data-quality issue.
+For local dashboard and command-line runs, put the same names in a private `.env` file in the project folder. The app loads `.env` automatically and the file is ignored by git. For GitHub Actions, add the values in repository Settings -> Secrets and variables -> Actions -> New repository secret, then manually run the workflow with `data_mode` set to `live`. Without those secrets, current live mode still uses keyless public data; if a live numeric source fails, fallback rows are marked as `sample_fallback` in source status and should be treated as a visible data-quality issue.
 
 ## GitHub Repository Settings
 
