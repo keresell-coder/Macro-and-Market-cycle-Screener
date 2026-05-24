@@ -13,6 +13,7 @@ from urllib.request import urlopen
 REQUIRED_PAGE_TEXT = (
     "Latest Radar",
     "Source Health",
+    "Contradicting Evidence",
     "Changes Since Last Report",
     "Archive",
     "Methodology",

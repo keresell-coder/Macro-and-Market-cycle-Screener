@@ -104,7 +104,7 @@ SUBSECTORS: tuple[Subsector, ...] = (
         ("aluminum", "copper", "global_pmi", "eur_nok"),
         ("China growth", "energy prices", "industrial production"),
         "medium",
-        "Recovery is more credible when metals prices, PMIs, and energy-cost pressure improve together.",
+        "Recovery is more credible when metals prices, annual growth proxies, and energy-cost pressure improve together.",
     ),
     Subsector(
         "renewables",
@@ -151,4 +151,3 @@ SUBSECTORS: tuple[Subsector, ...] = (
 
 def subsector_by_slug() -> dict[str, Subsector]:
     return {subsector.slug: subsector for subsector in SUBSECTORS}
-

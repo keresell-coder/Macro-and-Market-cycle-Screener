@@ -8,7 +8,7 @@ Build a private-first research dashboard that identifies Oslo Bors-linked subsec
 
 ## Current Implementation
 
-- Python project with Streamlit dashboard, DuckDB storage, keyless public live-data connectors, deterministic sample fallback, static HTML export, static report site, Sprint 6 source-health monitoring, GitHub Pages workflow, and tests.
+- Python project with Streamlit dashboard, DuckDB storage, keyless public live-data connectors, deterministic sample fallback, static HTML export, static report site, Sprint 6 source-health monitoring, Sprint 7 proxy-label cleanup, GitHub Pages workflow, and tests.
 - Main app: `dashboard/app.py`.
 - Core package: `src/cycle_screener/`.
 - Static export: `exports/opportunity_radar.html`.
@@ -18,6 +18,7 @@ Build a private-first research dashboard that identifies Oslo Bors-linked subsec
 - Live GitHub Pages report: `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`.
 - Manual reports folder: `data/manual_reports/`.
 - Scoring version shown in public methodology: `score-v1-public-cycle-radar`.
+- Report-state schema version: `2026-05-24-sprint7`.
 - Saved knowledge-base reference: `docs/knowledge_base/global_macro_market_cycle_knowledge_base.md`.
 - Reviewed knowledge-base assessment: `docs/knowledge_base_review.md`.
 - Open-data expansion plan: `docs/open_data_expansion_plan.md`.
@@ -92,6 +93,7 @@ Important live-data caveats:
 
 - Yahoo chart data is used only for broad market proxies where no official keyless endpoint is currently wired: NASDAQ, heating oil, and US 10-year yield proxy.
 - World Bank growth proxies are annual and therefore naturally less fresh than monthly/daily market and macro series.
+- The legacy internal `global_pmi` slug is retained for compatibility, but public report state displays it as `global_growth_proxy` with label "Global annual GDP growth proxy"; it is not PMI or OECD CLI data.
 - Numeric scoring uses live indicators after a live refresh, but subsector market-cycle charts still use deterministic proxy histories.
 
 ## GitHub/Public Boundary Status
@@ -129,6 +131,8 @@ Sprint 3 static report state and change engine is implemented locally:
   - `exports/site/data/archive.json`.
 - Report state includes:
   - rank, score, and signal values by subsector;
+  - public display slugs for renamed proxy indicators while preserving legacy internal slugs;
+  - a Contradicting Evidence summary generated from existing signal and sample-backed market-cycle components;
   - latest source status;
   - per-indicator source freshness and source-health summaries;
   - framework coverage metadata across growth, inflation, rates, credit, earnings, valuation, market internals, subsector market-cycle data, and research evidence;
@@ -143,6 +147,7 @@ Sprint 3 static report state and change engine is implemented locally:
   - market-cycle deltas.
 - Sprint 4 static site views are implemented:
   - Latest Radar;
+  - Contradicting Evidence;
   - Changes Since Last Report;
   - Archive;
   - Methodology.
@@ -163,6 +168,12 @@ Sprint 3 static report state and change engine is implemented locally:
   - strict live static builds can fail on numeric `sample_fallback` via `--fail-on-numeric-sample-fallback`;
   - tests cover fallback visibility and the strict guard;
   - generated static-site QA is wired into the GitHub workflow.
+- Sprint 7 proxy label cleanup and coverage honesty is implemented locally:
+  - public labels distinguish annual GDP growth proxies, oil-price proxies, heating-oil proxies, broad market-chart proxies, and valuation proxies;
+  - the stored `global_pmi` indicator remains backward compatible, while public report state exposes `display_slug=global_growth_proxy`;
+  - report-state methodology and framework coverage explicitly say annual World Bank GDP growth is not PMI or OECD CLI data;
+  - static reports include a Contradicting Evidence section using recovery, macro, momentum, valuation-proxy, confidence, and sample-backed market-cycle components;
+  - tests cover the public growth display slug and static Contradicting Evidence rendering.
 - GitHub repository setup status:
   - local project is initialized as a git repository on branch `main`;
   - remote `origin` points to `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener.git`;
@@ -195,10 +206,9 @@ HOME="$PWD/.streamlit_home" STREAMLIT_BROWSER_GATHER_USAGE_STATS=false .venv/bin
 ## Next Likely Improvements
 
 - Monitor the next scheduled Saturday 07:15 UTC live workflow run.
-- Rename or replace misleading proxy labels, especially `global_pmi`, which currently uses annual World Bank GDP growth rather than true PMI data.
-- Add a true "contradicting evidence" summary to the static report.
+- Add true open leading-growth indicators, likely OECD CLI if the keyless endpoint proves stable.
 - Add keyless credit/liquidity sources where terms and endpoint reliability are acceptable, such as selected FRED public CSV series.
-- Implement the sprint sequence in `docs/open_data_expansion_plan.md`: proxy label cleanup, OECD CLI/open growth indicators, credit/liquidity indicators, valuation/market internals reality check, reviewed research evidence, and archive/monitoring maturity.
+- Continue the sprint sequence in `docs/open_data_expansion_plan.md`: OECD CLI/open growth indicators, credit/liquidity indicators, valuation/market internals reality check, reviewed research evidence, and archive/monitoring maturity.
 - Add source-specific confidence detail beyond the first research facts table.
 - Add a private notes layer that is explicitly excluded from public/static exports.
 - Replace deterministic market-cycle proxy history with reviewed public/licensed subsector price, constituent, and valuation data.
@@ -226,7 +236,7 @@ On 2026-05-23, GitHub Pages and GitHub Actions were evaluated as a feasible targ
 - Change tracking should include rank deltas, score deltas, signal deltas, source-status changes, and later research-fact changes.
 - Static Pages must not contain private notes, credentials, manual reports, raw licensed data, or paywalled content.
 - GitHub Pages cannot run Python server-side, so all Python work must occur during the Actions build step.
-- Roadmap update: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, and the keyless live-data connector upgrade have been implemented and deployed. GitHub Pages is live. The next roadmap is the open-data expansion sequence in `docs/open_data_expansion_plan.md`.
+- Roadmap update: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, Sprint 7, and the keyless live-data connector upgrade have been implemented locally. GitHub Pages is live. The next roadmap step is Sprint 8 in `docs/open_data_expansion_plan.md`.
 
 ## Continuation Prompt
 

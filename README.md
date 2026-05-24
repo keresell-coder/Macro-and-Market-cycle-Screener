@@ -17,9 +17,11 @@ This is a research radar, not an investment recommendation engine. It ranks subs
 - Keyless public data connectors with deterministic sample fallback only when a live source fails.
 - DuckDB data store for raw observations, normalized indicators, source status, scores, research profiles, and research facts.
 - Static HTML export for private sharing across devices.
-- Public-safe static report site with Latest Radar, Changes Since Last Report, Archive, and Methodology views.
+- Public-safe static report site with Latest Radar, Source Health, Contradicting Evidence, Changes Since Last Report, Archive, and Methodology views.
 - Public-safe report-state JSON export and change-comparison engine for future weekly static reports.
 - Public source-health summaries covering numeric freshness, live numeric data, numeric sample fallback, research page failures, and research-evidence fallback.
+- Public report labels that distinguish annual GDP growth proxies, broad market/chart proxies, sample-backed market-cycle proxies, and missing dimensions instead of implying true PMI, inventory, or valuation-multiple data.
+- Contradicting Evidence summary in the static report, generated from existing recovery, macro, momentum, valuation-proxy, confidence, and sample-backed market-cycle components.
 - Framework coverage metadata showing which macro-cycle dimensions are implemented, proxied, sample-backed, or missing.
 - Scoring methodology versioning shown in the static Methodology view.
 - GitHub Actions workflow for manually or weekly building and deploying the static site to GitHub Pages.
@@ -46,7 +48,7 @@ The default live refresh does not require API keys:
 python -m cycle_screener.refresh
 ```
 
-Current keyless sources include World Bank commodity and macro data, Norges Bank FX and policy-rate data, Statistics Norway CPI data, and limited public market chart data for traded proxies. If a live numeric source fails, missing series are filled from deterministic sample data and marked in source status.
+Current keyless sources include World Bank commodity and annual GDP growth proxy data, Norges Bank FX and policy-rate data, Statistics Norway CPI data, and limited public market chart data for traded proxies. The growth proxies are not PMI or OECD CLI data. If a live numeric source fails, missing series are filled from deterministic sample data and marked in source status.
 
 The live refresh was verified locally without `FRED_API_KEY` or `EIA_API_KEY`: 17/17 numeric indicators were covered with 0 numeric `sample_fallback` rows. Research evidence may still fall back to sample evidence when no local reviewed CSV files exist.
 

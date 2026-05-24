@@ -63,12 +63,15 @@ Official references:
 
 ### Sprint 7: Proxy Label Cleanup And Coverage Honesty
 
+Status: implemented locally on 2026-05-24.
+
 Goal: remove misleading labels and make coverage gaps impossible to miss.
 
-- Rename the displayed `global_pmi` concept to `global_growth_proxy`, or replace it with an OECD CLI/PMI-like source if available.
-- Rename any other indicator labels that imply a better source than is actually connected.
-- Keep backward-compatible slugs where needed, but make public labels and methodology precise.
-- Add a "Contradicting Evidence" summary to static reports using existing signal components.
+- Renamed the displayed `global_pmi` concept to `global_growth_proxy` in public report state while keeping the legacy internal slug for stored-data compatibility.
+- Changed the label to "Global annual GDP growth proxy" and documented that it is World Bank annual real GDP growth, not PMI or OECD CLI data.
+- Renamed other public labels that implied stronger source coverage than exists, including oil-price and heating-oil proxies with backward-compatible internal slugs.
+- Kept backward-compatible slugs where needed, but made public labels and methodology precise.
+- Added a "Contradicting Evidence" summary to static reports using existing recovery, macro, momentum, valuation-proxy, confidence, and sample-backed market-cycle components.
 - Acceptance: a reader can tell exactly what is real live data, what is proxy data, what is sample-backed, and what is missing.
 
 ### Sprint 8: Open Growth And Leading Indicators
@@ -140,4 +143,4 @@ These can be handled only through reviewed manual inputs, licensed data that the
 
 ## Current Priority
 
-The next implementation sprint should start with Sprint 7. The highest-risk issue is not missing data itself; it is labels and scores that can sound more complete than the underlying evidence. Fixing labels, coverage, and contradicting evidence first will make every later source addition safer.
+The next implementation sprint should start with Sprint 8: Open Growth And Leading Indicators. Sprint 7 reduced the highest-risk semantic overreach by making proxy labels, coverage gaps, and contradicting evidence visible before adding more sources.

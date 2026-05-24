@@ -14,7 +14,7 @@ from .publication import is_public_export_path
 SIGNAL_LABELS = {
     "cycle_pressure": "Cycle pressure",
     "recovery_potential": "Recovery",
-    "valuation_proxy": "Valuation",
+    "valuation_proxy": "Valuation proxy",
     "momentum": "Momentum",
     "macro_tailwind": "Macro",
     "narrative_divergence": "Narrative gap",
@@ -144,6 +144,7 @@ def _render_page(
   <nav class="site-nav" aria-label="Static report views">
     <a href="{escape(home_href)}">Top</a>
     <a href="#source-health">Source Health</a>
+    <a href="#contradicting-evidence">Contradicting Evidence</a>
     <a href="#latest-radar">Latest Radar</a>
     <a href="#changes">Changes Since Last Report</a>
     <a href="#archive">Archive</a>
@@ -163,6 +164,14 @@ def _render_page(
         <h2>Freshness And Fallbacks</h2>
       </div>
       {_render_source_health(report_state)}
+    </section>
+
+    <section id="contradicting-evidence" class="section">
+      <div class="section-heading">
+        <p class="eyebrow">Contradicting Evidence</p>
+        <h2>Signals That Do Not Yet Agree</h2>
+      </div>
+      {_render_contradicting_evidence(report_state)}
     </section>
 
     <section id="latest-radar" class="section">
@@ -224,7 +233,7 @@ def _render_radar_table(subsectors: list[dict[str, Any]]) -> str:
         )
     return (
         '<div class="table-wrap"><table class="radar-table">'
-        "<thead><tr><th>Rank</th><th>Subsector</th><th>Score</th><th>Recovery</th><th>Valuation</th><th>Momentum</th><th>Confidence</th><th>Read-through</th></tr></thead>"
+        "<thead><tr><th>Rank</th><th>Subsector</th><th>Score</th><th>Recovery</th><th>Valuation proxy</th><th>Momentum</th><th>Confidence</th><th>Read-through</th></tr></thead>"
         f"<tbody>{''.join(rows)}</tbody></table></div>"
     )
 
@@ -303,9 +312,12 @@ def _render_source_health(report_state: dict[str, Any]) -> str:
 
     rows = []
     for item in freshness:
+        display_slug = str(item.get("display_slug") or item.get("indicator_slug", ""))
+        legacy_slug = str(item.get("legacy_slug") or "")
+        slug_label = display_slug if not legacy_slug else f"{display_slug} (legacy: {legacy_slug})"
         rows.append(
             "<tr>"
-            f"<td><strong>{escape(str(item.get('indicator_name', item.get('indicator_slug', ''))))}</strong><span>{escape(str(item.get('indicator_slug', '')))}</span></td>"
+            f"<td><strong>{escape(str(item.get('indicator_name', item.get('indicator_slug', ''))))}</strong><span>{escape(slug_label)}</span></td>"
             f"<td>{escape(str(item.get('latest_observed_at', '')))}</td>"
             f"<td>{int(_num(item.get('age_days')))}</td>"
             f"<td>{escape(str(item.get('source_category', '')).replace('_', ' '))}</td>"
@@ -320,6 +332,25 @@ def _render_source_health(report_state: dict[str, Any]) -> str:
     )
 
     return status_cards + "".join(alerts) + table
+
+
+def _render_contradicting_evidence(report_state: dict[str, Any]) -> str:
+    records = list(report_state.get("contradicting_evidence", []))
+    if not records:
+        return '<p class="empty-state">No material contradictions were detected among the current score components.</p>'
+
+    items = []
+    for item in records:
+        components = _component_list(dict(item.get("components", {})))
+        items.append(
+            '<article class="evidence-item">'
+            f"<h4>{escape(str(item.get('subsector_name', '')))}</h4>"
+            f"<p><strong>{escape(str(item.get('title', '')))}</strong></p>"
+            f"<p>{escape(str(item.get('summary', '')))}</p>"
+            f"<p class=\"muted\">Components: {components}</p>"
+            "</article>"
+        )
+    return f'<div class="evidence-grid">{"".join(items)}</div>'
 
 
 def _render_changes(changes: dict[str, Any] | None) -> str:
@@ -476,6 +507,12 @@ def _delta_list(values: dict[str, Any]) -> str:
     return ", ".join(f"{escape(str(key).replace('_', ' '))} {_signed(value)}" for key, value in values.items())
 
 
+def _component_list(values: dict[str, Any]) -> str:
+    if not values:
+        return "none"
+    return ", ".join(f"{escape(str(key).replace('_', ' '))} {_signed(value)}" for key, value in values.items())
+
+
 def _join_or_none(values: list[Any]) -> str:
     cleaned = [str(value) for value in values if str(value)]
     return ", ".join(cleaned) if cleaned else "none"
@@ -485,7 +522,7 @@ def _signal_description(signal: str) -> str:
     descriptions = {
         "cycle_pressure": "pressure or stress that can create future recovery setups.",
         "recovery_potential": "evidence that a depressed subsector may be turning.",
-        "valuation_proxy": "screening context from public or sample valuation proxies.",
+        "valuation_proxy": "public-data screening context and sample-backed valuation context, not true subsector valuation multiples.",
         "momentum": "recent trend strength in the subsector signal set.",
         "macro_tailwind": "macro or geopolitical backdrop that may support the subsector.",
         "narrative_divergence": "gap between current evidence and prevailing sentiment.",
@@ -606,7 +643,7 @@ h4 { margin: 0 0 8px; font-size: 17px; }
 main { max-width: 1240px; margin: 0 auto; padding: 24px 28px 46px; }
 .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 26px; }
 .summary-grid--compact { margin: 0 0 18px; }
-.metric, .lead-item { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.metric, .lead-item, .evidence-item { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
 .metric { padding: 16px; }
 .metric span { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; font-weight: 700; }
 .metric strong { display: block; margin-top: 7px; font-size: 24px; line-height: 1.15; }
@@ -631,6 +668,9 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .lead-item { padding: 16px; }
 .lead-item p, .lead-item li { color: #35423b; line-height: 1.45; }
 .lead-item ul { margin: 12px 0 0; padding-left: 18px; }
+.evidence-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.evidence-item { padding: 15px; border-left: 4px solid var(--amber); }
+.evidence-item p { margin: 8px 0 0; color: #35423b; line-height: 1.45; }
 .source-name { color: var(--muted); font-weight: 700; }
 .mini-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 14px 0 0; }
 .mini-stats div { background: #f1f4ef; border-radius: 6px; padding: 9px; }
@@ -649,7 +689,7 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .methodology-grid p, .methodology-grid li { line-height: 1.55; }
 .coverage-table td:nth-child(2) { font-weight: 800; text-transform: capitalize; }
 @media (max-width: 900px) {
-  .summary-grid, .lead-grid, .methodology-grid { grid-template-columns: 1fr; }
+  .summary-grid, .lead-grid, .evidence-grid, .methodology-grid { grid-template-columns: 1fr; }
   .masthead__inner, main { padding-left: 18px; padding-right: 18px; }
   .site-nav { padding-left: 18px; padding-right: 18px; }
   h1 { font-size: 34px; }

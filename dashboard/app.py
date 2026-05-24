@@ -16,6 +16,7 @@ if str(SRC) not in sys.path:
 
 from cycle_screener.config import get_settings
 from cycle_screener.export_static import export_static
+from cycle_screener.indicators import indicator_by_slug
 from cycle_screener.refresh import refresh
 from cycle_screener.storage import RadarStore
 from cycle_screener.taxonomy import subsector_by_slug
@@ -49,7 +50,7 @@ def score_color(value: float) -> str:
 
 
 def highlight_signal_table(frame: pd.DataFrame) -> pd.io.formats.style.Styler:
-    numeric_columns = ["Score", "Recovery", "Valuation/proxy", "Momentum", "Macro", "Narrative gap"]
+    numeric_columns = ["Score", "Recovery", "Valuation proxy", "Momentum", "Macro", "Narrative gap"]
     quantiles = {
         column: {
             "high": frame[column].quantile(0.8),
@@ -87,7 +88,7 @@ def highlight_signal_table(frame: pd.DataFrame) -> pd.io.formats.style.Styler:
             {
                 "Score": "{:.1f}",
                 "Recovery": "{:+.3f}",
-                "Valuation/proxy": "{:+.3f}",
+                "Valuation proxy": "{:+.3f}",
                 "Momentum": "{:+.3f}",
                 "Macro": "{:+.3f}",
                 "Narrative gap": "{:+.3f}",
@@ -201,6 +202,7 @@ def source_evidence_table(facts: pd.DataFrame) -> pd.DataFrame:
 
 scores, observations, statuses, research_profiles, research_facts, market_cycle = load_tables()
 taxonomy = subsector_by_slug()
+indicator_lookup = indicator_by_slug()
 settings = get_settings()
 status_store = RadarStore(settings.database_path)
 backend = status_store.backend
@@ -239,7 +241,7 @@ with left:
     heatmap = heatmap.rename(
         columns={
             "recovery_potential": "Recovery",
-            "valuation_proxy": "Valuation/proxy",
+            "valuation_proxy": "Valuation proxy",
             "momentum": "Momentum",
             "macro_tailwind": "Macro",
             "narrative_divergence": "Narrative gap",
@@ -294,7 +296,7 @@ display = filtered[
         "group_name": "Group",
         "opportunity_score": "Score",
         "recovery_potential": "Recovery",
-        "valuation_proxy": "Valuation/proxy",
+        "valuation_proxy": "Valuation proxy",
         "momentum": "Momentum",
         "macro_tailwind": "Macro",
         "narrative_divergence": "Narrative gap",
@@ -413,12 +415,13 @@ if not chart_data.empty:
     normalized = (pivot / pivot.iloc[0] * 100).dropna(how="all")
     chart = go.Figure()
     for column in normalized.columns:
+        indicator_name = indicator_lookup[column].name if column in indicator_lookup else column
         chart.add_trace(
             go.Scatter(
                 x=normalized.index,
                 y=normalized[column],
                 mode="lines",
-                name=column,
+                name=indicator_name,
                 hovertemplate="%{x|%Y-%m-%d}<br>%{y:.1f}<extra>%{fullData.name}</extra>",
             )
         )

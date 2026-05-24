@@ -267,15 +267,16 @@ Implemented Sprint 6 details:
 
 ### Sprint 7: Proxy label cleanup and coverage honesty
 
-Status: recommended next.
+Status: implemented locally on 2026-05-24.
 
 Goal: reduce semantic overreach before adding more sources.
 
 - Verify that `keresell-coder/Macro-and-Market-cycle-Screener` deploys the static report at `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`. First manual live deployment is verified.
 - Confirm the scheduled weekly Saturday 07:15 UTC workflow runs in live mode and blocks numeric sample fallback. Manual live run is verified; the next scheduled run should be monitored.
-- Rename or replace misleading proxy labels, especially `global_pmi`, which currently uses annual World Bank GDP growth rather than true PMI data.
-- Add a true "contradicting evidence" summary to the static report.
-- Ensure report-state and static Methodology explain all proxied, missing, and sample-backed dimensions.
+- The stored `global_pmi` slug is retained for compatibility, but public report state now exposes `display_slug=global_growth_proxy` and labels it "Global annual GDP growth proxy".
+- Source-health and scoring explanations now show annual GDP growth, oil-price, heating-oil, and market-chart proxy labels instead of overclaiming PMI, inventory, or valuation-multiple coverage.
+- Static reports now include a "Contradicting Evidence" view built from existing score and sample-backed market-cycle components.
+- Report-state methodology and framework coverage explain proxied, missing, limited, and sample-backed dimensions.
 
 ### Sprint 8: Open growth and leading indicators
 

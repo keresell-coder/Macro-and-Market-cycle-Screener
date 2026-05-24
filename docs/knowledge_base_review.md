@@ -47,7 +47,7 @@ The current project implements these knowledge-base ideas well enough for a firs
 
 The current implementation does not yet cover the full framework. The main gaps are:
 
-- Growth: the current `global_pmi` is actually annual World Bank GDP growth, not a true PMI. This is acceptable as a placeholder but should be renamed or replaced to avoid overstating timeliness.
+- Growth: the current public label now says "Global annual GDP growth proxy" and exposes `display_slug=global_growth_proxy`, while the legacy internal `global_pmi` slug remains for storage compatibility. It is annual World Bank GDP growth, not a true PMI or OECD CLI.
 - Credit and financial cycle: there is no live high-yield spread, investment-grade spread, lending standards, loan growth, default, credit-to-GDP, property-price, or refinancing-wall series.
 - Earnings and margins: there is no live earnings-revisions, EPS, margin, backlog, order-intake, or analyst-estimate feed.
 - Valuation: the scoring field named `valuation_proxy` is a public-data screening proxy derived from indicator percentiles and deterministic market-cycle sample data, not true subsector valuation multiples.
@@ -60,8 +60,8 @@ The current implementation does not yet cover the full framework. The main gaps 
 
 Recommended next implementation work, in order:
 
-1. Rename or replace misleading proxy indicators.
-   - The current `global_pmi` and `china_growth_proxy` are annual World Bank GDP growth proxies, not PMIs. Either rename them to `global_growth_proxy` in display text and docs, or connect a terms-compliant PMI or OECD CLI source.
+1. Add open leading-growth indicators.
+   - Sprint 7 fixed the displayed `global_pmi` overreach by labeling it as annual World Bank GDP growth and exposing the public `global_growth_proxy` display slug. The next improvement is to connect terms-compliant OECD CLI or PMI-like public data so growth coverage becomes timelier.
 
 2. Add a cycle-dimension coverage matrix.
    - Public report state should explicitly show which framework dimensions are covered, proxied, missing, sample-backed, or blocked. This prevents users from reading missing data as neutral evidence.
@@ -82,11 +82,11 @@ Recommended next implementation work, in order:
 
 Feasible without paid data or credentials:
 
-- Better naming and labeling of existing proxies.
+- Better naming and labeling of existing proxies. Implemented in Sprint 7 for annual GDP growth, oil-price, heating-oil, broad market-chart, and valuation-proxy labels.
 - OECD CLI ingestion if an accessible keyless endpoint is confirmed.
 - FRED public CSV ingestion for selected free public macro/credit/rates series, where terms and endpoint reliability are acceptable.
 - More transparent methodology and coverage metadata in report state.
-- Contradicting-evidence summaries from existing signal components.
+- Contradicting-evidence summaries from existing signal components. Implemented in Sprint 7 static reports.
 - Public/manual reviewed research CSV ingestion using the existing schema.
 - More robust archive navigation and scheduled-run monitoring.
 - Optional local/private notes layer that is excluded from public export.
@@ -114,7 +114,7 @@ The following should not be promised as automatic public dashboard features unle
 
 The project is directionally correct. The architecture is sensible: local Streamlit for private analysis, static GitHub Pages for public-safe weekly output, source-health metadata, and a strict public/private boundary. The current implementation is also appropriately cautious: it does not pretend to be an investment-advice engine, and it surfaces source failures and fallback use.
 
-The biggest risk is semantic overreach. Some labels and scores sound more complete than the underlying data. In particular, annual GDP proxies are not PMIs, the valuation proxy is not a market valuation feed, and sample research evidence is not equivalent to a reviewed evidence layer. The next sprint should reduce this overreach by improving labels, adding coverage metadata, and then adding one or two genuinely useful missing dimensions rather than broadening indiscriminately.
+The biggest risk remains semantic overreach, but Sprint 7 reduced it. Annual GDP proxies are now labeled as annual GDP growth proxies rather than PMI data, the valuation proxy is described as screening context rather than a market valuation feed, and sample-backed dimensions remain visible. The next sprint should add one or two genuinely useful missing dimensions rather than broadening indiscriminately.
 
 ## Changes Made From This Review
 
@@ -124,3 +124,5 @@ The biggest risk is semantic overreach. Some labels and scores sound more comple
 - Static Methodology now displays framework reference, framework coverage, and the implementation boundary so public readers see the radar's current blind spots.
 - Static-site QA now checks for the new Framework Coverage text.
 - Public report state now includes a `framework_coverage` matrix that marks growth, inflation, rates, credit, earnings, valuation, market internals, subsector market-cycle data, and research evidence as covered, partial, proxied, sample-backed, limited, or missing.
+- Sprint 7 public report state now includes display slugs for renamed proxies and a `contradicting_evidence` summary generated from existing score components.
+- Static reports now include a "Contradicting Evidence" section and avoid presenting annual World Bank GDP growth as PMI data.

@@ -28,8 +28,9 @@ Current implementation:
 - DuckDB storage with SQLite fallback.
 - Keyless live numeric refresh using World Bank Pink Sheet, World Bank Indicators, Norges Bank CSV API, Statistics Norway API, and selected public market chart data.
 - Latest live verification: 17/17 numeric indicators covered, 1,208 observations, 0 numeric `sample_fallback` rows.
-- Static HTML report site under `exports/site/` with Latest Radar, Source Health, Changes Since Last Report, Archive, and Methodology views.
-- Public-safe report-state JSON includes `source_freshness`, `source_health`, `framework_coverage`, scoring version, radar state, source statuses, market-cycle summaries, and reviewed public facts.
+- Static HTML report site under `exports/site/` with Latest Radar, Source Health, Contradicting Evidence, Changes Since Last Report, Archive, and Methodology views.
+- Public-safe report-state JSON includes `source_freshness`, `source_health`, `framework_coverage`, scoring version, radar state, source statuses, market-cycle summaries, `contradicting_evidence`, and reviewed public facts.
+- Sprint 7 proxy-label cleanup is implemented: the legacy internal `global_pmi` slug is publicly displayed as `global_growth_proxy` / "Global annual GDP growth proxy"; it is annual World Bank GDP growth, not PMI or OECD CLI data.
 - GitHub Actions workflow runs weekly Saturday 07:15 UTC. Scheduled runs default to live keyless public data and fail if numeric `sample_fallback` is used. Manual sample mode remains available.
 - GitHub repository: `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener`.
 - Live Pages URL: `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`.
@@ -49,20 +50,19 @@ Important constraints:
 - Keep unreviewed research claims separate from numeric scoring unless explicit confidence rules are implemented.
 
 Requested next task:
-Implement Sprint 7 from `docs/open_data_expansion_plan.md`: Proxy Label Cleanup And Coverage Honesty.
+Implement Sprint 8 from `docs/open_data_expansion_plan.md`: Open Growth And Leading Indicators.
 
 Scope:
-1. Rename the displayed `global_pmi` concept to `global_growth_proxy`, or otherwise make it clear that it currently uses annual World Bank GDP growth rather than true PMI data.
-2. Review all indicator display labels and methodology text for semantic overreach.
-3. Preserve backward compatibility where practical, but make public report labels and docs precise.
-4. Add a "Contradicting Evidence" summary to static reports using existing signal components.
-5. Update `framework_coverage`, methodology, tests, and docs so the report clearly distinguishes implemented, proxied, missing, limited, and sample-backed dimensions.
+1. Test OECD SDMX/Data Explorer access for Composite Leading Indicators using official/keyless endpoints only.
+2. Add a small curated CLI set only if the endpoint is stable and terms-compliant.
+3. Keep World Bank annual GDP growth as slow-moving background context, not a PMI substitute.
+4. Every new connector must produce source-status rows, freshness metadata, clear failure messages, and tests.
+5. Update `framework_coverage`, methodology, source-health display, and docs if growth coverage improves.
 6. Run local tests and static-site QA.
 7. Commit and push changes to GitHub.
 8. Manually dispatch the live GitHub Actions workflow and verify the public Pages report still shows `live_numeric` with 0 numeric `sample_fallback`.
 
-After Sprint 7, the next planned sprints are:
-- Sprint 8: OECD/open leading-growth indicators.
+After Sprint 8, the next planned sprints are:
 - Sprint 9: keyless credit/liquidity and financial-conditions indicators.
 - Sprint 10: valuation and market-internals reality check.
 - Sprint 11: reviewed public/manual research evidence.

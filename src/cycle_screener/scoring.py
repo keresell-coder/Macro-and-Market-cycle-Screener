@@ -129,12 +129,14 @@ def _narrative_score(subsector, narrative: dict[str, float]) -> float:
 
 
 def _explain(proxy_indicators: tuple[str, ...], metrics: dict[str, dict[str, float | str]], narrative_score: float, thesis: str) -> str:
+    definitions = indicator_by_slug()
     parts = []
     for slug in proxy_indicators[:4]:
         metric = metrics.get(slug)
         if not metric:
             continue
-        parts.append(f"{slug}: pctile {float(metric['percentile']):.0%}, momentum {float(metric['momentum']):+.2f}")
+        label = definitions[slug].name if slug in definitions else slug
+        parts.append(f"{label}: pctile {float(metric['percentile']):.0%}, momentum {float(metric['momentum']):+.2f}")
     narrative = f"narrative {narrative_score:+.2f}"
     return f"{thesis} Evidence: {', '.join(parts) if parts else 'limited indicator coverage'}; {narrative}."
 
@@ -149,4 +151,3 @@ def _clip(value: float) -> float:
 
 def _clip_100(value: float) -> float:
     return max(min(value, 100.0), 0.0)
-

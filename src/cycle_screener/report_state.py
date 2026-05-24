@@ -8,7 +8,7 @@ from typing import Any
 import pandas as pd
 
 from .config import EXPORT_DIR, get_settings
-from .indicators import indicator_by_slug
+from .indicators import indicator_by_slug, public_indicator_slug
 from .publication import is_public_export_path
 from .sources import SOURCE_DEFINITIONS
 from .storage import RadarStore
@@ -32,7 +32,7 @@ MARKET_COLUMNS = (
     "driver_pressure",
 )
 
-REPORT_STATE_VERSION = "2026-05-24-sprint6"
+REPORT_STATE_VERSION = "2026-05-24-sprint7"
 SCORING_METHODOLOGY_VERSION = "score-v1-public-cycle-radar"
 
 
@@ -56,6 +56,8 @@ def build_report_state(store: RadarStore | None = None) -> dict[str, Any]:
     source_status_records = _latest_source_status(source_status)
     source_freshness = _source_freshness(observations, source_status_records)
 
+    contradicting_evidence = _contradicting_evidence_summary(subsectors)
+
     return {
         "schema_version": REPORT_STATE_VERSION,
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -64,13 +66,14 @@ def build_report_state(store: RadarStore | None = None) -> dict[str, Any]:
             "scoring_version": SCORING_METHODOLOGY_VERSION,
             "report_state_version": REPORT_STATE_VERSION,
             "framework_reference": "docs/knowledge_base/global_macro_market_cycle_knowledge_base.md",
-            "framework_coverage": "Partial implementation of a broader macro and market-cycle framework. Current scoring covers public macro, rates, FX, commodity, market-proxy, source-health, and reviewed-public-research evidence, but does not yet include full credit, earnings-revisions, valuation-multiple, positioning, or licensed subsector market data.",
+            "framework_coverage": "Partial implementation of a broader macro and market-cycle framework. Current scoring covers public macro, rates, FX, commodity, market-proxy, source-health, and reviewed-public-research evidence. Growth is currently an annual World Bank GDP growth proxy, not PMI or OECD CLI data. The model does not yet include full credit, earnings-revisions, true valuation-multiple, positioning, or licensed subsector market data.",
             "implementation_boundary": "Opportunity scores are research triage signals, not cycle-state labels, return forecasts, or investment advice. Missing dimensions should be treated as explicit blind spots rather than neutral evidence.",
-            "scoring": "Transparent subsector scoring from public/free indicators and sample fallbacks.",
+            "scoring": "Transparent subsector scoring from public/free indicators, explicitly labeled proxies, and visible sample fallbacks when present.",
             "research_policy": "Only reviewed public research facts are included in public report state. Unreviewed and manual evidence remain local.",
             "not_investment_advice": True,
         },
         "subsectors": subsectors,
+        "contradicting_evidence": contradicting_evidence,
         "source_status": source_status_records,
         "source_freshness": source_freshness,
         "source_health": _source_health_summary(source_freshness, source_status_records),
@@ -94,16 +97,19 @@ def export_report_state(output_path: Path | None = None, store: RadarStore | Non
 
 def _subsector_record(rank: int, row: pd.Series, market_cycle: pd.DataFrame, research_facts: pd.DataFrame) -> dict[str, Any]:
     slug = str(row["slug"])
+    signals = {column: _rounded(row[column], 3) for column in SIGNAL_COLUMNS if column in row}
+    latest_market_cycle = _latest_market_cycle(slug, market_cycle)
     return {
         "slug": slug,
         "name": str(row["name"]),
         "group_name": str(row["group_name"]),
         "rank": rank,
         "opportunity_score": _rounded(row["opportunity_score"], 1),
-        "signals": {column: _rounded(row[column], 3) for column in SIGNAL_COLUMNS if column in row},
+        "signals": signals,
         "data_confidence": str(row.get("data_confidence", "")),
         "explanation": str(row.get("explanation", "")),
-        "market_cycle": _latest_market_cycle(slug, market_cycle),
+        "market_cycle": latest_market_cycle,
+        "contradicting_evidence": _subsector_contradictions(str(row["name"]), signals, latest_market_cycle),
         "reviewed_public_fact_ids": _fact_ids_for_subsector(slug, research_facts),
     }
 
@@ -165,10 +171,14 @@ def _source_freshness(observations: pd.DataFrame, source_status: list[dict[str, 
         source_category = _source_category(source, has_sample_fallback, deterministic_sample_build)
         age_days = max(0, (today - observed_date).days)
         indicator = indicator_lookup.get(str(indicator_slug))
+        display_slug = public_indicator_slug(str(indicator_slug))
         records.append(
             {
                 "indicator_slug": str(indicator_slug),
+                "display_slug": display_slug,
+                "legacy_slug": str(indicator_slug) if display_slug != str(indicator_slug) else "",
                 "indicator_name": indicator.name if indicator else str(indicator_slug),
+                "indicator_description": indicator.description if indicator else "",
                 "latest_observed_at": observed_date.isoformat(),
                 "age_days": age_days,
                 "observation_count": int(len(group)),
@@ -262,8 +272,8 @@ def _framework_coverage() -> list[dict[str, str]]:
         {
             "dimension": "Growth",
             "status": "proxied",
-            "current_coverage": "World Bank annual global and China growth proxies plus commodity and market proxies.",
-            "main_gap": "No true live PMI, OECD CLI, industrial-production, or new-orders feed yet.",
+            "current_coverage": "World Bank annual real GDP growth proxies for global and China growth, plus commodity and broad market proxies.",
+            "main_gap": "No true live PMI, OECD CLI, industrial-production, or new-orders feed yet; annual GDP is slow-moving background context.",
         },
         {
             "dimension": "Inflation",
@@ -292,13 +302,13 @@ def _framework_coverage() -> list[dict[str, str]]:
         {
             "dimension": "Valuation and risk premium",
             "status": "proxied",
-            "current_coverage": "Uses scoring proxy and deterministic market-cycle valuation history.",
-            "main_gap": "No true Oslo subsector valuation multiples or equity-risk-premium feed.",
+            "current_coverage": "Uses a public-data scoring proxy and deterministic sample-backed market-cycle valuation history.",
+            "main_gap": "No true Oslo subsector valuation multiples, constituent-level valuation data, or equity-risk-premium feed.",
         },
         {
             "dimension": "Market internals and positioning",
             "status": "limited",
-            "current_coverage": "NASDAQ and broad market chart proxies only.",
+            "current_coverage": "NASDAQ and broad public market chart proxies only.",
             "main_gap": "No breadth, volatility, fund-flow, short-interest, CFTC, or positioning layer.",
         },
         {
@@ -310,10 +320,95 @@ def _framework_coverage() -> list[dict[str, str]]:
         {
             "dimension": "Research evidence",
             "status": "sample_backed",
-            "current_coverage": "Reviewed public sample facts plus optional local reviewed CSV ingestion.",
+            "current_coverage": "Reviewed public sample facts plus optional local reviewed CSV ingestion; sample facts are visible as sample-backed context.",
             "main_gap": "Needs analyst-reviewed public/manual CSV evidence for priority subsectors.",
         },
     ]
+
+
+def _contradicting_evidence_summary(subsectors: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    records = []
+    for item in subsectors:
+        for contradiction in item.get("contradicting_evidence", []):
+            records.append(
+                {
+                    "subsector_slug": str(item.get("slug", "")),
+                    "subsector_name": str(item.get("name", "")),
+                    "rank": int(_rounded(item.get("rank"), 0)),
+                    **contradiction,
+                }
+            )
+    return sorted(records, key=lambda item: (-float(item.get("severity", 0)), int(item.get("rank", 999))))[:8]
+
+
+def _subsector_contradictions(name: str, signals: dict[str, Any], market_cycle: dict[str, Any]) -> list[dict[str, Any]]:
+    recovery = float(signals.get("recovery_potential", 0) or 0)
+    valuation = float(signals.get("valuation_proxy", 0) or 0)
+    momentum = float(signals.get("momentum", 0) or 0)
+    macro = float(signals.get("macro_tailwind", 0) or 0)
+    confidence = float(signals.get("confidence", 0) or 0)
+    relative_price = float(market_cycle.get("relative_price_index", 100) or 100)
+    market_valuation = float(market_cycle.get("valuation_proxy", 100) or 100)
+
+    records: list[dict[str, Any]] = []
+    if recovery >= 0.2 and macro <= -0.15:
+        records.append(
+            _contradiction(
+                "Recovery signal conflicts with macro backdrop",
+                f"{name} has a positive recovery signal while the macro-tailwind component is negative.",
+                {"recovery_potential": recovery, "macro_tailwind": macro},
+            )
+        )
+    if recovery >= 0.2 and momentum <= -0.15:
+        records.append(
+            _contradiction(
+                "Recovery signal lacks momentum confirmation",
+                f"{name} scores positively on recovery potential, but the momentum component is negative.",
+                {"recovery_potential": recovery, "momentum": momentum},
+            )
+        )
+    if macro >= 0.2 and recovery <= -0.15:
+        records.append(
+            _contradiction(
+                "Macro tailwind has not become a recovery signal",
+                f"{name} has a positive macro backdrop, but the recovery component remains negative.",
+                {"macro_tailwind": macro, "recovery_potential": recovery},
+            )
+        )
+    if valuation >= 0.2 and market_valuation >= 110:
+        records.append(
+            _contradiction(
+                "Scoring valuation proxy conflicts with sample market-cycle valuation",
+                f"{name} has a positive valuation signal, but the sample-backed market-cycle valuation proxy is elevated.",
+                {"valuation_proxy": valuation, "market_cycle_valuation_pressure": (market_valuation - 100) / 100},
+            )
+        )
+    if momentum >= 0.25 and relative_price < 95:
+        records.append(
+            _contradiction(
+                "Momentum is improving from weak relative price",
+                f"{name} has positive momentum while the sample-backed relative-price proxy remains below 95.",
+                {"momentum": momentum, "relative_price_gap": (relative_price - 100) / 100},
+            )
+        )
+    if confidence < 0.6 and (recovery >= 0.2 or valuation >= 0.2 or macro >= 0.2):
+        records.append(
+            _contradiction(
+                "Signal depends on low-confidence coverage",
+                f"{name} has at least one positive signal, but data confidence is below 60%.",
+                {"confidence": confidence, "recovery_potential": recovery, "valuation_proxy": valuation, "macro_tailwind": macro},
+            )
+        )
+    return sorted(records, key=lambda item: -float(item["severity"]))[:3]
+
+
+def _contradiction(title: str, summary: str, components: dict[str, float]) -> dict[str, Any]:
+    return {
+        "title": title,
+        "summary": summary,
+        "components": {key: _rounded(value, 3) for key, value in components.items()},
+        "severity": _rounded(sum(abs(float(value)) for value in components.values()) / max(len(components), 1), 3),
+    }
 
 
 def _source_category(source: str, has_sample_fallback: bool, deterministic_sample_build: bool = False) -> str:
