@@ -39,6 +39,7 @@ Current implementation:
 - GitHub Actions workflow for weekly/static GitHub Pages deployment. Scheduled runs are live by default and fail if numeric live data uses deterministic `sample_fallback`; manual sample mode remains available.
 - GitHub repository: `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener`.
 - Live GitHub Pages URL after deployment: `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`.
+- Latest manual live GitHub Actions deployment after Sprint 9 published schema `2026-05-24-sprint9`, `numeric_mode=live_numeric`, 22 live indicators, 0 numeric `sample_fallback` indicators, chart layer version `sprint9-historical-chart-layer`, and 159 chart-layer series.
 - Remaining known non-OK source statuses: UBS public research page blocks scanning with 403; structured research evidence falls back to sample evidence when no reviewed CSV files exist.
 
 Important constraints:
