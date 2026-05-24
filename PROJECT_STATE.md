@@ -8,17 +8,18 @@ Build a private-first research dashboard that identifies Oslo Bors-linked subsec
 
 ## Current Implementation
 
-- Python project with Streamlit dashboard, DuckDB storage, keyless public live-data connectors, deterministic sample fallback, static HTML export, static report site, Sprint 6 source-health monitoring, Sprint 7 proxy-label cleanup, Sprint 8 OECD CLI growth proxies, GitHub Pages workflow, and tests.
+- Python project with Streamlit dashboard, DuckDB storage, keyless public live-data connectors, deterministic sample fallback, static HTML export, static report site, Sprint 6 source-health monitoring, Sprint 7 proxy-label cleanup, Sprint 8 OECD CLI growth proxies, Sprint 9 historical chart layer, GitHub Pages workflow, and tests.
 - Main app: `dashboard/app.py`.
 - Core package: `src/cycle_screener/`.
 - Static export: `exports/opportunity_radar.html`.
 - Static report site: `exports/site/index.html`.
+- Static report chart layer: global historical chart view first, then regional and sector/subsector drilldown using live public indicator histories and clearly labeled sample-backed subsector histories.
 - GitHub Pages workflow: `.github/workflows/weekly-report.yml`.
 - GitHub repository: `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener`.
 - Live GitHub Pages report: `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`.
 - Manual reports folder: `data/manual_reports/`.
 - Scoring version shown in public methodology: `score-v1-public-cycle-radar`.
-- Report-state schema version: `2026-05-24-sprint8`.
+- Report-state schema version: `2026-05-24-sprint9`.
 - Saved knowledge-base reference: `docs/knowledge_base/global_macro_market_cycle_knowledge_base.md`.
 - Reviewed knowledge-base assessment: `docs/knowledge_base_review.md`.
 - Open-data expansion plan: `docs/open_data_expansion_plan.md`.
@@ -49,6 +50,7 @@ Build a private-first research dashboard that identifies Oslo Bors-linked subsec
   - "Source evidence" with claim, source, date, confidence, scope, and review status.
 - Reviewed and unreviewed research evidence is clearly labeled. Unreviewed claims do not affect numeric scoring.
 - Public export excludes private notes and manual reports.
+- Public static report now opens its analytical content with Historical Charts before Source Health, Contradicting Evidence, and Latest Radar.
 
 ## Data And Scoring Notes
 
@@ -139,6 +141,7 @@ Sprint 3 static report state and change engine is implemented locally:
   - latest source status;
   - per-indicator source freshness and source-health summaries;
   - framework coverage metadata across growth, inflation, rates, credit, earnings, valuation, market internals, subsector market-cycle data, and research evidence;
+  - historical chart-layer metadata for global, regional, and sector/subsector views;
   - latest market-cycle summary per subsector;
   - reviewed public research facts only.
 - Change tracking covers:
@@ -184,6 +187,16 @@ Sprint 3 static report state and change engine is implemented locally:
   - integrated CLI indicators into relevant subsector proxy sets while keeping World Bank annual GDP growth as background context;
   - updated framework coverage for Growth from `proxied` to `partial`;
   - local live verification shows `live_numeric`, 22 live indicators, 0 numeric `sample_fallback`, and current CLI observations through 2026-04-30.
+- Sprint 9 historical chart layer and drilldown is implemented locally:
+  - added `src/cycle_screener/charts.py` to build chart-layer JSON from existing observations and sample-backed subsector market-cycle histories;
+  - static report now shows Historical Charts as the first analytical layer after the summary metrics;
+  - global chart view appears first and uses existing live/proxy series including OECD CLI mirror indicators, World Bank annual GDP growth proxy, commodity, rates, FX, and broad market-chart proxies;
+  - regional drilldowns cover global, United States, Europe, China, and Norway/Oslo-linked contexts where live series exist;
+  - sector/subsector drilldowns show current scoring proxy histories plus sample-backed price, benchmark, relative price, valuation-proxy, and driver-pressure histories;
+  - chart metadata includes source, vintage/freshness, frequency, data class, proxy/sample/missing status, and scoring inclusion;
+  - methodology, framework coverage, source-health display, static-site QA text, and tests were updated;
+  - local live static verification shows schema `2026-05-24-sprint9`, `live_numeric`, 22 live indicators, 0 numeric `sample_fallback`, and 159 chart-layer series;
+  - true subsector valuation multiples and licensed market histories remain missing unless reviewed public or licensed data is connected.
 - GitHub repository setup status:
   - local project is initialized as a git repository on branch `main`;
   - remote `origin` points to `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener.git`;
@@ -219,9 +232,8 @@ HOME="$PWD/.streamlit_home" STREAMLIT_BROWSER_GATHER_USAGE_STATS=false .venv/bin
 ## Next Likely Improvements
 
 - Monitor the next scheduled Saturday 07:15 UTC live workflow run.
-- Reintroduce historical line charts as the first analytical layer in the static report: one global view first, then regional and sector/subsector drilldown.
-- Add keyless credit/liquidity sources after the chart layer is in place, so new signals have a visible historical context immediately.
-- Continue the sprint sequence in `docs/open_data_expansion_plan.md`: historical chart layer, credit/liquidity indicators, valuation/market internals reality check, reviewed research evidence, and archive/monitoring maturity.
+- Add keyless credit/liquidity sources now that the chart layer is in place, so new signals have a visible historical context immediately.
+- Continue the sprint sequence in `docs/open_data_expansion_plan.md`: credit/liquidity indicators, valuation/market internals reality check, reviewed research evidence, and archive/monitoring maturity.
 - Add source-specific confidence detail beyond the first research facts table.
 - Add a private notes layer that is explicitly excluded from public/static exports.
 - Replace deterministic market-cycle proxy history with reviewed public/licensed subsector price, constituent, and valuation data.
@@ -249,7 +261,7 @@ On 2026-05-23, GitHub Pages and GitHub Actions were evaluated as a feasible targ
 - Change tracking should include rank deltas, score deltas, signal deltas, source-status changes, and later research-fact changes.
 - Static Pages must not contain private notes, credentials, manual reports, raw licensed data, or paywalled content.
 - GitHub Pages cannot run Python server-side, so all Python work must occur during the Actions build step.
-- Roadmap update: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, Sprint 7, Sprint 8, and the keyless live-data connector upgrade have been implemented locally. GitHub Pages is live. The next roadmap step is Sprint 9 in `docs/open_data_expansion_plan.md`: Historical Chart Layer And Drilldown.
+- Roadmap update: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, Sprint 7, Sprint 8, Sprint 9, and the keyless live-data connector upgrade have been implemented locally. GitHub Pages is live. The next roadmap step is Sprint 10 in `docs/open_data_expansion_plan.md`: Credit, Liquidity, And Financial Conditions.
 
 ## Continuation Prompt
 

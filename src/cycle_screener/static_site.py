@@ -143,6 +143,7 @@ def _render_page(
   </header>
   <nav class="site-nav" aria-label="Static report views">
     <a href="{escape(home_href)}">Top</a>
+    <a href="#historical-charts">Historical Charts</a>
     <a href="#source-health">Source Health</a>
     <a href="#contradicting-evidence">Contradicting Evidence</a>
     <a href="#latest-radar">Latest Radar</a>
@@ -156,6 +157,14 @@ def _render_page(
       {_metric("Median confidence", _pct(median_confidence), "Reviewed public facts only")}
       {_metric("Source issues", str(issue_count), "Fallbacks, stale series, or source failures")}
       {_metric("Numeric fallback", str(numeric_health.get("sample_fallback_indicator_count", 0)), f"{numeric_health.get('live_indicator_count', 0)} live indicators")}
+    </section>
+
+    <section id="historical-charts" class="section section--charts">
+      <div class="section-heading">
+        <p class="eyebrow">Historical Charts</p>
+        <h2>Global View And Drilldown</h2>
+      </div>
+      {_render_chart_layer(report_state)}
     </section>
 
     <section id="source-health" class="section">
@@ -275,12 +284,219 @@ def _render_research_leads(subsectors: list[dict[str, Any]], research_facts: lis
     return f'<div class="lead-grid">{"".join(blocks)}</div>'
 
 
+def _render_chart_layer(report_state: dict[str, Any]) -> str:
+    layer = dict(report_state.get("chart_layer", {}))
+    views = list(layer.get("views", []))
+    if not views:
+        return '<p class="empty-state">No historical chart metadata is available in this report snapshot.</p>'
+
+    global_view_id = str(layer.get("global_view_id", "global"))
+    global_view = next((view for view in views if view.get("view_id") == global_view_id), views[0])
+    regional_views = [view for view in views if view is not global_view]
+    sector_views = list(layer.get("sector_views", []))
+    coverage_notes = list(layer.get("coverage_notes", []))
+
+    coverage_items = "".join(
+        "<li>"
+        f"<strong>{escape(str(item.get('dimension', '')))}:</strong> "
+        f"{escape(str(item.get('status', '')).replace('_', ' '))}. "
+        f"{escape(str(item.get('note', '')))}"
+        "</li>"
+        for item in coverage_notes
+    )
+    coverage_block = f"<ul class=\"chart-notes\">{coverage_items}</ul>" if coverage_items else ""
+
+    regional_blocks = "".join(
+        "<details class=\"chart-details\">"
+        f"<summary>{escape(str(view.get('title', 'Regional chart')))}</summary>"
+        f"{_render_chart_view(view)}"
+        "</details>"
+        for view in regional_views
+    )
+    sector_blocks = "".join(_render_sector_chart_view(sector) for sector in sector_views)
+
+    return (
+        '<div class="chart-layer-intro">'
+        f"<p>{escape(str(layer.get('summary', 'Historical charts use current report-state data.')))}</p>"
+        f"<p class=\"muted\">{escape(str(layer.get('normalization', 'Chart lines are normalized where needed.')))}</p>"
+        "</div>"
+        f"{_render_chart_view(global_view, featured=True)}"
+        "<h3>Regional Drilldown</h3>"
+        f"{regional_blocks or '<p class=\"empty-state\">No regional chart views are available.</p>'}"
+        "<h3>Sector And Subsector Drilldown</h3>"
+        f"{sector_blocks or '<p class=\"empty-state\">No sector chart views are available.</p>'}"
+        "<h3>Chart Coverage Notes</h3>"
+        f"{coverage_block}"
+    )
+
+
+def _render_sector_chart_view(sector: dict[str, Any]) -> str:
+    subsectors = list(sector.get("subsectors", []))
+    cards = []
+    for subsector in subsectors:
+        cards.append(
+            '<article class="subsector-chart-card">'
+            f"<h4>{escape(str(subsector.get('subsector_name', '')))}</h4>"
+            f"<p class=\"muted\">{escape(str(subsector.get('data_boundary', '')))}</p>"
+            f"{_render_chart_view(dict(subsector.get('proxy_view', {})), compact=True)}"
+            f"{_render_chart_view(dict(subsector.get('market_view', {})), compact=True)}"
+            f"{_render_chart_view(dict(subsector.get('driver_view', {})), compact=True)}"
+            "</article>"
+        )
+    return (
+        "<details class=\"chart-details\">"
+        f"<summary>{escape(str(sector.get('group_name', 'Sector')))}</summary>"
+        f"<p class=\"muted\">{escape(str(sector.get('description', '')))}</p>"
+        f"<div class=\"subsector-chart-grid\">{''.join(cards)}</div>"
+        "</details>"
+    )
+
+
+def _render_chart_view(view: dict[str, Any], featured: bool = False, compact: bool = False) -> str:
+    series = list(view.get("series", []))
+    missing = list(view.get("missing_series", []))
+    title = escape(str(view.get("title", "Chart view")))
+    description = escape(str(view.get("description", "")))
+    css_class = "chart-card chart-card--featured" if featured else "chart-card"
+    if compact:
+        css_class += " chart-card--compact"
+    missing_block = ""
+    if missing:
+        missing_items = "".join(
+            f"<li>{escape(str(item.get('label', item.get('series_id', ''))))}: {escape(str(item.get('message', 'missing')))}</li>"
+            for item in missing
+        )
+        missing_block = f"<ul class=\"chart-missing\">{missing_items}</ul>"
+    return (
+        f"<article class=\"{css_class}\">"
+        f"<div class=\"chart-card__heading\"><h4>{title}</h4><p>{description}</p></div>"
+        f"{_render_line_chart(series, title)}"
+        f"{_render_chart_metadata(series, compact=compact)}"
+        f"{missing_block}"
+        "</article>"
+    )
+
+
+def _render_line_chart(series: list[dict[str, Any]], title: str) -> str:
+    plottable = [item for item in series if item.get("points")]
+    if not plottable:
+        return '<p class="empty-state">No chartable points are available for this view.</p>'
+
+    width = 760
+    height = 280
+    left = 50
+    right = 18
+    top = 18
+    bottom = 42
+    plot_width = width - left - right
+    plot_height = height - top - bottom
+    date_values: list[datetime] = []
+    y_values: list[float] = []
+    for item in plottable:
+        for point in item.get("points", []):
+            parsed_date = _parse_date(point.get("date"))
+            if parsed_date is None:
+                continue
+            date_values.append(parsed_date)
+            y_values.append(_num(point.get("chart_value")))
+    if not date_values or not y_values:
+        return '<p class="empty-state">No chartable points are available for this view.</p>'
+
+    min_date = min(date_values)
+    max_date = max(date_values)
+    min_y = min(y_values)
+    max_y = max(y_values)
+    if abs(max_y - min_y) < 1e-9:
+        min_y -= 1
+        max_y += 1
+    padding = (max_y - min_y) * 0.08
+    min_y -= padding
+    max_y += padding
+    date_span = max((max_date - min_date).days, 1)
+
+    colors = ("#207857", "#246389", "#b2822b", "#ac4b3a", "#5b5f97", "#7a6a2f", "#168aad", "#7b2d26", "#4f772d")
+    polylines = []
+    legend = []
+    for idx, item in enumerate(plottable):
+        color = colors[idx % len(colors)]
+        coords = []
+        for point in item.get("points", []):
+            parsed_date = _parse_date(point.get("date"))
+            if parsed_date is None:
+                continue
+            x = left + ((parsed_date - min_date).days / date_span) * plot_width
+            y = top + (max_y - _num(point.get("chart_value"))) / (max_y - min_y) * plot_height
+            coords.append(f"{x:.1f},{y:.1f}")
+        if len(coords) >= 2:
+            polylines.append(f'<polyline points="{" ".join(coords)}" fill="none" stroke="{color}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" />')
+        legend.append(
+            f'<span><i style="background:{color}"></i>{escape(str(item.get("label", item.get("series_id", ""))))}</span>'
+        )
+
+    grid_lines = []
+    for step in range(5):
+        y = top + (plot_height / 4) * step
+        value = max_y - ((max_y - min_y) / 4) * step
+        grid_lines.append(
+            f'<line x1="{left}" y1="{y:.1f}" x2="{width - right}" y2="{y:.1f}" class="chart-grid-line" />'
+            f'<text x="{left - 8}" y="{y + 4:.1f}" class="chart-axis-label" text-anchor="end">{value:.1f}</text>'
+        )
+    axis = (
+        f'<line x1="{left}" y1="{height - bottom}" x2="{width - right}" y2="{height - bottom}" class="chart-axis-line" />'
+        f'<text x="{left}" y="{height - 14}" class="chart-axis-label" text-anchor="start">{escape(min_date.date().isoformat())}</text>'
+        f'<text x="{width - right}" y="{height - 14}" class="chart-axis-label" text-anchor="end">{escape(max_date.date().isoformat())}</text>'
+    )
+
+    return (
+        '<div class="svg-chart-wrap">'
+        f'<svg class="line-chart" viewBox="0 0 {width} {height}" role="img" aria-label="{escape(title)}">'
+        f"<rect x=\"0\" y=\"0\" width=\"{width}\" height=\"{height}\" rx=\"8\" class=\"chart-bg\" />"
+        f"{''.join(grid_lines)}{axis}{''.join(polylines)}"
+        "</svg>"
+        f'<div class="chart-legend">{"".join(legend)}</div>'
+        "</div>"
+    )
+
+
+def _render_chart_metadata(series: list[dict[str, Any]], compact: bool = False) -> str:
+    if not series:
+        return ""
+    rows = []
+    display_series = series if not compact else series[:6]
+    for item in display_series:
+        status = str(item.get("proxy_status", "")).replace("_", " ")
+        data_class = str(item.get("data_class", "")).replace("_", " ")
+        scoring = "yes" if item.get("scoring_inclusion") else "no"
+        legacy = str(item.get("legacy_slug") or "")
+        slug = str(item.get("series_id", ""))
+        label = slug if not legacy else f"{slug} (legacy: {legacy})"
+        rows.append(
+            "<tr>"
+            f"<td><strong>{escape(str(item.get('label', '')))}</strong><span>{escape(label)}</span></td>"
+            f"<td>{escape(str(item.get('source', '')))}</td>"
+            f"<td>{escape(str(item.get('latest_observed_at', '')))}</td>"
+            f"<td>{escape(str(item.get('frequency', '')))}</td>"
+            f"<td>{escape(data_class)}</td>"
+            f"<td>{escape(status)}</td>"
+            f"<td>{escape(scoring)}</td>"
+            "</tr>"
+        )
+    if compact and len(series) > len(display_series):
+        rows.append(f"<tr><td colspan=\"7\">{len(series) - len(display_series)} additional series in JSON metadata.</td></tr>")
+    return (
+        '<div class="table-wrap chart-meta-wrap"><table class="chart-meta-table">'
+        "<thead><tr><th>Series</th><th>Source</th><th>Vintage</th><th>Frequency</th><th>Data class</th><th>Proxy/sample status</th><th>Scored</th></tr></thead>"
+        f"<tbody>{''.join(rows)}</tbody></table></div>"
+    )
+
+
 def _render_source_health(report_state: dict[str, Any]) -> str:
     health = dict(report_state.get("source_health", {}))
     numeric = dict(health.get("numeric", {}))
     pages = dict(health.get("research_pages", {}))
     evidence = dict(health.get("research_evidence", {}))
     freshness = list(report_state.get("source_freshness", []))
+    chart_layer = dict(report_state.get("chart_layer", {}))
 
     fallback_indicators = numeric.get("sample_fallback_indicators", []) or []
     stale_indicators = numeric.get("stale_indicators", []) or []
@@ -293,6 +509,7 @@ def _render_source_health(report_state: dict[str, Any]) -> str:
         f"{_metric('Numeric sample fallback', str(numeric.get('sample_fallback_indicator_count', 0)), _join_or_none(fallback_indicators))}"
         f"{_metric('Research page failures', str(pages.get('failed_count', 0)), _join_or_none([item.get('source_slug', '') for item in failed_sources]))}"
         f"{_metric('Research evidence fallback', 'Yes' if evidence.get('fallback_used') else 'No', str(evidence.get('message', '') or evidence.get('mode', 'unknown')))}"
+        f"{_metric('Historical chart layer', str(chart_layer.get('series_count', 0)), str(chart_layer.get('version', 'not available')))}"
         "</div>"
     )
 
@@ -603,6 +820,14 @@ def _num(value: object) -> float:
         return 0.0
 
 
+def _parse_date(value: object) -> datetime | None:
+    raw = str(value or "")
+    try:
+        return datetime.fromisoformat(raw)
+    except ValueError:
+        return None
+
+
 def _stylesheet() -> str:
     return """
 :root {
@@ -643,7 +868,7 @@ h4 { margin: 0 0 8px; font-size: 17px; }
 main { max-width: 1240px; margin: 0 auto; padding: 24px 28px 46px; }
 .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 26px; }
 .summary-grid--compact { margin: 0 0 18px; }
-.metric, .lead-item, .evidence-item { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.metric, .lead-item, .evidence-item, .chart-card, .subsector-chart-card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
 .metric { padding: 16px; }
 .metric span { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; font-weight: 700; }
 .metric strong { display: block; margin-top: 7px; font-size: 24px; line-height: 1.15; }
@@ -671,6 +896,34 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .evidence-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .evidence-item { padding: 15px; border-left: 4px solid var(--amber); }
 .evidence-item p { margin: 8px 0 0; color: #35423b; line-height: 1.45; }
+.chart-layer-intro { background: #eef1eb; border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin-bottom: 14px; }
+.chart-layer-intro p { margin: 0; line-height: 1.5; }
+.chart-layer-intro p + p { margin-top: 6px; }
+.chart-card { padding: 15px; margin-bottom: 12px; }
+.chart-card--featured { border-top: 4px solid var(--green); }
+.chart-card--compact { padding: 12px; }
+.chart-card__heading h4 { margin: 0 0 5px; }
+.chart-card__heading p { margin: 0 0 10px; color: #35423b; line-height: 1.45; }
+.svg-chart-wrap { border: 1px solid #e1e6dd; border-radius: 8px; background: #fbfcfa; padding: 8px; }
+.line-chart { display: block; width: 100%; height: auto; min-height: 220px; }
+.chart-bg { fill: #fbfcfa; }
+.chart-grid-line { stroke: #dfe5dc; stroke-width: 1; }
+.chart-axis-line { stroke: #9ca79f; stroke-width: 1.2; }
+.chart-axis-label { fill: #5a665f; font-size: 11px; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 9px; color: #33413a; font-size: 12px; }
+.chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.chart-legend i { display: inline-block; width: 18px; height: 3px; border-radius: 999px; }
+.chart-meta-wrap { margin-top: 10px; }
+.chart-meta-table { min-width: 980px; }
+.chart-meta-table td span { display: block; color: var(--muted); margin-top: 3px; font-size: 12px; }
+.chart-details { margin: 10px 0; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.chart-details summary { cursor: pointer; padding: 13px 15px; font-weight: 800; color: var(--forest); }
+.chart-details > .chart-card, .chart-details > p, .chart-details > .subsector-chart-grid { margin-left: 12px; margin-right: 12px; }
+.subsector-chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding-bottom: 12px; }
+.subsector-chart-card { padding: 13px; }
+.subsector-chart-card .chart-card { border-color: #e5e9e1; background: #fcfdfb; }
+.chart-notes, .chart-missing { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; margin: 0; padding: 14px 18px 14px 32px; }
+.chart-notes li, .chart-missing li { margin: 6px 0; line-height: 1.45; }
 .source-name { color: var(--muted); font-weight: 700; }
 .mini-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 14px 0 0; }
 .mini-stats div { background: #f1f4ef; border-radius: 6px; padding: 9px; }
@@ -689,9 +942,10 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .methodology-grid p, .methodology-grid li { line-height: 1.55; }
 .coverage-table td:nth-child(2) { font-weight: 800; text-transform: capitalize; }
 @media (max-width: 900px) {
-  .summary-grid, .lead-grid, .evidence-grid, .methodology-grid { grid-template-columns: 1fr; }
+  .summary-grid, .lead-grid, .evidence-grid, .methodology-grid, .subsector-chart-grid { grid-template-columns: 1fr; }
   .masthead__inner, main { padding-left: 18px; padding-right: 18px; }
   .site-nav { padding-left: 18px; padding-right: 18px; }
   h1 { font-size: 34px; }
+  .line-chart { min-height: 190px; }
 }
 """

@@ -298,13 +298,16 @@ Additional OECD direct-API retest on 2026-05-24:
 
 ### Sprint 9: Historical chart layer and drilldown
 
+Status: implemented locally on 2026-05-24.
+
 Goal: put historical line charts back at the top of the static report before the next source-family expansion.
 
-- Add a first-view global chart layer using existing live and clearly labeled proxy series.
-- Provide drilldown into regional views and sector/subsector views.
-- Carry source, freshness, frequency, proxy/sample/missing status, and scoring inclusion metadata into chart panels.
-- Keep metrics and multiples honest: true multiples require reviewed public/licensed data; until then, show valuation proxies, sample-backed histories, or missing status.
-- Preserve static GitHub Pages deployment: generated HTML/JSON/assets only, no hosted Streamlit.
+- Added a first-view global chart layer using existing live and clearly labeled proxy series.
+- Added regional drilldowns for global, United States, Europe, China, and Norway/Oslo-linked context where live series exist.
+- Added sector/subsector drilldowns using current scoring proxy histories and deterministic sample-backed market-cycle histories.
+- Carried source, freshness, frequency, data class, proxy/sample/missing status, and scoring inclusion metadata into chart panels and report-state JSON.
+- Kept metrics and multiples honest: true multiples require reviewed public/licensed data; current subsector valuation histories are labeled as sample-backed valuation proxies or missing.
+- Preserved static GitHub Pages deployment: generated HTML/JSON/assets only, no hosted Streamlit.
 
 ### Sprint 10: Credit, liquidity, and financial conditions
 

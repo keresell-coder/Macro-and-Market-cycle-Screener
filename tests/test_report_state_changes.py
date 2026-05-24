@@ -32,6 +32,12 @@ def test_report_state_contains_public_safe_snapshot() -> None:
     assert state["source_status"]
     assert state["source_freshness"]
     assert state["source_health"]
+    assert state["chart_layer"]
+    assert state["chart_layer"]["version"] == "sprint9-historical-chart-layer"
+    assert state["chart_layer"]["views"][0]["view_id"] == "global"
+    assert state["chart_layer"]["views"][0]["series"]
+    assert any(view["view_id"] == "norway_oslo" for view in state["chart_layer"]["views"])
+    assert any(sector["subsectors"] for sector in state["chart_layer"]["sector_views"])
     assert "contradicting_evidence" in state
     assert state["research_facts"]
     assert state["methodology"]["scoring_version"]
@@ -46,7 +52,10 @@ def test_report_state_contains_public_safe_snapshot() -> None:
         for item in state["source_freshness"]
     )
     assert any(item["dimension"] == "Growth" and item["status"] == "partial" for item in state["framework_coverage"])
+    assert any(item["dimension"] == "Historical chart layer" and item["status"] == "partial" for item in state["framework_coverage"])
     assert any(item["indicator_slug"] == "g20_cli" and "OECD CLI" in item["indicator_name"] for item in state["source_freshness"])
+    global_series = state["chart_layer"]["views"][0]["series"][0]
+    assert {"source", "latest_observed_at", "frequency", "data_class", "proxy_status", "scoring_inclusion"}.issubset(global_series)
 
     first = state["subsectors"][0]
     assert {"slug", "rank", "opportunity_score", "signals", "market_cycle", "reviewed_public_fact_ids"}.issubset(first)
@@ -108,6 +117,11 @@ def test_build_static_site_writes_report_json(tmp_path) -> None:
 
     site_index = Path(result["site_index"])
     site_html = site_index.read_text(encoding="utf-8")
+    assert "Historical Charts" in site_html
+    assert "Global View And Drilldown" in site_html
+    assert "Regional Drilldown" in site_html
+    assert "Sector And Subsector Drilldown" in site_html
+    assert "sample-backed market-cycle proxy history" in site_html
     assert "Latest Radar" in site_html
     assert "Source Health" in site_html
     assert "Freshness And Fallbacks" in site_html

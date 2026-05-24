@@ -22,6 +22,8 @@ This is a research radar, not an investment recommendation engine. It ranks subs
 - Public source-health summaries covering numeric freshness, live numeric data, numeric sample fallback, research page failures, and research-evidence fallback.
 - Public report labels that distinguish annual GDP growth proxies, broad market/chart proxies, sample-backed market-cycle proxies, and missing dimensions instead of implying true PMI, inventory, or valuation-multiple data.
 - Monthly OECD Composite Leading Indicator growth proxies for G20, G7, United States, China, and major Europe, accessed through the public DB.nomics mirror because the direct OECD SDMX endpoint is blocked from this environment.
+- Historical chart layer at the top of the static report with a global view first, regional drilldowns, and sector/subsector drilldowns using existing live proxies and sample-backed market-cycle histories.
+- Chart metadata for source, vintage/freshness, frequency, data class, proxy/sample/missing status, and scoring inclusion.
 - Contradicting Evidence summary in the static report, generated from existing recovery, macro, momentum, valuation-proxy, confidence, and sample-backed market-cycle components.
 - Framework coverage metadata showing which macro-cycle dimensions are implemented, proxied, sample-backed, or missing.
 - Scoring methodology versioning shown in the static Methodology view.
@@ -29,7 +31,7 @@ This is a research radar, not an investment recommendation engine. It ranks subs
 - Static-site QA command that serves the generated site locally and runs browser/screenshot checks when Playwright is available.
 - Manual report folder for documents you are entitled to use.
 
-Next planned sprint: reintroduce historical line charts as the first analytical layer in the static report, with a global chart view first and drilldown into regional and sector/subsector views. The chart layer will use existing live/proxy/sample-backed histories and must label source, freshness, frequency, proxy/sample/missing status, and scoring inclusion.
+Next planned sprint: add keyless credit/liquidity and financial-conditions indicators, then show them in the historical chart layer before including them in scoring.
 
 ## Quick Start
 
@@ -125,7 +127,7 @@ GitHub Pages is enabled and the live static report is available at:
 https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/
 ```
 
-The latest verified live deployment reported schema `2026-05-24-sprint8`, live numeric mode, 22 live indicators, 0 numeric `sample_fallback` indicators, and one visible research-page failure for the UBS public insights page returning 403.
+The latest verified live deployment reported schema `2026-05-24-sprint8`, live numeric mode, 22 live indicators, 0 numeric `sample_fallback` indicators, and one visible research-page failure for the UBS public insights page returning 403. Sprint 9 updates the local report schema to `2026-05-24-sprint9`; the next live workflow dispatch should publish and verify that schema on Pages.
 
 Details are in `docs/github_pages_setup.md`.
 
@@ -152,6 +154,7 @@ Rows with unknown subsectors are dropped, confidence is clipped to 0-100%, and u
 - `src/cycle_screener/taxonomy.py` defines subsectors, drivers, proxies, and confidence levels.
 - `src/cycle_screener/sources.py` defines allowed data and research sources.
 - `src/cycle_screener/connectors.py` fetches public data and research-source status.
+- `src/cycle_screener/charts.py` builds public-safe historical chart-layer JSON from live observations and sample-backed subsector histories.
 - `src/cycle_screener/research.py` ingests structured public/manual research evidence as claim data.
 - `src/cycle_screener/publication.py` defines the public export allowlist and blocks known private paths.
 - `src/cycle_screener/report_state.py` builds public-safe report snapshots.

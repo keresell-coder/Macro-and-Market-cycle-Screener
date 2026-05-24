@@ -11,6 +11,8 @@ from urllib.request import urlopen
 
 
 REQUIRED_PAGE_TEXT = (
+    "Historical Charts",
+    "Global View And Drilldown",
     "Latest Radar",
     "Source Health",
     "Contradicting Evidence",

@@ -7,6 +7,7 @@ from typing import Any
 
 import pandas as pd
 
+from .charts import build_chart_layer
 from .config import EXPORT_DIR, get_settings
 from .indicators import indicator_by_slug, public_indicator_slug
 from .publication import is_public_export_path
@@ -32,7 +33,7 @@ MARKET_COLUMNS = (
     "driver_pressure",
 )
 
-REPORT_STATE_VERSION = "2026-05-24-sprint8"
+REPORT_STATE_VERSION = "2026-05-24-sprint9"
 SCORING_METHODOLOGY_VERSION = "score-v1-public-cycle-radar"
 
 
@@ -55,6 +56,7 @@ def build_report_state(store: RadarStore | None = None) -> dict[str, Any]:
 
     source_status_records = _latest_source_status(source_status)
     source_freshness = _source_freshness(observations, source_status_records)
+    chart_layer = build_chart_layer(observations, market_cycle, source_freshness)
 
     contradicting_evidence = _contradicting_evidence_summary(subsectors)
 
@@ -66,12 +68,13 @@ def build_report_state(store: RadarStore | None = None) -> dict[str, Any]:
             "scoring_version": SCORING_METHODOLOGY_VERSION,
             "report_state_version": REPORT_STATE_VERSION,
             "framework_reference": "docs/knowledge_base/global_macro_market_cycle_knowledge_base.md",
-            "framework_coverage": "Partial implementation of a broader macro and market-cycle framework. Current scoring covers public macro, rates, FX, commodity, OECD CLI growth proxies, market-proxy, source-health, and reviewed-public-research evidence. Annual World Bank GDP growth remains slow-moving background context, while monthly OECD CLI data is accessed through the public DB.nomics mirror because the direct OECD SDMX endpoint is not reliably reachable from this environment. The model does not yet include full credit, earnings-revisions, true valuation-multiple, positioning, or licensed subsector market data.",
+            "framework_coverage": "Partial implementation of a broader macro and market-cycle framework. Current scoring covers public macro, rates, FX, commodity, OECD CLI growth proxies, market-proxy, source-health, and reviewed-public-research evidence. The static report now adds a historical chart layer using existing live public series plus explicitly sample-backed subsector proxy histories. Annual World Bank GDP growth remains slow-moving background context, while monthly OECD CLI data is accessed through the public DB.nomics mirror because the direct OECD SDMX endpoint is not reliably reachable from this environment. The model does not yet include full credit, earnings-revisions, true valuation-multiple, positioning, or licensed subsector market data.",
             "implementation_boundary": "Opportunity scores are research triage signals, not cycle-state labels, return forecasts, or investment advice. Missing dimensions should be treated as explicit blind spots rather than neutral evidence.",
             "scoring": "Transparent subsector scoring from public/free indicators, explicitly labeled proxies, and visible sample fallbacks when present.",
             "research_policy": "Only reviewed public research facts are included in public report state. Unreviewed and manual evidence remain local.",
             "not_investment_advice": True,
         },
+        "chart_layer": chart_layer,
         "subsectors": subsectors,
         "contradicting_evidence": contradicting_evidence,
         "source_status": source_status_records,
@@ -272,7 +275,7 @@ def _framework_coverage() -> list[dict[str, str]]:
         {
             "dimension": "Growth",
             "status": "partial",
-            "current_coverage": "Monthly OECD CLI proxies for G20, G7, United States, China, and major Europe via DB.nomics mirror, plus World Bank annual real GDP growth proxies for global and China growth.",
+            "current_coverage": "Monthly OECD CLI proxies for G20, G7, United States, China, and major Europe via DB.nomics mirror, plus World Bank annual real GDP growth proxies for global and China growth. Histories are shown in the new static chart layer.",
             "main_gap": "No direct PMI, industrial-production, or new-orders feed yet; direct OECD SDMX API access is documented but currently blocked from this environment, so CLI data is mirrored through DB.nomics.",
         },
         {
@@ -302,7 +305,7 @@ def _framework_coverage() -> list[dict[str, str]]:
         {
             "dimension": "Valuation and risk premium",
             "status": "proxied",
-            "current_coverage": "Uses a public-data scoring proxy and deterministic sample-backed market-cycle valuation history.",
+            "current_coverage": "Uses a public-data scoring proxy and deterministic sample-backed market-cycle valuation history. Static charts label this as a valuation proxy, not a true multiple.",
             "main_gap": "No true Oslo subsector valuation multiples, constituent-level valuation data, or equity-risk-premium feed.",
         },
         {
@@ -314,8 +317,14 @@ def _framework_coverage() -> list[dict[str, str]]:
         {
             "dimension": "Subsector market cycle",
             "status": "sample_backed",
-            "current_coverage": "Deterministic price, relative-price, valuation, and driver-pressure histories.",
+            "current_coverage": "Deterministic price, relative-price, valuation-proxy, and driver-pressure histories are visible in static sector/subsector drilldown charts.",
             "main_gap": "Needs reviewed public or licensed Oslo subsector market data before being treated as real market history.",
+        },
+        {
+            "dimension": "Historical chart layer",
+            "status": "partial",
+            "current_coverage": "Static global, regional, and sector/subsector historical chart views using existing live public indicators and clearly labeled sample-backed subsector histories.",
+            "main_gap": "No new credit/liquidity family yet; no true subsector market histories or true valuation multiples until reviewed public or licensed data is connected.",
         },
         {
             "dimension": "Research evidence",
