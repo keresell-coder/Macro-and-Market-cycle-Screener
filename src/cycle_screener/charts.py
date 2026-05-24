@@ -10,6 +10,9 @@ from .taxonomy import SUBSECTORS, Subsector
 
 
 CHART_LAYER_VERSION = "sprint9-historical-chart-layer"
+CHART_MIN_YEARS = 10
+CHART_MAX_YEARS = 30
+CHART_MAX_MONTHS = CHART_MAX_YEARS * 12 + 1
 
 CHART_VIEW_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {
@@ -94,7 +97,12 @@ def build_chart_layer(
         "version": CHART_LAYER_VERSION,
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "summary": "Historical chart layer built from existing live public indicators and explicitly sample-backed subsector market-cycle histories.",
-        "normalization": "Most chart lines are indexed to 100 at the first available observation inside each series window. Near-zero or sign-changing series are range-normalized around 100 to avoid distorted chart scales. Raw values and units remain in metadata.",
+        "normalization": "Most chart lines are indexed to 100 at the first available observation inside each chart window. Near-zero or sign-changing series are range-normalized around 100 to avoid distorted chart scales. Chart x-axes target a common overlapping history, are capped at 30 years, and are not compressed below 10 years; series with shorter available history are flagged in metadata until longer source histories are fetched.",
+        "chart_window_policy": {
+            "minimum_years": CHART_MIN_YEARS,
+            "maximum_years": CHART_MAX_YEARS,
+            "alignment": "Use the shortest common overlap among series with at least 10 years of available history. If the common overlap is shorter, keep a 10-year x-axis and flag short-history series. Cap every chart window at 30 years.",
+        },
         "global_view_id": "global",
         "series_count": series_count,
         "views": views,
@@ -125,6 +133,7 @@ def _indicator_chart_view(
                     "message": "No observations are available in this snapshot.",
                 }
             )
+    chart_window = _apply_common_chart_window(series)
     return {
         "view_id": str(definition["view_id"]),
         "title": str(definition["title"]),
@@ -133,6 +142,7 @@ def _indicator_chart_view(
         "value_basis": "indexed_to_100",
         "series": series,
         "missing_series": missing,
+        "chart_window": chart_window,
     }
 
 
@@ -151,6 +161,7 @@ def _indicator_series(
     source_category = str(freshness.get("source_category") or "missing")
     scoring_subsectors = scoring_lookup.get(slug, [])
     latest_point = points[-1] if points else {}
+    first_point = points[0] if points else {}
 
     return {
         "series_id": public_indicator_slug(slug),
@@ -170,6 +181,8 @@ def _indicator_series(
         "scoring_note": _scoring_note(scoring_subsectors),
         "latest_value": latest_point.get("value"),
         "latest_indexed_value": latest_point.get("indexed_value"),
+        "first_observed_at": str(first_point.get("date", "")),
+        "available_years": _available_years(points),
         "points": points,
     }
 
@@ -247,6 +260,7 @@ def _market_cycle_view(subsector: Subsector, market_cycle: pd.DataFrame, columns
         frame = _market_frame(market_cycle, subsector.slug, column)
         points = _raw_points(frame) if raw else _indexed_points(frame)
         latest = points[-1] if points else {}
+        first = points[0] if points else {}
         series.append(
             {
                 "series_id": column,
@@ -266,9 +280,12 @@ def _market_cycle_view(subsector: Subsector, market_cycle: pd.DataFrame, columns
                 "scoring_note": "Not included in the opportunity score. Used as visible subsector context and contradiction evidence only.",
                 "latest_value": latest.get("value"),
                 "latest_indexed_value": latest.get("indexed_value") if not raw else None,
+                "first_observed_at": str(first.get("date", "")),
+                "available_years": _available_years(points),
                 "points": points,
             }
         )
+    chart_window = _apply_common_chart_window(series)
     return {
         "view_id": f"{subsector.slug}_{'driver_pressure' if raw else 'market_cycle'}",
         "title": f"{subsector.name}: {'driver pressure proxy' if raw else 'sample-backed market-cycle proxy history'}",
@@ -277,6 +294,7 @@ def _market_cycle_view(subsector: Subsector, market_cycle: pd.DataFrame, columns
         "value_basis": "raw_standardized" if raw else "indexed_to_100",
         "series": [item for item in series if item["points"]],
         "missing_series": [item for item in series if not item["points"]],
+        "chart_window": chart_window,
     }
 
 
@@ -286,7 +304,7 @@ def _series_frame(frame: pd.DataFrame, column: str, value: str) -> pd.DataFrame:
     result = frame[frame[column].astype(str) == value].copy()
     result["observed_at_sort"] = pd.to_datetime(result["observed_at"], errors="coerce")
     result["value"] = pd.to_numeric(result["value"], errors="coerce")
-    return result.dropna(subset=["observed_at_sort", "value"]).sort_values("observed_at_sort").tail(72)
+    return result.dropna(subset=["observed_at_sort", "value"]).sort_values("observed_at_sort").tail(CHART_MAX_MONTHS)
 
 
 def _market_frame(market_cycle: pd.DataFrame, subsector_slug: str, value_column: str) -> pd.DataFrame:
@@ -296,7 +314,96 @@ def _market_frame(market_cycle: pd.DataFrame, subsector_slug: str, value_column:
     frame = frame.rename(columns={value_column: "value"})
     frame["observed_at_sort"] = pd.to_datetime(frame["observed_at"], errors="coerce")
     frame["value"] = pd.to_numeric(frame["value"], errors="coerce")
-    return frame.dropna(subset=["observed_at_sort", "value"]).sort_values("observed_at_sort").tail(72)
+    return frame.dropna(subset=["observed_at_sort", "value"]).sort_values("observed_at_sort").tail(CHART_MAX_MONTHS)
+
+
+def _apply_common_chart_window(series: list[dict[str, Any]]) -> dict[str, Any]:
+    spans = []
+    for item in series:
+        dates = [_parse_point_date(point) for point in item.get("points", [])]
+        dates = [date for date in dates if date is not None]
+        if not dates:
+            continue
+        start = min(dates)
+        end = max(dates)
+        available_years = _year_span(start, end)
+        item["available_years"] = round(available_years, 2)
+        spans.append(
+            {
+                "series_id": str(item.get("series_id", "")),
+                "label": str(item.get("label", "")),
+                "start": start,
+                "end": end,
+                "available_years": available_years,
+            }
+        )
+
+    if not spans:
+        return {
+            "start": "",
+            "end": "",
+            "year_span": 0,
+            "minimum_years": CHART_MIN_YEARS,
+            "maximum_years": CHART_MAX_YEARS,
+            "minimum_years_satisfied": False,
+            "short_history_series": [],
+        }
+
+    eligible = [span for span in spans if span["available_years"] >= CHART_MIN_YEARS]
+    anchor_spans = eligible or spans
+    window_end = min(span["end"] for span in anchor_spans) if eligible else max(span["end"] for span in spans)
+    overlap_start = max(span["start"] for span in anchor_spans)
+    min_start = window_end - pd.DateOffset(years=CHART_MIN_YEARS)
+    max_start = window_end - pd.DateOffset(years=CHART_MAX_YEARS)
+    window_start = max(overlap_start, max_start)
+    if window_start > min_start:
+        window_start = min_start
+
+    for item in series:
+        item["points"] = [
+            point
+            for point in item.get("points", [])
+            if (parsed := _parse_point_date(point)) is not None and window_start <= parsed <= window_end
+        ]
+
+    short_history = [
+        {
+            "series_id": span["series_id"],
+            "label": span["label"],
+            "available_years": round(span["available_years"], 2),
+        }
+        for span in spans
+        if span["available_years"] < CHART_MIN_YEARS
+    ]
+    year_span = _year_span(window_start, window_end)
+    return {
+        "start": window_start.date().isoformat(),
+        "end": window_end.date().isoformat(),
+        "year_span": round(year_span, 2),
+        "minimum_years": CHART_MIN_YEARS,
+        "maximum_years": CHART_MAX_YEARS,
+        "minimum_years_satisfied": year_span >= CHART_MIN_YEARS,
+        "short_history_series": short_history,
+    }
+
+
+def _available_years(points: list[dict[str, Any]]) -> float:
+    dates = [_parse_point_date(point) for point in points]
+    dates = [date for date in dates if date is not None]
+    if not dates:
+        return 0.0
+    return round(_year_span(min(dates), max(dates)), 2)
+
+
+def _year_span(start: pd.Timestamp, end: pd.Timestamp) -> float:
+    return max(0.0, (end - start).days / 365.25)
+
+
+def _parse_point_date(point: dict[str, Any]) -> pd.Timestamp | None:
+    value = pd.to_datetime(point.get("date"), errors="coerce")
+    if pd.isna(value):
+        return None
+    return pd.Timestamp(value)
 
 
 def _indexed_points(frame: pd.DataFrame) -> list[dict[str, Any]]:

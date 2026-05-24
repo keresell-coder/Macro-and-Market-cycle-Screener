@@ -34,8 +34,12 @@ def test_report_state_contains_public_safe_snapshot() -> None:
     assert state["source_health"]
     assert state["chart_layer"]
     assert state["chart_layer"]["version"] == "sprint9-historical-chart-layer"
+    assert state["chart_layer"]["chart_window_policy"]["minimum_years"] == 10
+    assert state["chart_layer"]["chart_window_policy"]["maximum_years"] == 30
     assert state["chart_layer"]["views"][0]["view_id"] == "global"
     assert state["chart_layer"]["views"][0]["series"]
+    assert state["chart_layer"]["views"][0]["chart_window"]["year_span"] >= 10
+    assert state["chart_layer"]["views"][0]["chart_window"]["year_span"] <= 30
     assert any(view["view_id"] == "norway_oslo" for view in state["chart_layer"]["views"])
     assert any(sector["subsectors"] for sector in state["chart_layer"]["sector_views"])
     assert "contradicting_evidence" in state
@@ -119,6 +123,7 @@ def test_build_static_site_writes_report_json(tmp_path) -> None:
     site_html = site_index.read_text(encoding="utf-8")
     assert "Historical Charts" in site_html
     assert "Global View And Drilldown" in site_html
+    assert "Chart window:" in site_html
     assert "Regional Drilldown" in site_html
     assert "Sector And Subsector Drilldown" in site_html
     assert "sample-backed market-cycle proxy history" in site_html

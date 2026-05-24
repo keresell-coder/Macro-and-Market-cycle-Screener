@@ -56,7 +56,7 @@ Build a private-first research dashboard that identifies Oslo Bors-linked subsec
 
 - V1 can run either deterministic sample data or live public data.
 - The default live refresh does not require API keys and was verified without `FRED_API_KEY` or `EIA_API_KEY`.
-- `FRED_API_KEY` and `EIA_API_KEY` are optional future connector keys only; Codex does not have them.
+- `FRED_API_KEY` and `EIA_API_KEY` are configured locally in `.env` and as GitHub Actions repository secrets as of 2026-05-24. The project must never commit or publish the key values.
 - Keyless public data is preferred. The project must not bypass paywalls or scrape restricted data.
 - Scoring is explainable and transparent, using indicator percentiles, momentum, macro tailwind, valuation/proxy signal, recovery potential, and narrative divergence.
 - Sprint 1 research evidence tables are implemented:
@@ -196,6 +196,7 @@ Sprint 3 static report state and change engine is implemented locally:
   - chart metadata includes source, vintage/freshness, frequency, data class, proxy/sample/missing status, and scoring inclusion;
   - methodology, framework coverage, source-health display, static-site QA text, and tests were updated;
   - local live static verification shows schema `2026-05-24-sprint9`, `live_numeric`, 22 live indicators, 0 numeric `sample_fallback`, and 159 chart-layer series;
+  - chart x-axis policy is now defined in report-state metadata: target the shortest common overlap, cap charts at 30 years, and keep the displayed x-axis from compressing below 10 years; short-history series are flagged until Sprint 10 expands source fetch windows;
   - true subsector valuation multiples and licensed market histories remain missing unless reviewed public or licensed data is connected.
 - GitHub repository setup status:
   - local project is initialized as a git repository on branch `main`;
@@ -216,6 +217,10 @@ Sprint 3 static report state and change engine is implemented locally:
   - Sprint 8 OECD CLI mirror indicators present: `g20_cli`, `g7_cli`, `us_cli`, `china_cli`, and `europe_cli`, latest observed at 2026-04-30;
   - Growth framework coverage status: `partial`;
   - research page failures: 1, UBS public insights page returned 403 and remains a visible source failure.
+- Latest GitHub Actions secrets status on 2026-05-24:
+  - `FRED_API_KEY` and `EIA_API_KEY` were added as GitHub repository secrets by the user;
+  - a manual live workflow run after adding secrets completed green;
+  - the workflow still verified `live_numeric` with 0 numeric `sample_fallback`.
 
 ## Verification Commands
 
@@ -234,7 +239,8 @@ HOME="$PWD/.streamlit_home" STREAMLIT_BROWSER_GATHER_USAGE_STATS=false .venv/bin
 ## Next Likely Improvements
 
 - Monitor the next scheduled Saturday 07:15 UTC live workflow run.
-- Add keyless credit/liquidity sources now that the chart layer is in place, so new signals have a visible historical context immediately.
+- Add FRED/EIA-backed or keyless credit/liquidity sources now that the chart layer is in place, so new signals have a visible historical context immediately.
+- Expand chart-source histories during Sprint 10 so each chart view can use the 10-30 year x-axis policy with real long histories, not only forced 10-year axes around shorter current fetch windows.
 - Continue the sprint sequence in `docs/open_data_expansion_plan.md`: credit/liquidity indicators, valuation/market internals reality check, reviewed research evidence, and archive/monitoring maturity.
 - Add source-specific confidence detail beyond the first research facts table.
 - Add a private notes layer that is explicitly excluded from public/static exports.

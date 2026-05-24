@@ -24,6 +24,7 @@ This is a research radar, not an investment recommendation engine. It ranks subs
 - Monthly OECD Composite Leading Indicator growth proxies for G20, G7, United States, China, and major Europe, accessed through the public DB.nomics mirror because the direct OECD SDMX endpoint is blocked from this environment.
 - Historical chart layer at the top of the static report with a global view first, regional drilldowns, and sector/subsector drilldowns using existing live proxies and sample-backed market-cycle histories.
 - Chart metadata for source, vintage/freshness, frequency, data class, proxy/sample/missing status, and scoring inclusion.
+- Chart x-axis policy targeting the shortest common range, capped at 30 years, with a minimum displayed range of 10 years where short-history series are flagged.
 - Contradicting Evidence summary in the static report, generated from existing recovery, macro, momentum, valuation-proxy, confidence, and sample-backed market-cycle components.
 - Framework coverage metadata showing which macro-cycle dimensions are implemented, proxied, sample-backed, or missing.
 - Scoring methodology versioning shown in the static Methodology view.
@@ -31,7 +32,7 @@ This is a research radar, not an investment recommendation engine. It ranks subs
 - Static-site QA command that serves the generated site locally and runs browser/screenshot checks when Playwright is available.
 - Manual report folder for documents you are entitled to use.
 
-Next planned sprint: add keyless credit/liquidity and financial-conditions indicators, then show them in the historical chart layer before including them in scoring.
+Next planned sprint: add FRED/EIA-backed or keyless credit/liquidity and financial-conditions indicators, expand chart histories toward the 10-30 year x-axis policy, then show new series in the historical chart layer before including them in scoring.
 
 ## Quick Start
 
@@ -134,7 +135,7 @@ GitHub Pages is enabled and the live static report is available at:
 https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/
 ```
 
-The latest verified live deployment reported schema `2026-05-24-sprint9`, live numeric mode, 22 live indicators, 0 numeric `sample_fallback` indicators, chart layer version `sprint9-historical-chart-layer`, 159 chart-layer series, and one visible research-page failure for the UBS public insights page returning 403.
+The latest verified live deployment reported schema `2026-05-24-sprint9`, live numeric mode, 22 live indicators, 0 numeric `sample_fallback` indicators, chart layer version `sprint9-historical-chart-layer`, 159 chart-layer series, and one visible research-page failure for the UBS public insights page returning 403. GitHub Actions repository secrets for `FRED_API_KEY` and `EIA_API_KEY` are configured, and a manual live workflow run completed green after they were added.
 
 Details are in `docs/github_pages_setup.md`.
 

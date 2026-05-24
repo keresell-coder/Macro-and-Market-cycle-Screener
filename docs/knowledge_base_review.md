@@ -61,18 +61,21 @@ The current implementation does not yet cover the full framework. The main gaps 
 Recommended next implementation work, in order:
 
 1. Add keyless credit/liquidity sources where feasible.
-   - Sprint 9 added the historical chart layer first: a global view, regional drilldowns, and sector/subsector drilldowns using existing live and sample-backed histories. The next blind spot is credit/liquidity, and new series should appear in the chart layer before they are added to scoring.
+   - Sprint 9 added the historical chart layer first: a global view, regional drilldowns, and sector/subsector drilldowns using existing live and sample-backed histories. The next blind spot is credit/liquidity, and new series should appear in the chart layer before they are added to scoring. FRED and EIA keys are now configured locally and in GitHub Actions secrets, so configured-key public connectors can be used where appropriate.
 
 2. Add a dedicated liquidity/credit signal group.
    - Once at least one robust live credit/liquidity source is connected and tested, the dashboard should identify whether liquidity/credit signals confirm or contradict growth, macro, and market signals.
 
-3. Keep improving the cycle-dimension coverage matrix.
+3. Expand and align chart histories.
+   - Chart x-axes should target the shortest common overlap, cap at 30 years, and avoid compressing below 10 years. Sprint 10 should expand fetch windows where sources allow it and flag any short-history series that cannot meet the policy.
+
+4. Keep improving the cycle-dimension coverage matrix.
    - Public report state already marks covered, proxied, missing, sample-backed, limited, or blocked dimensions. Future source additions should update coverage only after live data is connected and tested.
 
-4. Add reviewed public/manual research evidence.
+5. Add reviewed public/manual research evidence.
    - Create reviewed CSV rows for priority subsectors. Public facts should cite public sources and remain separate from numeric scoring unless an explicit evidence-confidence model is added.
 
-5. Improve market-cycle and valuation data.
+6. Improve market-cycle and valuation data.
    - True Oslo subsector price, relative strength, constituent, and valuation data is important but needs either reviewed public data or licensed feeds. This is a major quality upgrade but must respect publication and licensing rules.
 
 ## What Can Be Implemented With Current Constraints
@@ -125,4 +128,4 @@ The biggest risk remains semantic overreach, but Sprint 7 reduced it. Annual GDP
 - Sprint 7 public report state now includes display slugs for renamed proxies and a `contradicting_evidence` summary generated from existing score components.
 - Static reports now include a "Contradicting Evidence" section and avoid presenting annual World Bank GDP growth as PMI data.
 - Sprint 8 public report state now includes monthly OECD CLI mirror indicators for G20, G7, United States, China, and major Europe, and Growth coverage is marked `partial`.
-- Sprint 9 public report state now includes a historical chart layer with global, regional, and sector/subsector views; chart metadata includes source, freshness, frequency, data class, proxy/sample/missing status, and scoring inclusion.
+- Sprint 9 public report state now includes a historical chart layer with global, regional, and sector/subsector views; chart metadata includes source, freshness, frequency, data class, proxy/sample/missing status, scoring inclusion, and chart-window policy metadata for 10-30 year aligned x-axes.

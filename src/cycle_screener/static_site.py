@@ -370,14 +370,35 @@ def _render_chart_view(view: dict[str, Any], featured: bool = False, compact: bo
     return (
         f"<article class=\"{css_class}\">"
         f"<div class=\"chart-card__heading\"><h4>{title}</h4><p>{description}</p></div>"
-        f"{_render_line_chart(series, title)}"
+        f"{_render_chart_window_note(dict(view.get('chart_window', {})))}"
+        f"{_render_line_chart(series, title, dict(view.get('chart_window', {})))}"
         f"{_render_chart_metadata(series, compact=compact)}"
         f"{missing_block}"
         "</article>"
     )
 
 
-def _render_line_chart(series: list[dict[str, Any]], title: str) -> str:
+def _render_chart_window_note(chart_window: dict[str, Any]) -> str:
+    if not chart_window or not chart_window.get("start") or not chart_window.get("end"):
+        return ""
+    short = list(chart_window.get("short_history_series", []))
+    short_note = ""
+    if short:
+        labels = ", ".join(str(item.get("label") or item.get("series_id", "")) for item in short[:4])
+        remaining = len(short) - 4
+        if remaining > 0:
+            labels = f"{labels}, and {remaining} more"
+        short_note = f" Short-history series flagged: {labels}."
+    return (
+        '<p class="chart-window-note">'
+        f"Chart window: {escape(str(chart_window.get('start')))} to {escape(str(chart_window.get('end')))} "
+        f"({escape(_fmt(chart_window.get('year_span'), 1))} years; policy {int(_num(chart_window.get('minimum_years')))}-{int(_num(chart_window.get('maximum_years')))} years)."
+        f"{escape(short_note)}"
+        "</p>"
+    )
+
+
+def _render_line_chart(series: list[dict[str, Any]], title: str, chart_window: dict[str, Any] | None = None) -> str:
     plottable = [item for item in series if item.get("points")]
     if not plottable:
         return '<p class="empty-state">No chartable points are available for this view.</p>'
@@ -402,8 +423,10 @@ def _render_line_chart(series: list[dict[str, Any]], title: str) -> str:
     if not date_values or not y_values:
         return '<p class="empty-state">No chartable points are available for this view.</p>'
 
-    min_date = min(date_values)
-    max_date = max(date_values)
+    window_start = _parse_date((chart_window or {}).get("start"))
+    window_end = _parse_date((chart_window or {}).get("end"))
+    min_date = window_start or min(date_values)
+    max_date = window_end or max(date_values)
     min_y = min(y_values)
     max_y = max(y_values)
     if abs(max_y - min_y) < 1e-9:
@@ -904,6 +927,7 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .chart-card--compact { padding: 12px; }
 .chart-card__heading h4 { margin: 0 0 5px; }
 .chart-card__heading p { margin: 0 0 10px; color: #35423b; line-height: 1.45; }
+.chart-window-note { margin: 0 0 10px; color: var(--muted); font-size: 13px; line-height: 1.45; }
 .svg-chart-wrap { border: 1px solid #e1e6dd; border-radius: 8px; background: #fbfcfa; padding: 8px; }
 .line-chart { display: block; width: 100%; height: auto; min-height: 220px; }
 .chart-bg { fill: #fbfcfa; }

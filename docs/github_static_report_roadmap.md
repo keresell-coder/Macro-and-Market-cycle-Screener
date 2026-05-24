@@ -306,6 +306,7 @@ Goal: put historical line charts back at the top of the static report before the
 - Added regional drilldowns for global, United States, Europe, China, and Norway/Oslo-linked context where live series exist.
 - Added sector/subsector drilldowns using current scoring proxy histories and deterministic sample-backed market-cycle histories.
 - Carried source, freshness, frequency, data class, proxy/sample/missing status, and scoring inclusion metadata into chart panels and report-state JSON.
+- Added chart-window policy metadata: x-axes target the shortest common overlap, are capped at 30 years, and keep a minimum displayed range of 10 years while flagging short-history series.
 - Kept metrics and multiples honest: true multiples require reviewed public/licensed data; current subsector valuation histories are labeled as sample-backed valuation proxies or missing.
 - Preserved static GitHub Pages deployment: generated HTML/JSON/assets only, no hosted Streamlit.
 
@@ -313,8 +314,9 @@ Goal: put historical line charts back at the top of the static report before the
 
 Goal: add the biggest missing macro-cycle dimension.
 
-- Add keyless credit/liquidity sources where terms and endpoint reliability are acceptable.
+- Add keyless or configured-key credit/liquidity sources where terms and endpoint reliability are acceptable.
 - Candidate first sources include Chicago Fed NFCI through FRED public CSV, selected public credit-spread proxies, and BIS credit/property series after connector testing.
+- Use configured GitHub Actions secrets for FRED/EIA only through environment variables and expand charted series histories toward 30 years where endpoints support it.
 - Add a dedicated liquidity/credit signal group and update framework coverage only after live data is connected and tested.
 
 ### Sprint 11: Valuation and market internals reality check
