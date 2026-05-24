@@ -32,10 +32,13 @@ These sources have official pages or documentation indicating programmatic or do
 | Source | Candidate use | Access model | Fit | Notes |
 |---|---|---:|---|---|
 | OECD Composite Leading Indicators | Growth / turning-point signals | OECD SDMX API / Data Explorer; DB.nomics mirror fallback | High | OECD describes CLIs as early qualitative turning-point signals. Direct OECD SDMX requests currently return a Cloudflare challenge from this environment, so Sprint 8 uses the public DB.nomics mirror of OECD data and labels that boundary. |
+| DB.nomics | Cross-provider macro time-series access and mirrors | Public web API | High as fallback/mirror | Useful when an official source is open but hard to automate reliably. Label as a mirror/aggregator, not the primary institution. Already used for OECD CLI mirror data. |
 | BIS Data Portal | Credit, property prices, debt, global liquidity | BIS SDMX API and bulk downloads | High | Best open candidate for financial-cycle dimensions such as credit to non-financial sector and property prices. |
 | ECB Data Portal | Euro-area rates, monetary aggregates, credit, financial data | ECB SDMX REST API | Medium/high | Strong for Europe-facing policy/liquidity context. SDMX keys can be complex, so start with a small curated set. |
+| Eurostat | EU and regional macro detail | Eurostat API and bulk downloads | Medium/high | Good candidate for European inflation, production, labor, trade, and regional context. Use curated series only because dimensions can be dense. |
 | FRED public CSV | US rates, financial conditions, credit proxies, inflation expectations | Public graph CSV endpoint where available | Medium/high | Existing project has FRED parser utilities. Use only stable/public series and mark as US/global proxies. |
 | Chicago Fed NFCI | US financial conditions | Available via FRED and Chicago Fed | High | Useful liquidity/financial-conditions input. Positive values mean tighter-than-average conditions; negative values mean looser-than-average conditions. |
+| IMF Data APIs | Global macro, external, fiscal, and financial datasets | SDMX 2.1/3.0 APIs | Medium, needs endpoint testing | Official IMF docs describe SDMX APIs, but the current Swagger explorer requires a beta portal sign-in. Treat as a candidate only after accountless endpoint tests pass. |
 | World Bank | Annual macro and commodity data | Public API/downloads | Already used | Good for robust low-frequency data, but not a substitute for timely PMI/CLI. |
 | Norges Bank | Norway rates and FX | Public CSV API | Already used | Strong Oslo/NOK relevance. |
 | Statistics Norway | Norway CPI and macro data | Public API | Already used | Strong Norway relevance. |
@@ -44,10 +47,14 @@ Official references:
 
 - OECD API overview: https://www.oecd.org/en/data/insights/data-explainers/2024/09/api.html
 - OECD Composite Leading Indicators: https://www.oecd.org/en/data/datasets/oecd-composite-leading-indicators-clis.html
+- DB.nomics documentation: https://docs.db.nomics.world/
 - BIS Data Portal: https://data.bis.org/
 - BIS bulk downloads: https://data.bis.org/bulkdownload
 - ECB SDMX web services: https://data.ecb.europa.eu/help/getting-data-web-services-sdmx-0
 - ECB API data help: https://data.ecb.europa.eu/help/api/data
+- Eurostat API guidelines: https://ec.europa.eu/eurostat/web/user-guides/data-browser/api-data-access/api-detailed-guidelines/api-statistics
+- IMF Data APIs: https://data.imf.org/en/Resource-Pages/IMF-API
+- World Bank Indicators API documentation: https://datahelpdesk.worldbank.org/knowledgebase/articles/889392
 - Chicago Fed NFCI on FRED: https://fred.stlouisfed.org/series/NFCI
 
 ## Important Implementation Rules
@@ -86,7 +93,32 @@ Goal: replace low-frequency growth proxies where open data is available.
 - Added tests for parsing and report-state coverage; the existing source-status, freshness, and strict live fallback guard cover the new indicators.
 - Acceptance: report-state growth coverage moves from "proxied" toward "partial" or "covered" for leading growth signals.
 
-### Sprint 9: Credit, Liquidity, And Financial Conditions
+Additional OECD direct-API retest on 2026-05-24:
+
+- Reviewed the official OECD API page, which documents free SDMX API access and shows a Python/CSV example for OECD CLI data.
+- Tested the documented CLI CSV endpoint and the documented dataflow endpoint locally and in the browser.
+- Result: `sdmx.oecd.org` returned an HTTP 403 Cloudflare verification page from this environment. The browser view also showed an automated security verification screen.
+- Decision: do not bypass the block. Keep direct OECD CLI access marked as `public_blocked`; continue using the public DB.nomics mirror for automated live refresh unless OECD provides a non-blocked automation route.
+- Manual action needed: none for the current radar, because the DB.nomics mirror already works. Manual OECD follow-up is only needed if direct OECD-hosted access becomes a requirement.
+
+### Sprint 9: Historical Chart Layer And Drilldown
+
+Goal: reintroduce historical line charts as the first analytical layer in the static report, before adding more source families.
+
+- Add a top-of-report chart section so the first charts a reader sees are historical indicator lines, not only current scores.
+- Start with a global view using existing live series and clearly labeled proxies:
+  - growth/turning point: OECD CLI mirror indicators and annual World Bank GDP growth proxy;
+  - inflation/commodity pressure: CPI, oil, gas, and selected commodity indicators;
+  - rates/FX/market pricing: policy-rate, NOK FX, yield, and broad market-chart proxies where already available.
+- Add drilldown structure for:
+  - regional views such as global, United States, Europe, China, and Norway/Oslo-linked context where live data exists;
+  - sector/subsector views using existing subsector proxy histories until reviewed public/licensed market data is connected.
+- Add chart metadata that shows source, vintage/freshness, frequency, data class, proxy/sample/missing status, and whether a series is included in scoring.
+- Treat "metrics and multiples" conservatively: display real multiples only after reviewed public/licensed data is connected. Until then, label them as valuation proxies, sample-backed, or missing.
+- Update static-site navigation so chart exploration is prominent but still static GitHub Pages HTML/JSON/assets generated by GitHub Actions.
+- Acceptance: the report opens with useful global historic line charts, supports regional and sector/subsector drilldown, and never implies true PMI, true subsector multiples, or true licensed market data when only proxies or sample histories are present.
+
+### Sprint 10: Credit, Liquidity, And Financial Conditions
 
 Goal: add the most important missing framework dimension.
 
@@ -97,9 +129,9 @@ Goal: add the most important missing framework dimension.
   - BIS credit-to-non-financial-sector or property-price series via BIS bulk/API after connector testing.
 - Add a dedicated liquidity/credit signal group.
 - Update framework coverage from "missing" only after live data is connected and tested.
-- Acceptance: the dashboard can identify whether liquidity/credit signals confirm or contradict macro and market signals.
+- Acceptance: the dashboard can identify whether liquidity/credit signals confirm or contradict macro and market signals and can show those signals in the historical chart layer.
 
-### Sprint 10: Valuation And Market Internals Reality Check
+### Sprint 11: Valuation And Market Internals Reality Check
 
 Goal: improve market-pricing context without pretending to have institutional data.
 
@@ -108,7 +140,7 @@ Goal: improve market-pricing context without pretending to have institutional da
 - Keep true Oslo subsector valuation multiples out of scoring unless reviewed public/licensed data is available.
 - Acceptance: valuation and market internals remain clearly labeled as broad proxies unless true subsector data is available.
 
-### Sprint 11: Reviewed Research Evidence
+### Sprint 12: Reviewed Research Evidence
 
 Goal: reduce reliance on sample research evidence.
 
@@ -118,7 +150,7 @@ Goal: reduce reliance on sample research evidence.
 - Keep unreviewed/manual/licensed/private evidence local.
 - Acceptance: static reports show fewer sample research facts and more reviewed public evidence with source URLs and dates.
 
-### Sprint 12: Archive, Monitoring, And Deployment Maturity
+### Sprint 13: Archive, Monitoring, And Deployment Maturity
 
 Goal: make the weekly process robust as history accumulates.
 
@@ -145,4 +177,4 @@ These can be handled only through reviewed manual inputs, licensed data that the
 
 ## Current Priority
 
-The next implementation sprint should start with Sprint 9: Credit, Liquidity, And Financial Conditions. Sprint 8 improved growth coverage from proxied to partial using monthly OECD CLI mirror data while preserving the annual World Bank growth proxy as background context.
+The next implementation sprint should start with Sprint 9: Historical Chart Layer And Drilldown. This should happen before new credit/liquidity work so future source families have a clear top-level global chart view and regional/sector drilldown structure. Sprint 8 improved growth coverage from proxied to partial using monthly OECD CLI mirror data while preserving the annual World Bank growth proxy as background context.

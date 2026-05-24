@@ -60,19 +60,22 @@ The current implementation does not yet cover the full framework. The main gaps 
 
 Recommended next implementation work, in order:
 
-1. Add keyless credit/liquidity sources where feasible.
-   - Sprint 8 added monthly OECD CLI proxies and moved growth coverage from proxied to partial. The next major blind spot is credit/liquidity: FRED public CSV can likely support selected US rates/credit/financial-condition series such as NFCI or credit-spread proxies without an API key. This should be tested source by source and marked clearly as US/global proxy data.
+1. Reintroduce historical line charts as the first analytical layer.
+   - Sprint 8 added monthly OECD CLI proxies and moved growth coverage from proxied to partial. Before adding more source families, the static report should surface history first: one global view, then regional and sector/subsector drilldowns. This makes later credit, liquidity, valuation, and market-internals work easier to inspect and keeps the report from becoming only a score table.
 
-2. Add a dedicated liquidity/credit signal group.
+2. Add keyless credit/liquidity sources where feasible.
+   - After the chart layer exists, the next major blind spot is credit/liquidity. FRED public CSV can likely support selected US rates/credit/financial-condition series such as NFCI or credit-spread proxies without an API key. This should be tested source by source and marked clearly as US/global proxy data.
+
+3. Add a dedicated liquidity/credit signal group.
    - Once at least one robust live credit/liquidity source is connected and tested, the dashboard should identify whether liquidity/credit signals confirm or contradict growth, macro, and market signals.
 
-3. Keep improving the cycle-dimension coverage matrix.
+4. Keep improving the cycle-dimension coverage matrix.
    - Public report state already marks covered, proxied, missing, sample-backed, limited, or blocked dimensions. Future source additions should update coverage only after live data is connected and tested.
 
-4. Add reviewed public/manual research evidence.
+5. Add reviewed public/manual research evidence.
    - Create reviewed CSV rows for priority subsectors. Public facts should cite public sources and remain separate from numeric scoring unless an explicit evidence-confidence model is added.
 
-5. Improve market-cycle and valuation data.
+6. Improve market-cycle and valuation data.
    - True Oslo subsector price, relative strength, constituent, and valuation data is important but needs either reviewed public data or licensed feeds. This is a major quality upgrade but must respect publication and licensing rules.
 
 ## What Can Be Implemented With Current Constraints
@@ -81,6 +84,7 @@ Feasible without paid data or credentials:
 
 - Better naming and labeling of existing proxies. Implemented in Sprint 7 for annual GDP growth, oil-price, heating-oil, broad market-chart, and valuation-proxy labels.
 - OECD CLI ingestion via a public mirror. Implemented in Sprint 8 through DB.nomics because direct OECD SDMX access is documented but blocked from this environment.
+- Static historical line-chart views using existing live/proxy/sample-backed histories, provided chart panels clearly show source, vintage, proxy/sample/missing status, and scoring inclusion.
 - FRED public CSV ingestion for selected free public macro/credit/rates series, where terms and endpoint reliability are acceptable.
 - More transparent methodology and coverage metadata in report state.
 - Contradicting-evidence summaries from existing signal components. Implemented in Sprint 7 static reports.

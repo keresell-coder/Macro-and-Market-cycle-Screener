@@ -290,7 +290,23 @@ Goal: add robust keyless leading-growth signals.
 - Added parser and report-state tests; the existing source-status, freshness, and strict live fallback guard cover the new indicators.
 - Local live verification shows 22 live numeric indicators with 0 numeric `sample_fallback` rows.
 
-### Sprint 9: Credit, liquidity, and financial conditions
+Additional OECD direct-API retest on 2026-05-24:
+
+- The official OECD API page documents free SDMX API use and shows an OECD CLI CSV request pattern.
+- Retesting the documented CLI endpoint and dataflow endpoint returned HTTP 403/security verification from this environment, including browser automation.
+- The project should not bypass that protection. Direct OECD remains blocked for automation; the DB.nomics mirror remains the live implementation path unless OECD provides a non-blocked automation route.
+
+### Sprint 9: Historical chart layer and drilldown
+
+Goal: put historical line charts back at the top of the static report before the next source-family expansion.
+
+- Add a first-view global chart layer using existing live and clearly labeled proxy series.
+- Provide drilldown into regional views and sector/subsector views.
+- Carry source, freshness, frequency, proxy/sample/missing status, and scoring inclusion metadata into chart panels.
+- Keep metrics and multiples honest: true multiples require reviewed public/licensed data; until then, show valuation proxies, sample-backed histories, or missing status.
+- Preserve static GitHub Pages deployment: generated HTML/JSON/assets only, no hosted Streamlit.
+
+### Sprint 10: Credit, liquidity, and financial conditions
 
 Goal: add the biggest missing macro-cycle dimension.
 
@@ -298,7 +314,7 @@ Goal: add the biggest missing macro-cycle dimension.
 - Candidate first sources include Chicago Fed NFCI through FRED public CSV, selected public credit-spread proxies, and BIS credit/property series after connector testing.
 - Add a dedicated liquidity/credit signal group and update framework coverage only after live data is connected and tested.
 
-### Sprint 10: Valuation and market internals reality check
+### Sprint 11: Valuation and market internals reality check
 
 Goal: improve market-pricing context without pretending to have institutional data.
 
@@ -306,7 +322,7 @@ Goal: improve market-pricing context without pretending to have institutional da
 - Add only robust public proxies at first.
 - Keep true Oslo subsector valuation multiples out of scoring unless reviewed public/licensed data is available.
 
-### Sprint 11: Reviewed research evidence
+### Sprint 12: Reviewed research evidence
 
 Goal: reduce reliance on sample research evidence.
 
@@ -314,7 +330,7 @@ Goal: reduce reliance on sample research evidence.
 - Add source-specific confidence details beyond the current health summary.
 - Keep private notes and any manual/licensed source material out of public exports.
 
-### Sprint 12: Archive, monitoring, and deployment maturity
+### Sprint 13: Archive, monitoring, and deployment maturity
 
 Goal: harden the recurring weekly operating process.
 

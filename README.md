@@ -29,6 +29,8 @@ This is a research radar, not an investment recommendation engine. It ranks subs
 - Static-site QA command that serves the generated site locally and runs browser/screenshot checks when Playwright is available.
 - Manual report folder for documents you are entitled to use.
 
+Next planned sprint: reintroduce historical line charts as the first analytical layer in the static report, with a global chart view first and drilldown into regional and sector/subsector views. The chart layer will use existing live/proxy/sample-backed histories and must label source, freshness, frequency, proxy/sample/missing status, and scoring inclusion.
+
 ## Quick Start
 
 ```bash

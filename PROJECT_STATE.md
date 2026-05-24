@@ -96,7 +96,7 @@ Important live-data caveats:
 - Yahoo chart data is used only for broad market proxies where no official keyless endpoint is currently wired: NASDAQ, heating oil, and US 10-year yield proxy.
 - World Bank growth proxies are annual and therefore naturally less fresh than monthly/daily market and macro series.
 - The legacy internal `global_pmi` slug is retained for compatibility, but public report state displays it as `global_growth_proxy` with label "Global annual GDP growth proxy"; it is not PMI or OECD CLI data.
-- The official OECD SDMX API is documented and keyless, but direct local requests currently return a Cloudflare challenge. The Sprint 8 implementation does not bypass that block; it uses the public DB.nomics mirror of OECD `DSD_STES@DF_CLI` and labels it accordingly.
+- The official OECD SDMX API is documented and keyless, but direct local requests currently return a Cloudflare challenge. A 2026-05-24 retest of the official OECD CLI CSV example and dataflow endpoint returned HTTP 403/security verification in local and browser automation. The Sprint 8 implementation does not bypass that block; it uses the public DB.nomics mirror of OECD `DSD_STES@DF_CLI` and labels it accordingly.
 - Numeric scoring uses live indicators after a live refresh, but subsector market-cycle charts still use deterministic proxy histories.
 
 ## GitHub/Public Boundary Status
@@ -219,8 +219,9 @@ HOME="$PWD/.streamlit_home" STREAMLIT_BROWSER_GATHER_USAGE_STATS=false .venv/bin
 ## Next Likely Improvements
 
 - Monitor the next scheduled Saturday 07:15 UTC live workflow run.
-- Add keyless credit/liquidity sources where terms and endpoint reliability are acceptable, such as selected FRED public CSV series.
-- Continue the sprint sequence in `docs/open_data_expansion_plan.md`: credit/liquidity indicators, valuation/market internals reality check, reviewed research evidence, and archive/monitoring maturity.
+- Reintroduce historical line charts as the first analytical layer in the static report: one global view first, then regional and sector/subsector drilldown.
+- Add keyless credit/liquidity sources after the chart layer is in place, so new signals have a visible historical context immediately.
+- Continue the sprint sequence in `docs/open_data_expansion_plan.md`: historical chart layer, credit/liquidity indicators, valuation/market internals reality check, reviewed research evidence, and archive/monitoring maturity.
 - Add source-specific confidence detail beyond the first research facts table.
 - Add a private notes layer that is explicitly excluded from public/static exports.
 - Replace deterministic market-cycle proxy history with reviewed public/licensed subsector price, constituent, and valuation data.
@@ -248,7 +249,7 @@ On 2026-05-23, GitHub Pages and GitHub Actions were evaluated as a feasible targ
 - Change tracking should include rank deltas, score deltas, signal deltas, source-status changes, and later research-fact changes.
 - Static Pages must not contain private notes, credentials, manual reports, raw licensed data, or paywalled content.
 - GitHub Pages cannot run Python server-side, so all Python work must occur during the Actions build step.
-- Roadmap update: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, Sprint 7, Sprint 8, and the keyless live-data connector upgrade have been implemented locally. GitHub Pages is live. The next roadmap step is Sprint 9 in `docs/open_data_expansion_plan.md`.
+- Roadmap update: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, Sprint 7, Sprint 8, and the keyless live-data connector upgrade have been implemented locally. GitHub Pages is live. The next roadmap step is Sprint 9 in `docs/open_data_expansion_plan.md`: Historical Chart Layer And Drilldown.
 
 ## Continuation Prompt
 

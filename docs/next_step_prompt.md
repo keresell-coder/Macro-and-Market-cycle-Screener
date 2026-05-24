@@ -32,6 +32,7 @@ Current implementation:
 - Public-safe report-state JSON includes `source_freshness`, `source_health`, `framework_coverage`, scoring version, radar state, source statuses, market-cycle summaries, `contradicting_evidence`, and reviewed public facts.
 - Sprint 7 proxy-label cleanup is implemented: the legacy internal `global_pmi` slug is publicly displayed as `global_growth_proxy` / "Global annual GDP growth proxy"; it is annual World Bank GDP growth, not PMI or OECD CLI data.
 - Sprint 8 open growth indicators are implemented locally: monthly OECD CLI proxies for G20, G7, United States, China, and major Europe are loaded from the public DB.nomics mirror. Direct OECD SDMX access is documented/keyless but currently returns a Cloudflare challenge from this environment, so it is marked blocked and not bypassed.
+- The OECD API page was retested on 2026-05-24. The documented OECD CLI CSV endpoint and dataflow endpoint still returned HTTP 403/security verification from this environment, including browser automation. Do not bypass it; no manual action is needed unless direct OECD-hosted automation becomes a hard requirement.
 - GitHub Actions workflow runs weekly Saturday 07:15 UTC. Scheduled runs default to live keyless public data and fail if numeric `sample_fallback` is used. Manual sample mode remains available.
 - GitHub repository: `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener`.
 - Live Pages URL: `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`.
@@ -51,20 +52,24 @@ Important constraints:
 - Keep unreviewed research claims separate from numeric scoring unless explicit confidence rules are implemented.
 
 Requested next task:
-Implement Sprint 9 from `docs/open_data_expansion_plan.md`: Credit, Liquidity, And Financial Conditions.
+Implement Sprint 9 from `docs/open_data_expansion_plan.md`: Historical Chart Layer And Drilldown.
 
 Scope:
-1. Add one or two robust keyless credit/liquidity series first, not a broad fragile catalog.
-2. Candidate first series: Chicago Fed NFCI through FRED public CSV; optionally one public spread or stress proxy if stable.
-3. Add a dedicated liquidity/credit signal group only after at least one live source is connected and tested.
-4. Every new connector/indicator must produce source-status rows, freshness metadata, clear failure messages, and tests.
-5. Update `framework_coverage`, methodology, source-health display, and docs only after live data is connected and verified.
-6. Run local tests and static-site QA.
-7. Commit and push changes to GitHub.
-8. Manually dispatch the live GitHub Actions workflow and verify the public Pages report still shows `live_numeric` with 0 numeric `sample_fallback`.
+1. Reintroduce historical line charts as the first analytical layer at the top of the static report.
+2. Add one global chart view first, using existing live and clearly labeled proxy series.
+3. Add drilldown structure for regional views such as global, United States, Europe, China, and Norway/Oslo-linked context where live data exists.
+4. Add sector/subsector chart drilldowns using existing subsector proxy histories until reviewed public/licensed subsector market data is connected.
+5. Include chart metadata for source, vintage/freshness, frequency, data class, proxy/sample/missing status, and whether each series is included in scoring.
+6. Treat metrics and multiples conservatively: display true multiples only after reviewed public/licensed data exists; otherwise label them as valuation proxies, sample-backed, or missing.
+7. Preserve the static GitHub Pages target: generated HTML/JSON/assets only, not hosted Streamlit.
+8. Update `framework_coverage`, methodology, source-health display, tests, and docs.
+9. Run local tests and static-site QA.
+10. Commit and push changes to GitHub.
+11. Manually dispatch the live GitHub Actions workflow and verify the public Pages report still shows `live_numeric` with 0 numeric `sample_fallback`.
 
 After Sprint 9, the next planned sprints are:
-- Sprint 10: valuation and market-internals reality check.
-- Sprint 11: reviewed public/manual research evidence.
-- Sprint 12: archive, monitoring, and deployment maturity.
+- Sprint 10: credit, liquidity, and financial conditions.
+- Sprint 11: valuation and market-internals reality check.
+- Sprint 12: reviewed public/manual research evidence.
+- Sprint 13: archive, monitoring, and deployment maturity.
 ```
