@@ -18,6 +18,8 @@ SOURCE_DEFINITIONS: tuple[SourceDefinition, ...] = (
     SourceDefinition("fred", "FRED API", "https://fred.stlouisfed.org/docs/api/fred/", "api", "free_key", "Optional API path for richer FRED metadata; not required for the default refresh."),
     SourceDefinition("world_bank", "World Bank Indicators", "https://api.worldbank.org/v2/", "api", "public", "Global macro indicators."),
     SourceDefinition("world_bank_commodities", "World Bank Pink Sheet", "https://www.worldbank.org/en/research/commodity-markets", "download", "public", "Monthly commodity prices for energy, metals, agriculture, and food/input proxies."),
+    SourceDefinition("oecd_cli", "OECD Composite Leading Indicators", "https://sdmx.oecd.org/public/rest/data/OECD.SDD.STES,DSD_STES@DF_CLI/", "api", "public_blocked", "Official keyless SDMX endpoint documented by OECD, but direct access currently returns a Cloudflare challenge from this environment; do not bypass."),
+    SourceDefinition("dbnomics_oecd_cli", "DB.nomics mirror of OECD CLI", "https://api.db.nomics.world/v22/series/OECD/DSD_STES%40DF_CLI/", "api", "public", "Open mirror used for monthly OECD CLI values while direct OECD SDMX access is blocked."),
     SourceDefinition("eia", "EIA Open Data", "https://www.eia.gov/opendata/", "api", "free_key", "Energy prices, inventories, production, forecasts."),
     SourceDefinition("ecb", "ECB Data Portal", "https://data-api.ecb.europa.eu/service/", "api", "public", "European rates and macro series."),
     SourceDefinition("ssb", "Statistics Norway", "https://data.ssb.no/api/v0/en/table/", "api", "public", "Norwegian macro statistics."),

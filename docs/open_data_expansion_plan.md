@@ -31,7 +31,7 @@ These sources have official pages or documentation indicating programmatic or do
 
 | Source | Candidate use | Access model | Fit | Notes |
 |---|---|---:|---|---|
-| OECD Composite Leading Indicators | Growth / turning-point signals | OECD SDMX API / Data Explorer | High | OECD describes CLIs as early qualitative turning-point signals. Good replacement or supplement for the current annual `global_pmi` proxy. |
+| OECD Composite Leading Indicators | Growth / turning-point signals | OECD SDMX API / Data Explorer; DB.nomics mirror fallback | High | OECD describes CLIs as early qualitative turning-point signals. Direct OECD SDMX requests currently return a Cloudflare challenge from this environment, so Sprint 8 uses the public DB.nomics mirror of OECD data and labels that boundary. |
 | BIS Data Portal | Credit, property prices, debt, global liquidity | BIS SDMX API and bulk downloads | High | Best open candidate for financial-cycle dimensions such as credit to non-financial sector and property prices. |
 | ECB Data Portal | Euro-area rates, monetary aggregates, credit, financial data | ECB SDMX REST API | Medium/high | Strong for Europe-facing policy/liquidity context. SDMX keys can be complex, so start with a small curated set. |
 | FRED public CSV | US rates, financial conditions, credit proxies, inflation expectations | Public graph CSV endpoint where available | Medium/high | Existing project has FRED parser utilities. Use only stable/public series and mark as US/global proxies. |
@@ -76,12 +76,14 @@ Goal: remove misleading labels and make coverage gaps impossible to miss.
 
 ### Sprint 8: Open Growth And Leading Indicators
 
+Status: implemented locally on 2026-05-24.
+
 Goal: replace low-frequency growth proxies where open data is available.
 
-- Test OECD SDMX/Data Explorer access for Composite Leading Indicators.
-- Add a small curated CLI set, likely global/OECD aggregate, euro area, United States, China or major Asia aggregate if available and stable.
-- Keep World Bank annual growth as slow-moving background context, not a PMI substitute.
-- Add tests for parsing, freshness, source status, and live fallback guard.
+- Tested OECD SDMX/Data Explorer access for Composite Leading Indicators. The official endpoint is documented and keyless, but direct requests from this environment return a Cloudflare challenge; the implementation does not bypass it.
+- Added a small curated monthly OECD CLI set through the public DB.nomics mirror of OECD `DSD_STES@DF_CLI`: G20, G7, United States, China, and major Europe.
+- Kept World Bank annual growth as slow-moving background context, not a PMI substitute.
+- Added tests for parsing and report-state coverage; the existing source-status, freshness, and strict live fallback guard cover the new indicators.
 - Acceptance: report-state growth coverage moves from "proxied" toward "partial" or "covered" for leading growth signals.
 
 ### Sprint 9: Credit, Liquidity, And Financial Conditions
@@ -143,4 +145,4 @@ These can be handled only through reviewed manual inputs, licensed data that the
 
 ## Current Priority
 
-The next implementation sprint should start with Sprint 8: Open Growth And Leading Indicators. Sprint 7 reduced the highest-risk semantic overreach by making proxy labels, coverage gaps, and contradicting evidence visible before adding more sources.
+The next implementation sprint should start with Sprint 9: Credit, Liquidity, And Financial Conditions. Sprint 8 improved growth coverage from proxied to partial using monthly OECD CLI mirror data while preserving the annual World Bank growth proxy as background context.

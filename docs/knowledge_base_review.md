@@ -47,7 +47,7 @@ The current project implements these knowledge-base ideas well enough for a firs
 
 The current implementation does not yet cover the full framework. The main gaps are:
 
-- Growth: the current public label now says "Global annual GDP growth proxy" and exposes `display_slug=global_growth_proxy`, while the legacy internal `global_pmi` slug remains for storage compatibility. It is annual World Bank GDP growth, not a true PMI or OECD CLI.
+- Growth: monthly OECD CLI proxies for G20, G7, United States, China, and major Europe are now included through the public DB.nomics mirror of OECD data. The legacy internal `global_pmi` slug remains for annual World Bank GDP growth background context and is displayed publicly as `global_growth_proxy`.
 - Credit and financial cycle: there is no live high-yield spread, investment-grade spread, lending standards, loan growth, default, credit-to-GDP, property-price, or refinancing-wall series.
 - Earnings and margins: there is no live earnings-revisions, EPS, margin, backlog, order-intake, or analyst-estimate feed.
 - Valuation: the scoring field named `valuation_proxy` is a public-data screening proxy derived from indicator percentiles and deterministic market-cycle sample data, not true subsector valuation multiples.
@@ -60,22 +60,19 @@ The current implementation does not yet cover the full framework. The main gaps 
 
 Recommended next implementation work, in order:
 
-1. Add open leading-growth indicators.
-   - Sprint 7 fixed the displayed `global_pmi` overreach by labeling it as annual World Bank GDP growth and exposing the public `global_growth_proxy` display slug. The next improvement is to connect terms-compliant OECD CLI or PMI-like public data so growth coverage becomes timelier.
+1. Add keyless credit/liquidity sources where feasible.
+   - Sprint 8 added monthly OECD CLI proxies and moved growth coverage from proxied to partial. The next major blind spot is credit/liquidity: FRED public CSV can likely support selected US rates/credit/financial-condition series such as NFCI or credit-spread proxies without an API key. This should be tested source by source and marked clearly as US/global proxy data.
 
-2. Add a cycle-dimension coverage matrix.
-   - Public report state should explicitly show which framework dimensions are covered, proxied, missing, sample-backed, or blocked. This prevents users from reading missing data as neutral evidence.
+2. Add a dedicated liquidity/credit signal group.
+   - Once at least one robust live credit/liquidity source is connected and tested, the dashboard should identify whether liquidity/credit signals confirm or contradict growth, macro, and market signals.
 
-3. Add keyless credit/liquidity sources where feasible.
-   - FRED public CSV can likely support selected US rates/credit/financial-condition series such as NFCI or credit-spread proxies without an API key. This should be tested source by source and marked clearly as US/global proxy data.
+3. Keep improving the cycle-dimension coverage matrix.
+   - Public report state already marks covered, proxied, missing, sample-backed, limited, or blocked dimensions. Future source additions should update coverage only after live data is connected and tested.
 
-4. Add a true "contradicting evidence" field.
-   - The knowledge-base document correctly emphasizes conflicting signals. The static report currently emphasizes top-ranked signals, but should show where macro, momentum, valuation/proxy, and confidence disagree.
-
-5. Add reviewed public/manual research evidence.
+4. Add reviewed public/manual research evidence.
    - Create reviewed CSV rows for priority subsectors. Public facts should cite public sources and remain separate from numeric scoring unless an explicit evidence-confidence model is added.
 
-6. Improve market-cycle and valuation data.
+5. Improve market-cycle and valuation data.
    - True Oslo subsector price, relative strength, constituent, and valuation data is important but needs either reviewed public data or licensed feeds. This is a major quality upgrade but must respect publication and licensing rules.
 
 ## What Can Be Implemented With Current Constraints
@@ -83,7 +80,7 @@ Recommended next implementation work, in order:
 Feasible without paid data or credentials:
 
 - Better naming and labeling of existing proxies. Implemented in Sprint 7 for annual GDP growth, oil-price, heating-oil, broad market-chart, and valuation-proxy labels.
-- OECD CLI ingestion if an accessible keyless endpoint is confirmed.
+- OECD CLI ingestion via a public mirror. Implemented in Sprint 8 through DB.nomics because direct OECD SDMX access is documented but blocked from this environment.
 - FRED public CSV ingestion for selected free public macro/credit/rates series, where terms and endpoint reliability are acceptable.
 - More transparent methodology and coverage metadata in report state.
 - Contradicting-evidence summaries from existing signal components. Implemented in Sprint 7 static reports.
@@ -126,3 +123,4 @@ The biggest risk remains semantic overreach, but Sprint 7 reduced it. Annual GDP
 - Public report state now includes a `framework_coverage` matrix that marks growth, inflation, rates, credit, earnings, valuation, market internals, subsector market-cycle data, and research evidence as covered, partial, proxied, sample-backed, limited, or missing.
 - Sprint 7 public report state now includes display slugs for renamed proxies and a `contradicting_evidence` summary generated from existing score components.
 - Static reports now include a "Contradicting Evidence" section and avoid presenting annual World Bank GDP growth as PMI data.
+- Sprint 8 public report state now includes monthly OECD CLI mirror indicators for G20, G7, United States, China, and major Europe, and Growth coverage is marked `partial`.

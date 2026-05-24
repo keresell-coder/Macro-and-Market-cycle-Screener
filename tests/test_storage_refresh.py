@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from cycle_screener.connectors import _derive_public_indicators, _fred_csv_to_monthly_frame
+from cycle_screener.connectors import _dbnomics_series_to_monthly_frame, _derive_public_indicators, _fred_csv_to_monthly_frame
 from cycle_screener.config import Settings
 from cycle_screener.indicators import IndicatorDefinition
 from cycle_screener.publication import is_public_export_path
@@ -35,6 +35,27 @@ def test_fred_public_csv_parser_returns_monthly_observations() -> None:
     assert frame["observed_at"].tolist() == ["2026-01-31", "2026-02-28"]
     assert frame["value"].tolist() == [77.4, 79.2]
     assert set(frame["source"]) == {"fred_public"}
+
+
+def test_dbnomics_oecd_cli_parser_returns_monthly_observations() -> None:
+    indicator = IndicatorDefinition("g20_cli", "G20 OECD CLI", "dbnomics_oecd_cli", "G20.M.LI...AA...H", "index", "higher_tailwind", "CLI")
+    payload = {
+        "series": {
+            "docs": [
+                {
+                    "period": ["2026-01", "2026-02", "2026-03"],
+                    "value": [100.42, None, 100.58],
+                }
+            ]
+        }
+    }
+
+    frame = _dbnomics_series_to_monthly_frame(payload, indicator)
+
+    assert frame["indicator_slug"].tolist() == ["g20_cli", "g20_cli"]
+    assert frame["observed_at"].tolist() == ["2026-01-31", "2026-03-31"]
+    assert frame["value"].tolist() == [100.42, 100.58]
+    assert set(frame["source"]) == {"dbnomics_oecd_cli"}
 
 
 def test_public_derived_indicators_use_fetched_series() -> None:

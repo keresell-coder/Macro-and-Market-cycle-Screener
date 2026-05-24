@@ -280,12 +280,15 @@ Goal: reduce semantic overreach before adding more sources.
 
 ### Sprint 8: Open growth and leading indicators
 
+Status: implemented locally on 2026-05-24.
+
 Goal: add robust keyless leading-growth signals.
 
-- Test OECD SDMX/Data Explorer access for Composite Leading Indicators.
-- Add a small curated CLI set if the endpoint proves stable.
-- Keep World Bank annual growth as background context, not a PMI substitute.
-- Add tests for parsing, freshness, source status, and live fallback guard.
+- Tested OECD SDMX/Data Explorer access for Composite Leading Indicators. Direct official SDMX requests are documented and keyless but currently return a Cloudflare challenge from this environment, so no bypass was attempted.
+- Added monthly OECD CLI proxies for G20, G7, United States, China, and major Europe through the public DB.nomics mirror of OECD data.
+- Kept World Bank annual growth as background context, not a PMI substitute.
+- Added parser and report-state tests; the existing source-status, freshness, and strict live fallback guard cover the new indicators.
+- Local live verification shows 22 live numeric indicators with 0 numeric `sample_fallback` rows.
 
 ### Sprint 9: Credit, liquidity, and financial conditions
 

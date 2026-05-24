@@ -45,6 +45,8 @@ def test_report_state_contains_public_safe_snapshot() -> None:
         and "GDP growth" in item["indicator_name"]
         for item in state["source_freshness"]
     )
+    assert any(item["dimension"] == "Growth" and item["status"] == "partial" for item in state["framework_coverage"])
+    assert any(item["indicator_slug"] == "g20_cli" and "OECD CLI" in item["indicator_name"] for item in state["source_freshness"])
 
     first = state["subsectors"][0]
     assert {"slug", "rank", "opportunity_score", "signals", "market_cycle", "reviewed_public_fact_ids"}.issubset(first)

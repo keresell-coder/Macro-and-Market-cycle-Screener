@@ -35,6 +35,7 @@ def fetch_indicator_observations(settings: Settings, sample: bool = False) -> tu
     for source, fetcher in (
         ("world_bank_commodity", _fetch_world_bank_commodities),
         ("world_bank_indicator", _fetch_world_bank_indicators),
+        ("dbnomics_oecd_cli", _fetch_dbnomics_oecd_cli),
         ("norges_bank_csv", _fetch_norges_bank_csv),
         ("ssb_cpi", _fetch_ssb_cpi),
         ("yahoo_chart", _fetch_yahoo_chart),
@@ -160,6 +161,24 @@ def _fetch_world_bank_indicators(indicators: Iterable[IndicatorDefinition], sett
             statuses.append(_status(f"world_bank_indicator:{indicator.slug}", "ok", f"Fetched {indicator.name} from World Bank Indicators ({len(frame)} annual rows)."))
         except Exception as exc:
             statuses.append(_status(f"world_bank_indicator:{indicator.slug}", "failed", f"Could not fetch World Bank indicator {indicator.source_key}: {exc}"))
+    return (pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()), statuses
+
+
+def _fetch_dbnomics_oecd_cli(indicators: Iterable[IndicatorDefinition], settings: Settings) -> tuple[pd.DataFrame, list[SourceStatus]]:
+    frames = []
+    statuses = []
+    session = requests.Session()
+    session.headers.update({"User-Agent": "OsloCycleRadar/0.1 public data refresh"})
+    for indicator in indicators:
+        url = f"https://api.db.nomics.world/v22/series/OECD/DSD_STES%40DF_CLI/{indicator.source_key}"
+        try:
+            response = session.get(url, params={"observations": "1"}, timeout=(5, settings.request_timeout_seconds))
+            response.raise_for_status()
+            frame = _dbnomics_series_to_monthly_frame(response.json(), indicator)
+            frames.append(frame)
+            statuses.append(_status(f"dbnomics_oecd_cli:{indicator.slug}", "ok", f"Fetched {indicator.name} from DB.nomics mirror of OECD CLI ({len(frame)} monthly rows)."))
+        except Exception as exc:
+            statuses.append(_status(f"dbnomics_oecd_cli:{indicator.slug}", "failed", f"Could not fetch DB.nomics/OECD CLI series {indicator.source_key}: {exc}"))
     return (pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()), statuses
 
 
@@ -332,6 +351,29 @@ def _fred_csv_to_monthly_frame(csv_data: str | pd.DataFrame, indicator: Indicato
     monthly["source"] = "fred_public"
     monthly["unit"] = indicator.unit
     return monthly[["indicator_slug", "observed_at", "value", "source", "unit"]]
+
+
+def _dbnomics_series_to_monthly_frame(payload: dict, indicator: IndicatorDefinition, max_months: int = 72) -> pd.DataFrame:
+    docs = payload.get("series", {}).get("docs", [])
+    if not docs:
+        raise ValueError("DB.nomics response did not include a series document.")
+    series = docs[0]
+    periods = series.get("period", [])
+    values = series.get("value", [])
+    if len(periods) != len(values):
+        raise ValueError("DB.nomics period and value arrays have different lengths.")
+    rows = []
+    for period, value in zip(periods, values):
+        if value is None:
+            continue
+        rows.append({"observed_at": pd.Period(str(period), freq="M").to_timestamp("M").date().isoformat(), "value": float(value)})
+    if not rows:
+        raise ValueError("DB.nomics series contained no numeric observations.")
+    frame = pd.DataFrame(rows).tail(max_months)
+    frame["indicator_slug"] = indicator.slug
+    frame["source"] = "dbnomics_oecd_cli"
+    frame["unit"] = indicator.unit
+    return frame[["indicator_slug", "observed_at", "value", "source", "unit"]]
 
 
 def _derive_public_indicators(indicators: Iterable[IndicatorDefinition], observations: pd.DataFrame, settings: Settings) -> tuple[pd.DataFrame, list[SourceStatus]]:

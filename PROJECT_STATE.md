@@ -8,7 +8,7 @@ Build a private-first research dashboard that identifies Oslo Bors-linked subsec
 
 ## Current Implementation
 
-- Python project with Streamlit dashboard, DuckDB storage, keyless public live-data connectors, deterministic sample fallback, static HTML export, static report site, Sprint 6 source-health monitoring, Sprint 7 proxy-label cleanup, GitHub Pages workflow, and tests.
+- Python project with Streamlit dashboard, DuckDB storage, keyless public live-data connectors, deterministic sample fallback, static HTML export, static report site, Sprint 6 source-health monitoring, Sprint 7 proxy-label cleanup, Sprint 8 OECD CLI growth proxies, GitHub Pages workflow, and tests.
 - Main app: `dashboard/app.py`.
 - Core package: `src/cycle_screener/`.
 - Static export: `exports/opportunity_radar.html`.
@@ -18,7 +18,7 @@ Build a private-first research dashboard that identifies Oslo Bors-linked subsec
 - Live GitHub Pages report: `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`.
 - Manual reports folder: `data/manual_reports/`.
 - Scoring version shown in public methodology: `score-v1-public-cycle-radar`.
-- Report-state schema version: `2026-05-24-sprint7`.
+- Report-state schema version: `2026-05-24-sprint8`.
 - Saved knowledge-base reference: `docs/knowledge_base/global_macro_market_cycle_knowledge_base.md`.
 - Reviewed knowledge-base assessment: `docs/knowledge_base_review.md`.
 - Open-data expansion plan: `docs/open_data_expansion_plan.md`.
@@ -72,19 +72,21 @@ Build a private-first research dashboard that identifies Oslo Bors-linked subsec
 
 ## Keyless Live Source Status
 
-Implemented and verified on 2026-05-23:
+Implemented and verified on 2026-05-23; expanded on 2026-05-24:
 
 - Numeric indicator refresh now uses accessible live sources without API keys:
   - World Bank Pink Sheet monthly commodity prices for Brent, WTI, natural gas, copper, aluminum, food/input proxies, and oil price pressure inputs.
   - World Bank Indicators API for global and China growth proxies.
+  - DB.nomics public API mirror for OECD monthly Composite Leading Indicators covering G20, G7, United States, China, and major Europe.
   - Norges Bank CSV API for USD/NOK, EUR/NOK, and policy-rate data.
   - Statistics Norway API for CPI.
   - Yahoo chart data for NASDAQ, heating oil, and US 10-year yield market proxies where no official keyless endpoint is currently wired.
 - Live refresh was verified with `FRED_API_KEY=` and `EIA_API_KEY=`:
-  - 1,208 observations;
-  - 17/17 indicators covered;
+  - 1,568 observations after Sprint 8;
+  - 22/22 indicators covered;
   - 0 numeric `sample_fallback` rows;
-  - latest live dates range from 2024-12-31 for annual World Bank growth proxies to 2026-05-31 for FX/rates/market proxies.
+  - latest live dates range from 2024-12-31 for annual World Bank growth proxies to 2026-05-31 for FX/rates/market proxies;
+  - OECD CLI mirror observations are current through 2026-04-30 in local verification.
 - Remaining non-OK statuses after live verification:
   - UBS public research page returns 403 and is skipped.
   - Structured research evidence falls back to sample evidence when no local reviewed CSV files exist.
@@ -94,6 +96,7 @@ Important live-data caveats:
 - Yahoo chart data is used only for broad market proxies where no official keyless endpoint is currently wired: NASDAQ, heating oil, and US 10-year yield proxy.
 - World Bank growth proxies are annual and therefore naturally less fresh than monthly/daily market and macro series.
 - The legacy internal `global_pmi` slug is retained for compatibility, but public report state displays it as `global_growth_proxy` with label "Global annual GDP growth proxy"; it is not PMI or OECD CLI data.
+- The official OECD SDMX API is documented and keyless, but direct local requests currently return a Cloudflare challenge. The Sprint 8 implementation does not bypass that block; it uses the public DB.nomics mirror of OECD `DSD_STES@DF_CLI` and labels it accordingly.
 - Numeric scoring uses live indicators after a live refresh, but subsector market-cycle charts still use deterministic proxy histories.
 
 ## GitHub/Public Boundary Status
@@ -174,6 +177,13 @@ Sprint 3 static report state and change engine is implemented locally:
   - report-state methodology and framework coverage explicitly say annual World Bank GDP growth is not PMI or OECD CLI data;
   - static reports include a Contradicting Evidence section using recovery, macro, momentum, valuation-proxy, confidence, and sample-backed market-cycle components;
   - tests cover the public growth display slug and static Contradicting Evidence rendering.
+- Sprint 8 open growth and leading indicators is implemented locally:
+  - added five monthly OECD CLI indicators via DB.nomics mirror: `g20_cli`, `g7_cli`, `us_cli`, `china_cli`, and `europe_cli`;
+  - added source registry entries for the direct OECD CLI endpoint as `public_blocked` and the DB.nomics OECD CLI mirror as public;
+  - added a DB.nomics/OECD CLI connector with source-status rows, freshness metadata through the existing report-state path, and parser tests;
+  - integrated CLI indicators into relevant subsector proxy sets while keeping World Bank annual GDP growth as background context;
+  - updated framework coverage for Growth from `proxied` to `partial`;
+  - local live verification shows `live_numeric`, 22 live indicators, 0 numeric `sample_fallback`, and current CLI observations through 2026-04-30.
 - GitHub repository setup status:
   - local project is initialized as a git repository on branch `main`;
   - remote `origin` points to `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener.git`;
@@ -185,7 +195,7 @@ Sprint 3 static report state and change engine is implemented locally:
   - public report URL returned HTTP 200;
   - public `data/report_state.json` returned HTTP 200;
   - `numeric_mode`: `live_numeric`;
-  - `live_indicator_count`: 17;
+  - `live_indicator_count`: 17 before Sprint 8 deployment;
   - numeric `sample_fallback` count: 0;
   - research page failures: 1, UBS public insights page returned 403 and remains a visible source failure.
 
@@ -206,9 +216,8 @@ HOME="$PWD/.streamlit_home" STREAMLIT_BROWSER_GATHER_USAGE_STATS=false .venv/bin
 ## Next Likely Improvements
 
 - Monitor the next scheduled Saturday 07:15 UTC live workflow run.
-- Add true open leading-growth indicators, likely OECD CLI if the keyless endpoint proves stable.
 - Add keyless credit/liquidity sources where terms and endpoint reliability are acceptable, such as selected FRED public CSV series.
-- Continue the sprint sequence in `docs/open_data_expansion_plan.md`: OECD CLI/open growth indicators, credit/liquidity indicators, valuation/market internals reality check, reviewed research evidence, and archive/monitoring maturity.
+- Continue the sprint sequence in `docs/open_data_expansion_plan.md`: credit/liquidity indicators, valuation/market internals reality check, reviewed research evidence, and archive/monitoring maturity.
 - Add source-specific confidence detail beyond the first research facts table.
 - Add a private notes layer that is explicitly excluded from public/static exports.
 - Replace deterministic market-cycle proxy history with reviewed public/licensed subsector price, constituent, and valuation data.
@@ -236,7 +245,7 @@ On 2026-05-23, GitHub Pages and GitHub Actions were evaluated as a feasible targ
 - Change tracking should include rank deltas, score deltas, signal deltas, source-status changes, and later research-fact changes.
 - Static Pages must not contain private notes, credentials, manual reports, raw licensed data, or paywalled content.
 - GitHub Pages cannot run Python server-side, so all Python work must occur during the Actions build step.
-- Roadmap update: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, Sprint 7, and the keyless live-data connector upgrade have been implemented locally. GitHub Pages is live. The next roadmap step is Sprint 8 in `docs/open_data_expansion_plan.md`.
+- Roadmap update: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, Sprint 7, Sprint 8, and the keyless live-data connector upgrade have been implemented locally. GitHub Pages is live. The next roadmap step is Sprint 9 in `docs/open_data_expansion_plan.md`.
 
 ## Continuation Prompt
 

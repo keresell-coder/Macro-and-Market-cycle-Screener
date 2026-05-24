@@ -32,7 +32,7 @@ MARKET_COLUMNS = (
     "driver_pressure",
 )
 
-REPORT_STATE_VERSION = "2026-05-24-sprint7"
+REPORT_STATE_VERSION = "2026-05-24-sprint8"
 SCORING_METHODOLOGY_VERSION = "score-v1-public-cycle-radar"
 
 
@@ -66,7 +66,7 @@ def build_report_state(store: RadarStore | None = None) -> dict[str, Any]:
             "scoring_version": SCORING_METHODOLOGY_VERSION,
             "report_state_version": REPORT_STATE_VERSION,
             "framework_reference": "docs/knowledge_base/global_macro_market_cycle_knowledge_base.md",
-            "framework_coverage": "Partial implementation of a broader macro and market-cycle framework. Current scoring covers public macro, rates, FX, commodity, market-proxy, source-health, and reviewed-public-research evidence. Growth is currently an annual World Bank GDP growth proxy, not PMI or OECD CLI data. The model does not yet include full credit, earnings-revisions, true valuation-multiple, positioning, or licensed subsector market data.",
+            "framework_coverage": "Partial implementation of a broader macro and market-cycle framework. Current scoring covers public macro, rates, FX, commodity, OECD CLI growth proxies, market-proxy, source-health, and reviewed-public-research evidence. Annual World Bank GDP growth remains slow-moving background context, while monthly OECD CLI data is accessed through the public DB.nomics mirror because the direct OECD SDMX endpoint is not reliably reachable from this environment. The model does not yet include full credit, earnings-revisions, true valuation-multiple, positioning, or licensed subsector market data.",
             "implementation_boundary": "Opportunity scores are research triage signals, not cycle-state labels, return forecasts, or investment advice. Missing dimensions should be treated as explicit blind spots rather than neutral evidence.",
             "scoring": "Transparent subsector scoring from public/free indicators, explicitly labeled proxies, and visible sample fallbacks when present.",
             "research_policy": "Only reviewed public research facts are included in public report state. Unreviewed and manual evidence remain local.",
@@ -271,9 +271,9 @@ def _framework_coverage() -> list[dict[str, str]]:
     return [
         {
             "dimension": "Growth",
-            "status": "proxied",
-            "current_coverage": "World Bank annual real GDP growth proxies for global and China growth, plus commodity and broad market proxies.",
-            "main_gap": "No true live PMI, OECD CLI, industrial-production, or new-orders feed yet; annual GDP is slow-moving background context.",
+            "status": "partial",
+            "current_coverage": "Monthly OECD CLI proxies for G20, G7, United States, China, and major Europe via DB.nomics mirror, plus World Bank annual real GDP growth proxies for global and China growth.",
+            "main_gap": "No direct PMI, industrial-production, or new-orders feed yet; direct OECD SDMX API access is documented but currently blocked from this environment, so CLI data is mirrored through DB.nomics.",
         },
         {
             "dimension": "Inflation",

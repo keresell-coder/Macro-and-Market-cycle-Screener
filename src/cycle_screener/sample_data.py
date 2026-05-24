@@ -179,30 +179,30 @@ _PROFILE_OVERRIDES: dict[str, dict[str, str]] = {
     "crude_tankers": {
         "cycle_conclusion": "The cycle read is constructive only if oil trade disruption or inventory draws lift ton-mile demand faster than vessel supply normalizes. Relative tanker price strength without better oil-trade evidence should be treated as a sentiment move, not a confirmed cycle turn.",
         "valuation_context": "Compare tanker equities against the Oslo benchmark and freight-linked proxies. A cheaper valuation proxy is more meaningful when relative price is basing and oil-market evidence points to tighter trade flows.",
-        "market_cycle_watch": "Watch Brent/WTI, oil-price pressure, the global annual GDP growth proxy, relative sector price, and valuation proxy together; a durable turn should show improving relative price before valuation fully normalizes.",
-        "why_now": "Oil-price pressure, Brent/WTI prices, and annual GDP growth proxies can flag when oil trade activity is improving before public tanker sentiment has fully recovered, but they are not timely PMI substitutes.",
+        "market_cycle_watch": "Watch Brent/WTI, oil-price pressure, G20 OECD CLI, the global annual GDP growth proxy, relative sector price, and valuation proxy together; a durable turn should show improving relative price before valuation fully normalizes.",
+        "why_now": "Oil-price pressure, Brent/WTI prices, OECD CLI data, and annual GDP growth proxies can flag when oil trade activity is improving before public tanker sentiment has fully recovered.",
         "key_debates": "Bull case: trade disruption and ton-mile expansion tighten vessel supply.\nBase case: oil trade normalizes but rates stay volatile.\nBear case: weak oil demand or fleet additions absorb the recovery.",
         "catalysts": "OPEC+ decisions, sanctions or route changes, weekly oil inventory releases, fleet orderbook updates, and spot-rate inflections.",
     },
     "product_chemical_tankers": {
         "cycle_conclusion": "The setup is about refinery and product-flow dislocation, not just crude-price direction. A stronger conclusion requires distillate inventory pressure, route disruption, and relative price stabilization to line up.",
         "valuation_context": "Low valuation proxies are useful only when product tanker relative price stops underperforming while product inventory and refinery-dislocation evidence improves.",
-        "market_cycle_watch": "Track heating-oil proxy data, Brent, the global annual GDP growth proxy, USD/NOK, relative price, and valuation proxy; product tankers can diverge from crude tankers when refinery geography changes.",
+        "market_cycle_watch": "Track heating-oil proxy data, Brent, G20 OECD CLI, the global annual GDP growth proxy, USD/NOK, relative price, and valuation proxy; product tankers can diverge from crude tankers when refinery geography changes.",
     },
     "dry_bulk": {
         "cycle_conclusion": "Dry bulk remains a high-beta China and industrial-cycle watch item. Treat rallies cautiously unless copper/aluminum, China proxy data, and relative price action confirm each other.",
         "valuation_context": "Because free freight data is limited, valuation context should lean on relative price versus Oslo and commodity-cycle proxies rather than standalone multiples.",
-        "market_cycle_watch": "Copper, aluminum, China annual GDP growth proxy, global annual GDP growth proxy, relative price, and valuation proxy are the minimum factor set before calling a cycle recovery.",
+        "market_cycle_watch": "Copper, aluminum, G20 OECD CLI, China OECD CLI, China annual GDP growth proxy, relative price, and valuation proxy are the minimum factor set before calling a cycle recovery.",
     },
     "lng_lpg_shipping": {
         "cycle_conclusion": "The cycle conclusion depends on gas-spread and fleet-delivery timing. Strong energy-security narratives are not enough if relative price and gas-market proxies fail to confirm.",
         "valuation_context": "A discounted valuation proxy matters most when relative price firms while gas-market pressure and Asian demand indicators improve.",
-        "market_cycle_watch": "Watch gas prices, Brent, the global annual GDP growth proxy, USD/NOK, relative price, valuation proxy, and vessel-supply commentary.",
+        "market_cycle_watch": "Watch gas prices, Brent, G20 OECD CLI, the global annual GDP growth proxy, USD/NOK, relative price, valuation proxy, and vessel-supply commentary.",
     },
     "offshore_vessels_drilling": {
         "cycle_conclusion": "The most attractive recovery pattern is late-cycle discipline: oil companies lift offshore spending while vessel and rig supply stays tight. Relative price strength should be confirmed by backlog, utilization, and dayrate evidence.",
         "valuation_context": "Relative price can run ahead of fundamentals in offshore services; valuation should be read against backlog quality and margin conversion, not oil price alone.",
-        "market_cycle_watch": "Oil curve pressure, Brent, the global annual GDP growth proxy, USD/NOK, relative price, valuation proxy, and order/backlog evidence should move in the same direction.",
+        "market_cycle_watch": "Oil curve pressure, Brent, G20 OECD CLI, the global annual GDP growth proxy, USD/NOK, relative price, valuation proxy, and order/backlog evidence should move in the same direction.",
         "why_now": "Offshore recovery setups often appear when oil prices and curve tightness improve while vessel or rig supply remains constrained.",
         "key_debates": "Bull case: E&P capex broadens and dayrates rise.\nBase case: backlog improves gradually.\nBear case: oil-company budget discipline caps utilization gains.",
         "catalysts": "E&P capex budgets, tender awards, rig/vessel utilization updates, oil-price curve shifts, and quarterly backlog commentary.",
@@ -215,22 +215,22 @@ _PROFILE_OVERRIDES: dict[str, dict[str, str]] = {
     "oil_services": {
         "cycle_conclusion": "Oil services is a second-derivative recovery lane: the key signal is improving orders, backlog, and margins before reported earnings fully catch up. Relative price should be checked against order-quality evidence.",
         "valuation_context": "Relative underperformance with stabilizing order data can be useful; relative outperformance without margin conversion raises exit-warning risk.",
-        "market_cycle_watch": "Track Brent, the global annual GDP growth proxy, USD/NOK, rates pressure, relative price, valuation proxy, and backlog/order commentary.",
+        "market_cycle_watch": "Track Brent, G20 OECD CLI, the global annual GDP growth proxy, USD/NOK, rates pressure, relative price, valuation proxy, and backlog/order commentary.",
     },
     "seafood_aquaculture": {
         "cycle_conclusion": "Seafood is not a simple macro-beta sector. The cycle read should emphasize salmon volume/price mix, biology, regulation, FX, and feed costs before drawing conclusions from broad food inflation.",
         "valuation_context": "A lower valuation proxy is only attractive if biological risk and regulatory risk are not deteriorating and relative price has stopped discounting weaker salmon prices.",
-        "market_cycle_watch": "Food-price pressure, USD/NOK, EUR/NOK, the global annual GDP growth proxy, relative price, valuation proxy, salmon price/volume evidence, and regulatory events are the core dashboard set.",
+        "market_cycle_watch": "Food-price pressure, USD/NOK, EUR/NOK, G20 OECD CLI, the global annual GDP growth proxy, relative price, valuation proxy, salmon price/volume evidence, and regulatory events are the core dashboard set.",
     },
     "metals_aluminum": {
         "cycle_conclusion": "Metals and aluminum should be treated as a commodity-plus-energy-cost cycle. The positive case needs metals price strength to outweigh China-demand and energy-cost risks.",
         "valuation_context": "Relative valuation needs to be interpreted against input-energy pressure and commodity sensitivity; cheapness alone is weak if metal prices are falling.",
-        "market_cycle_watch": "Aluminum, copper, the global annual GDP growth proxy, EUR/NOK, relative price, valuation proxy, and World Bank commodity context should be reviewed together.",
+        "market_cycle_watch": "Aluminum, copper, G20 OECD CLI, China OECD CLI, EUR/NOK, relative price, valuation proxy, and World Bank commodity context should be reviewed together.",
     },
     "renewables": {
         "cycle_conclusion": "Renewables remains rate-sensitive and project-economics driven. A cycle turn requires easing rate pressure and evidence that project returns or funding conditions are improving, not just policy optimism.",
         "valuation_context": "Relative price underperformance can signal improving risk/reward only when valuation proxy is low and rates pressure is rolling over.",
-        "market_cycle_watch": "Rates pressure, EUR/NOK, the global annual GDP growth proxy, copper, relative price, valuation proxy, auctions, impairments, and funding spreads are the relevant cycle picture.",
+        "market_cycle_watch": "Rates pressure, EUR/NOK, Europe and G20 OECD CLI, copper, relative price, valuation proxy, auctions, impairments, and funding spreads are the relevant cycle picture.",
         "why_now": "Rates pressure is a central variable for project economics, so easing rate stress can improve the setup even before reported project margins recover.",
         "key_debates": "Bull case: lower rates and policy support revive project returns.\nBase case: stronger demand offsets some supply-chain friction.\nBear case: power prices, costs, or permitting keep returns below required levels.",
         "catalysts": "Central-bank decisions, power-price updates, auctions, permitting decisions, and project impairment or margin guidance.",
@@ -249,9 +249,9 @@ _PROFILE_OVERRIDES: dict[str, dict[str, str]] = {
         "catalysts": "Norges Bank decisions, CPI prints, credit-spread moves, refinancing updates, and transaction evidence.",
     },
     "industrial_tech_exporters": {
-        "cycle_conclusion": "Industrial and tech exporters are a mixed global capex, AI, FX, and order-intake lane. A cycle upgrade needs annual growth, technology capex, and order-intake evidence to confirm relative price strength.",
+        "cycle_conclusion": "Industrial and tech exporters are a mixed global capex, AI, FX, and order-intake lane. A cycle upgrade needs OECD CLI, annual growth, technology capex, and order-intake evidence to confirm relative price strength.",
         "valuation_context": "Valuation should be read against order durability and FX translation. Relative price strength driven only by global tech sentiment may not transfer evenly to Oslo exporters.",
-        "market_cycle_watch": "Global annual GDP growth proxy, Nasdaq proxy, USD/NOK, EUR/NOK, relative price, valuation proxy, and order-intake commentary should be reviewed together.",
+        "market_cycle_watch": "G20 and US OECD CLI, Nasdaq proxy, USD/NOK, EUR/NOK, relative price, valuation proxy, and order-intake commentary should be reviewed together.",
     },
 }
 
@@ -533,6 +533,11 @@ def _base_for(slug: str) -> float:
         "us_distillate_stocks": 116_000,
         "global_pmi": 50,
         "china_growth_proxy": 50,
+        "g20_cli": 100,
+        "g7_cli": 100,
+        "us_cli": 100,
+        "china_cli": 100,
+        "europe_cli": 100,
         "copper": 100,
         "aluminum": 100,
         "usd_nok": 10.4,
@@ -551,6 +556,11 @@ def _trend_for(slug: str) -> float:
         "brent": 0.05,
         "wti": 0.04,
         "global_pmi": 0.01,
+        "g20_cli": 0.015,
+        "g7_cli": 0.012,
+        "us_cli": 0.014,
+        "china_cli": 0.006,
+        "europe_cli": 0.008,
         "rates_pressure": -0.06,
         "norges_bank_policy_rate": -0.01,
         "norway_cpi": -0.015,
@@ -564,6 +574,6 @@ def _amplitude_for(slug: str) -> float:
         return 18_000
     if slug in {"usd_nok", "eur_nok", "us_natural_gas", "norges_bank_policy_rate", "norway_cpi"}:
         return 0.65
-    if slug in {"global_pmi", "china_growth_proxy", "oil_curve_pressure"}:
+    if slug in {"global_pmi", "china_growth_proxy", "oil_curve_pressure", "g20_cli", "g7_cli", "us_cli", "china_cli", "europe_cli"}:
         return 3.5
     return 12.0

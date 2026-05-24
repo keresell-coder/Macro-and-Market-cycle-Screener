@@ -21,6 +21,7 @@ This is a research radar, not an investment recommendation engine. It ranks subs
 - Public-safe report-state JSON export and change-comparison engine for future weekly static reports.
 - Public source-health summaries covering numeric freshness, live numeric data, numeric sample fallback, research page failures, and research-evidence fallback.
 - Public report labels that distinguish annual GDP growth proxies, broad market/chart proxies, sample-backed market-cycle proxies, and missing dimensions instead of implying true PMI, inventory, or valuation-multiple data.
+- Monthly OECD Composite Leading Indicator growth proxies for G20, G7, United States, China, and major Europe, accessed through the public DB.nomics mirror because the direct OECD SDMX endpoint is blocked from this environment.
 - Contradicting Evidence summary in the static report, generated from existing recovery, macro, momentum, valuation-proxy, confidence, and sample-backed market-cycle components.
 - Framework coverage metadata showing which macro-cycle dimensions are implemented, proxied, sample-backed, or missing.
 - Scoring methodology versioning shown in the static Methodology view.
@@ -48,9 +49,9 @@ The default live refresh does not require API keys:
 python -m cycle_screener.refresh
 ```
 
-Current keyless sources include World Bank commodity and annual GDP growth proxy data, Norges Bank FX and policy-rate data, Statistics Norway CPI data, and limited public market chart data for traded proxies. The growth proxies are not PMI or OECD CLI data. If a live numeric source fails, missing series are filled from deterministic sample data and marked in source status.
+Current keyless sources include World Bank commodity and annual GDP growth proxy data, DB.nomics mirror access to OECD monthly CLI data, Norges Bank FX and policy-rate data, Statistics Norway CPI data, and limited public market chart data for traded proxies. If a live numeric source fails, missing series are filled from deterministic sample data and marked in source status.
 
-The live refresh was verified locally without `FRED_API_KEY` or `EIA_API_KEY`: 17/17 numeric indicators were covered with 0 numeric `sample_fallback` rows. Research evidence may still fall back to sample evidence when no local reviewed CSV files exist.
+The live refresh was verified locally without `FRED_API_KEY` or `EIA_API_KEY`: 22/22 numeric indicators were covered with 0 numeric `sample_fallback` rows. Research evidence may still fall back to sample evidence when no local reviewed CSV files exist.
 
 Optional future connectors may use:
 
@@ -122,7 +123,7 @@ GitHub Pages is enabled and the live static report is available at:
 https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/
 ```
 
-The first verified live deployment reported 17 live numeric indicators, 0 numeric `sample_fallback` indicators, and one visible research-page failure for the UBS public insights page returning 403.
+The latest verified live deployment reported live numeric mode, 0 numeric `sample_fallback` indicators, and one visible research-page failure for the UBS public insights page returning 403.
 
 Details are in `docs/github_pages_setup.md`.
 

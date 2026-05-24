@@ -16,7 +16,7 @@ Live GitHub Pages URL:
 https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/
 ```
 
-Current status: GitHub Pages is enabled with GitHub Actions as the deployment source. The first manual live workflow run completed successfully after the workflow was fixed to run live refresh before static-site generation. The published report-state JSON verifies `live_numeric` mode with 17 live indicators and 0 numeric `sample_fallback` indicators.
+Current status: GitHub Pages is enabled with GitHub Actions as the deployment source. Manual live workflow runs have completed successfully after the workflow was fixed to run live refresh before static-site generation. The published report-state JSON verifies `live_numeric` mode with 0 numeric `sample_fallback` indicators.
 
 ## What The Workflow Does
 
