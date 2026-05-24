@@ -137,7 +137,7 @@ GitHub Pages is enabled and the live static report is available at:
 https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/
 ```
 
-The latest local Sprint 10 live verification reported schema `2026-05-24-sprint10`, live numeric mode, 24 live indicators, 0 numeric `sample_fallback` indicators, chart layer version `sprint10-credit-liquidity-chart-layer`, 168 chart-layer series, and one visible research-page failure for the UBS public insights page returning 403. GitHub Actions repository secrets for `FRED_API_KEY` and `EIA_API_KEY` are configured, though the current Sprint 10 FRED public CSV indicators do not require a key.
+The latest published Sprint 10 live verification reported schema `2026-05-24-sprint10`, live numeric mode, 24 live indicators, 0 numeric `sample_fallback` indicators, chart layer version `sprint10-credit-liquidity-chart-layer`, 168 chart-layer series, and one visible research-page failure for the UBS public insights page returning 403. GitHub Actions repository secrets for `FRED_API_KEY` and `EIA_API_KEY` are configured, though the current Sprint 10 FRED public CSV indicators do not require a key.
 
 Details are in `docs/github_pages_setup.md`.
 

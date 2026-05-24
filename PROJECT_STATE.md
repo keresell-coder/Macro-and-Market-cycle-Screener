@@ -221,16 +221,19 @@ Sprint 3 static report state and change engine is implemented locally:
   - GitHub Pages is enabled with GitHub Actions as the build/deploy source;
   - first manual live workflow deployment completed successfully;
   - the static HTML report is accessible from other devices at the Pages URL above.
-- Latest GitHub Pages verification on 2026-05-24 after Sprint 9:
+- Latest GitHub Pages verification on 2026-05-24 after Sprint 10:
   - public report URL returned HTTP 200;
   - public `data/report_state.json` returned HTTP 200;
-  - `schema_version`: `2026-05-24-sprint9`;
+  - GitHub Actions run: `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener/actions/runs/26370387165`;
+  - deployed commit: `195eedf`;
+  - `schema_version`: `2026-05-24-sprint10`;
   - `numeric_mode`: `live_numeric`;
-  - `live_indicator_count`: 22;
+  - `live_indicator_count`: 24;
   - numeric `sample_fallback` count: 0;
-  - chart layer version: `sprint9-historical-chart-layer`;
-  - chart-layer series count: 159;
-  - Sprint 8 OECD CLI mirror indicators present: `g20_cli`, `g7_cli`, `us_cli`, `china_cli`, and `europe_cli`, latest observed at 2026-04-30;
+  - chart layer version: `sprint10-credit-liquidity-chart-layer`;
+  - chart-layer series count: 168;
+  - liquidity/credit signal group status: `connected`;
+  - Sprint 10 FRED public CSV indicators present: `chicago_fed_nfci` and `st_louis_financial_stress`, latest observed at 2026-05-31 with 361 monthly observations each;
   - Growth framework coverage status: `partial`;
   - research page failures: 1, UBS public insights page returned 403 and remains a visible source failure.
 - Latest local live verification on 2026-05-24 after Sprint 10:
