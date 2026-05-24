@@ -34,6 +34,10 @@ def test_report_state_contains_public_safe_snapshot() -> None:
     assert state["source_health"]
     assert state["research_facts"]
     assert state["methodology"]["scoring_version"]
+    assert state["methodology"]["framework_reference"].endswith("global_macro_market_cycle_knowledge_base.md")
+    assert "credit" in state["methodology"]["framework_coverage"].lower()
+    assert state["framework_coverage"]
+    assert any(item["dimension"] == "Liquidity and credit" and item["status"] == "missing" for item in state["framework_coverage"])
 
     first = state["subsectors"][0]
     assert {"slug", "rank", "opportunity_score", "signals", "market_cycle", "reviewed_public_fact_ids"}.issubset(first)
@@ -99,6 +103,7 @@ def test_build_static_site_writes_report_json(tmp_path) -> None:
     assert "Source Health" in site_html
     assert "Freshness And Fallbacks" in site_html
     assert "Scoring version" in site_html
+    assert "Framework coverage" in site_html
     assert "Changes Since Last Report" in site_html
     assert "Archive" in site_html
     assert "Methodology" in site_html

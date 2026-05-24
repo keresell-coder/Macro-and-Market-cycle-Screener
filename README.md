@@ -20,6 +20,7 @@ This is a research radar, not an investment recommendation engine. It ranks subs
 - Public-safe static report site with Latest Radar, Changes Since Last Report, Archive, and Methodology views.
 - Public-safe report-state JSON export and change-comparison engine for future weekly static reports.
 - Public source-health summaries covering numeric freshness, live numeric data, numeric sample fallback, research page failures, and research-evidence fallback.
+- Framework coverage metadata showing which macro-cycle dimensions are implemented, proxied, sample-backed, or missing.
 - Scoring methodology versioning shown in the static Methodology view.
 - GitHub Actions workflow for manually or weekly building and deploying the static site to GitHub Pages.
 - Static-site QA command that serves the generated site locally and runs browser/screenshot checks when Playwright is available.
@@ -94,7 +95,7 @@ python -m cycle_screener.build_static_site --previous path/to/previous_report_st
 
 When a previous snapshot is supplied, `exports/public/data/changes.json` and `exports/site/data/changes.json` are written with rank, score, signal, source-status, research-fact, and market-cycle deltas. The site can be opened directly from `exports/site/index.html`.
 
-The generated report-state JSON also includes `source_freshness`, `source_health`, and a scoring methodology version. A strict live build can fail if numeric live refresh falls back to deterministic sample rows:
+The generated report-state JSON also includes `source_freshness`, `source_health`, `framework_coverage`, and a scoring methodology version. A strict live build can fail if numeric live refresh falls back to deterministic sample rows:
 
 ```bash
 python -m cycle_screener.build_static_site --fail-on-numeric-sample-fallback
@@ -138,6 +139,8 @@ Rows with unknown subsectors are dropped, confidence is clipped to 0-100%, and u
 - `docs/market_researcher_repo_evaluation.md` records the 2026-05-23 review of the public Anthropic `market-researcher` plugin and possible relevance to this project.
 - `docs/github_static_report_roadmap.md` records the roadmap for a weekly GitHub Pages static report with change tracking.
 - `docs/github_pages_setup.md` explains how to enable the GitHub Pages workflow and optional secrets.
+- `docs/knowledge_base/global_macro_market_cycle_knowledge_base.md` stores the AI-drafted macro/market-cycle knowledge-base reference supplied for project planning.
+- `docs/knowledge_base_review.md` records the project-specific review of that knowledge base, including implementable, difficult, and out-of-scope items.
 - `docs/continuation_prompt.md` contains a copy/paste prompt for starting fresh chats in this project.
 - `docs/next_step_prompt.md` contains a copy/paste prompt for the immediate next implementation step.
 - `src/cycle_screener/taxonomy.py` defines subsectors, drivers, proxies, and confidence levels.

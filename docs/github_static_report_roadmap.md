@@ -269,10 +269,13 @@ Implemented Sprint 6 details:
 
 Status: recommended next.
 
-Goal: validate the first GitHub Pages deployment and reduce reliance on sample research evidence.
+Goal: validate the first scheduled GitHub Pages run and reduce the remaining gap between the broad macro-cycle knowledge base and the implemented radar.
 
 - Verify that `keresell-coder/Macro-and-Market-cycle-Screener` deploys the static report at `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`. First manual live deployment is verified.
 - Confirm the scheduled weekly Saturday 07:15 UTC workflow runs in live mode and blocks numeric sample fallback. Manual live run is verified; the next scheduled run should be monitored.
+- Rename or replace misleading proxy labels, especially `global_pmi`, which currently uses annual World Bank GDP growth rather than true PMI data.
+- Add a true "contradicting evidence" summary to the static report.
+- Add keyless credit/liquidity sources where terms and endpoint reliability are acceptable.
 - Add reviewed public/manual CSV research evidence for priority subsectors.
 - Add source-specific confidence details beyond the current health summary.
 - Keep private notes and any manual/licensed source material out of public exports.

@@ -386,22 +386,42 @@ def _render_archive(entries: list[dict[str, str]], report_prefix: str) -> str:
 def _render_methodology(report_state: dict[str, Any], data_prefix: str) -> str:
     methodology = report_state.get("methodology", {})
     signal_items = "".join(f"<li><strong>{escape(label)}:</strong> {escape(_signal_description(signal))}</li>" for signal, label in SIGNAL_LABELS.items())
+    coverage_rows = "".join(
+        "<tr>"
+        f"<td><strong>{escape(str(item.get('dimension', '')))}</strong></td>"
+        f"<td>{escape(str(item.get('status', '')).replace('_', ' '))}</td>"
+        f"<td>{escape(str(item.get('current_coverage', '')))}</td>"
+        f"<td>{escape(str(item.get('main_gap', '')))}</td>"
+        "</tr>"
+        for item in report_state.get("framework_coverage", [])
+    )
+    coverage_table = (
+        "<h3>Framework Coverage</h3>"
+        '<div class="table-wrap"><table class="coverage-table">'
+        "<thead><tr><th>Dimension</th><th>Status</th><th>Current coverage</th><th>Main gap</th></tr></thead>"
+        f"<tbody>{coverage_rows or '<tr><td colspan=\"4\">No framework coverage metadata available.</td></tr>'}</tbody>"
+        "</table></div>"
+    )
     return (
         '<div class="methodology-grid">'
         "<div>"
         f"<p><strong>Scoring version:</strong> {escape(str(methodology.get('scoring_version', 'unknown')))}<br>"
-        f"<strong>Report schema:</strong> {escape(str(methodology.get('report_state_version', report_state.get('schema_version', 'unknown'))))}</p>"
+        f"<strong>Report schema:</strong> {escape(str(methodology.get('report_state_version', report_state.get('schema_version', 'unknown'))))}<br>"
+        f"<strong>Framework reference:</strong> {escape(str(methodology.get('framework_reference', 'not set')))}</p>"
         f"<p>{escape(str(methodology.get('scoring', 'Transparent subsector scoring from public/free indicators and sample fallbacks.')))}</p>"
+        f"<p><strong>Framework coverage:</strong> {escape(str(methodology.get('framework_coverage', 'Partial macro-cycle implementation.')))}</p>"
         "<ul>"
         f"{signal_items}"
         "</ul>"
         "</div>"
         "<div>"
+        f"<p>{escape(str(methodology.get('implementation_boundary', 'Scores are research triage signals, not forecasts or advice.')))}</p>"
         f"<p>{escape(str(methodology.get('research_policy', 'Only reviewed public research facts are included in public report state.')))}</p>"
         "<p>Unreviewed claims, manual reports, credentials, private notes, raw licensed data, and unpublished research are excluded from this static site.</p>"
         f"<p>JSON assets: <a href=\"{escape(data_prefix)}/latest.json\">latest</a>, <a href=\"{escape(data_prefix)}/report_state.json\">report state</a>, <a href=\"{escape(data_prefix)}/archive.json\">archive</a>.</p>"
         "</div>"
         "</div>"
+        f"{coverage_table}"
     )
 
 
@@ -627,6 +647,7 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .methodology-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 18px; }
 .methodology-grid > div { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px; }
 .methodology-grid p, .methodology-grid li { line-height: 1.55; }
+.coverage-table td:nth-child(2) { font-weight: 800; text-transform: capitalize; }
 @media (max-width: 900px) {
   .summary-grid, .lead-grid, .methodology-grid { grid-template-columns: 1fr; }
   .masthead__inner, main { padding-left: 18px; padding-right: 18px; }

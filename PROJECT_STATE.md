@@ -18,6 +18,8 @@ Build a private-first research dashboard that identifies Oslo Bors-linked subsec
 - Live GitHub Pages report: `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`.
 - Manual reports folder: `data/manual_reports/`.
 - Scoring version shown in public methodology: `score-v1-public-cycle-radar`.
+- Saved knowledge-base reference: `docs/knowledge_base/global_macro_market_cycle_knowledge_base.md`.
+- Reviewed knowledge-base assessment: `docs/knowledge_base_review.md`.
 
 ## Current Dashboard Behavior
 
@@ -128,6 +130,7 @@ Sprint 3 static report state and change engine is implemented locally:
   - rank, score, and signal values by subsector;
   - latest source status;
   - per-indicator source freshness and source-health summaries;
+  - framework coverage metadata across growth, inflation, rates, credit, earnings, valuation, market internals, subsector market-cycle data, and research evidence;
   - latest market-cycle summary per subsector;
   - reviewed public research facts only.
 - Change tracking covers:
@@ -155,6 +158,7 @@ Sprint 3 static report state and change engine is implemented locally:
 - Sprint 6 quality and monitoring is implemented locally:
   - `source_freshness` and `source_health` are exported in public report-state JSON;
   - the static Source Health section distinguishes live numeric data, numeric sample fallback, research page failures, and research-evidence fallback;
+  - static Methodology displays framework reference, framework coverage, implementation boundary, and a framework coverage matrix;
   - strict live static builds can fail on numeric `sample_fallback` via `--fail-on-numeric-sample-fallback`;
   - tests cover fallback visibility and the strict guard;
   - generated static-site QA is wired into the GitHub workflow.
@@ -190,6 +194,9 @@ HOME="$PWD/.streamlit_home" STREAMLIT_BROWSER_GATHER_USAGE_STATS=false .venv/bin
 ## Next Likely Improvements
 
 - Monitor the next scheduled Saturday 07:15 UTC live workflow run.
+- Rename or replace misleading proxy labels, especially `global_pmi`, which currently uses annual World Bank GDP growth rather than true PMI data.
+- Add a true "contradicting evidence" summary to the static report.
+- Add keyless credit/liquidity sources where terms and endpoint reliability are acceptable, such as selected FRED public CSV series.
 - Add source-specific confidence detail beyond the first research facts table.
 - Add a private notes layer that is explicitly excluded from public/static exports.
 - Replace deterministic market-cycle proxy history with reviewed public/licensed subsector price, constituent, and valuation data.

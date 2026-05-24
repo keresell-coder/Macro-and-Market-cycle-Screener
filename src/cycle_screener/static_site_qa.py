@@ -17,6 +17,7 @@ REQUIRED_PAGE_TEXT = (
     "Archive",
     "Methodology",
     "Scoring version",
+    "Framework coverage",
 )
 
 

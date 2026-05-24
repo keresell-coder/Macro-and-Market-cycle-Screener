@@ -11,6 +11,7 @@ Please first read:
 - `docs/github_static_report_roadmap.md`
 - `docs/github_pages_setup.md`
 - `docs/publication_policy.md`
+- `docs/knowledge_base_review.md`
 
 Current project intent:
 Build a private-first Oslo-linked Macro and Market-cycle Opportunity Radar. The dashboard should monitor macro, geopolitical, market-cycle, and subsector signals to identify where sector-cycle phase changes, sentiment shifts, recoveries, or exit warnings may be emerging. It should be a research radar and starting point for further single-stock work, not an automatic stock-picking or investment-advice engine.
@@ -22,6 +23,7 @@ Current implementation:
 - Latest live verification: 17/17 numeric indicators covered, 1,208 observations, 0 numeric `sample_fallback` rows.
 - Static HTML report site under `exports/site/` with Latest Radar, Source Health, Changes Since Last Report, Archive, and Methodology views.
 - Public-safe report-state JSON includes `source_freshness`, `source_health`, scoring version, radar state, source statuses, market-cycle summaries, and reviewed public facts.
+- Public report-state JSON now also includes `framework_coverage`, based on the reviewed macro/market-cycle knowledge-base document.
 - GitHub Actions workflow is configured for weekly Saturday 07:15 UTC static GitHub Pages deployment. Scheduled runs default to live keyless public data and fail if numeric `sample_fallback` is used. Manual sample mode remains available.
 - GitHub repository: `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener`.
 - Live Pages URL after successful deployment: `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`.
@@ -38,11 +40,14 @@ Important constraints:
 
 Requested next task:
 Monitor the next scheduled Saturday 07:15 UTC GitHub Actions run, then plan the next sprint. Likely Sprint 7 candidates are:
-1. Replace or supplement sample research evidence with reviewed public/manual CSV evidence.
-2. Add source-specific confidence detail beyond the current source-health summary.
-3. Add a private notes layer that is explicitly excluded from public/static exports.
-4. Improve archive maturity after multiple weekly reports exist.
-5. Decide whether to install Playwright in CI for mandatory screenshot QA.
+1. Rename or replace misleading proxy labels, especially `global_pmi`, which currently uses annual World Bank GDP growth rather than true PMI data.
+2. Add a true "contradicting evidence" summary to the static report.
+3. Add keyless credit/liquidity sources where terms and endpoint reliability are acceptable.
+4. Replace or supplement sample research evidence with reviewed public/manual CSV evidence.
+5. Add source-specific confidence detail beyond the current source-health summary.
+6. Add a private notes layer that is explicitly excluded from public/static exports.
+7. Improve archive maturity after multiple weekly reports exist.
+8. Decide whether to install Playwright in CI for mandatory screenshot QA.
 
 Do not implement new paid-data integrations or bypass restricted content.
 ```

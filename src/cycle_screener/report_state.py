@@ -63,6 +63,9 @@ def build_report_state(store: RadarStore | None = None) -> dict[str, Any]:
         "methodology": {
             "scoring_version": SCORING_METHODOLOGY_VERSION,
             "report_state_version": REPORT_STATE_VERSION,
+            "framework_reference": "docs/knowledge_base/global_macro_market_cycle_knowledge_base.md",
+            "framework_coverage": "Partial implementation of a broader macro and market-cycle framework. Current scoring covers public macro, rates, FX, commodity, market-proxy, source-health, and reviewed-public-research evidence, but does not yet include full credit, earnings-revisions, valuation-multiple, positioning, or licensed subsector market data.",
+            "implementation_boundary": "Opportunity scores are research triage signals, not cycle-state labels, return forecasts, or investment advice. Missing dimensions should be treated as explicit blind spots rather than neutral evidence.",
             "scoring": "Transparent subsector scoring from public/free indicators and sample fallbacks.",
             "research_policy": "Only reviewed public research facts are included in public report state. Unreviewed and manual evidence remain local.",
             "not_investment_advice": True,
@@ -71,6 +74,7 @@ def build_report_state(store: RadarStore | None = None) -> dict[str, Any]:
         "source_status": source_status_records,
         "source_freshness": source_freshness,
         "source_health": _source_health_summary(source_freshness, source_status_records),
+        "framework_coverage": _framework_coverage(),
         "research_facts": _public_research_facts(research_facts),
     }
 
@@ -251,6 +255,65 @@ def _source_health_summary(source_freshness: list[dict[str, Any]], source_status
             "message": str((evidence_fallback or evidence_files or {}).get("message", "")),
         },
     }
+
+
+def _framework_coverage() -> list[dict[str, str]]:
+    return [
+        {
+            "dimension": "Growth",
+            "status": "proxied",
+            "current_coverage": "World Bank annual global and China growth proxies plus commodity and market proxies.",
+            "main_gap": "No true live PMI, OECD CLI, industrial-production, or new-orders feed yet.",
+        },
+        {
+            "dimension": "Inflation",
+            "status": "partial",
+            "current_coverage": "Norway CPI plus commodity and input-cost proxies.",
+            "main_gap": "No broad core inflation, wage, inflation-expectations, or supplier-delivery layer.",
+        },
+        {
+            "dimension": "Policy and rates",
+            "status": "partial",
+            "current_coverage": "Norges Bank policy rate and US 10-year yield proxy.",
+            "main_gap": "No full yield curve, real yields, policy-path, or central-bank balance-sheet layer.",
+        },
+        {
+            "dimension": "Liquidity and credit",
+            "status": "missing",
+            "current_coverage": "No direct live credit or financial-conditions series in scoring.",
+            "main_gap": "Needs terms-compliant credit spreads, NFCI/financial conditions, lending standards, loan growth, or credit-to-GDP data.",
+        },
+        {
+            "dimension": "Earnings and margins",
+            "status": "missing",
+            "current_coverage": "No live earnings revision, margin, order-intake, or analyst-estimate feed.",
+            "main_gap": "Likely requires paid data, manual reviewed evidence, or limited public filing/statement extraction.",
+        },
+        {
+            "dimension": "Valuation and risk premium",
+            "status": "proxied",
+            "current_coverage": "Uses scoring proxy and deterministic market-cycle valuation history.",
+            "main_gap": "No true Oslo subsector valuation multiples or equity-risk-premium feed.",
+        },
+        {
+            "dimension": "Market internals and positioning",
+            "status": "limited",
+            "current_coverage": "NASDAQ and broad market chart proxies only.",
+            "main_gap": "No breadth, volatility, fund-flow, short-interest, CFTC, or positioning layer.",
+        },
+        {
+            "dimension": "Subsector market cycle",
+            "status": "sample_backed",
+            "current_coverage": "Deterministic price, relative-price, valuation, and driver-pressure histories.",
+            "main_gap": "Needs reviewed public or licensed Oslo subsector market data before being treated as real market history.",
+        },
+        {
+            "dimension": "Research evidence",
+            "status": "sample_backed",
+            "current_coverage": "Reviewed public sample facts plus optional local reviewed CSV ingestion.",
+            "main_gap": "Needs analyst-reviewed public/manual CSV evidence for priority subsectors.",
+        },
+    ]
 
 
 def _source_category(source: str, has_sample_fallback: bool, deterministic_sample_build: bool = False) -> str:
