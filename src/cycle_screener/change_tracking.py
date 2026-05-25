@@ -15,6 +15,7 @@ def compare_report_states(previous: dict[str, Any], current: dict[str, Any]) -> 
     subsector_changes = _subsector_changes(previous.get("subsectors", []), current.get("subsectors", []))
     source_changes = _source_status_changes(previous.get("source_status", []), current.get("source_status", []))
     research_changes = _research_fact_changes(previous.get("research_facts", []), current.get("research_facts", []))
+    cycle_changes = _cycle_state_changes(previous.get("cycle_state", {}), current.get("cycle_state", {}))
 
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -28,7 +29,9 @@ def compare_report_states(previous: dict[str, Any], current: dict[str, Any]) -> 
             "new_research_facts": len(research_changes["new"]),
             "removed_research_facts": len(research_changes["removed"]),
             "changed_research_facts": len(research_changes["changed"]),
+            "cycle_state_changes": len(cycle_changes),
         },
+        "cycle_state_changes": cycle_changes,
         "subsector_changes": subsector_changes,
         "source_status_changes": source_changes,
         "research_fact_changes": research_changes,
@@ -135,6 +138,79 @@ def _research_fact_changes(previous_items: list[dict[str, Any]], current_items: 
         if changed_fields:
             changed.append({"fact_id": fact_id, "subsector_slug": current.get("subsector_slug"), "changed_fields": changed_fields})
     return {"new": new, "removed": removed, "changed": changed}
+
+
+def _cycle_state_changes(previous: dict[str, Any], current: dict[str, Any]) -> list[dict[str, Any]]:
+    if not previous and not current:
+        return []
+    if not previous:
+        return [{"scope": "cycle_state", "change_type": "new_cycle_state", "current_phase": current.get("global_equity_cycle", {}).get("phase")}]
+    if not current:
+        return [{"scope": "cycle_state", "change_type": "removed_cycle_state", "previous_phase": previous.get("global_equity_cycle", {}).get("phase")}]
+
+    changes: list[dict[str, Any]] = []
+    previous_global = previous.get("global_equity_cycle", {})
+    current_global = current.get("global_equity_cycle", {})
+    global_fields = ("phase", "status", "direction", "confidence")
+    changed_fields = {
+        field: {"previous": previous_global.get(field), "current": current_global.get(field)}
+        for field in global_fields
+        if previous_global.get(field) != current_global.get(field)
+    }
+    score_delta = _delta(previous_global.get("score", 0), current_global.get("score", 0))
+    if changed_fields or abs(score_delta) >= SIGNAL_MOVE_THRESHOLD:
+        changes.append(
+            {
+                "scope": "global_equity_cycle",
+                "change_type": "changed",
+                "changed_fields": changed_fields,
+                "score_delta": score_delta,
+                "previous_phase": previous_global.get("phase"),
+                "current_phase": current_global.get("phase"),
+            }
+        )
+
+    previous_dimensions = {item.get("dimension_id"): item for item in previous.get("dimensions", [])}
+    current_dimensions = {item.get("dimension_id"): item for item in current.get("dimensions", [])}
+    for dimension_id in sorted(set(previous_dimensions) | set(current_dimensions)):
+        previous_dimension = previous_dimensions.get(dimension_id)
+        current_dimension = current_dimensions.get(dimension_id)
+        if previous_dimension is None:
+            changes.append({"scope": "dimension", "dimension_id": dimension_id, "change_type": "new_dimension", "current_phase": current_dimension.get("phase") if current_dimension else None})
+            continue
+        if current_dimension is None:
+            changes.append({"scope": "dimension", "dimension_id": dimension_id, "change_type": "removed_dimension", "previous_phase": previous_dimension.get("phase")})
+            continue
+        changed_fields = {
+            field: {"previous": previous_dimension.get(field), "current": current_dimension.get(field)}
+            for field in global_fields
+            if previous_dimension.get(field) != current_dimension.get(field)
+        }
+        score_delta = _delta(previous_dimension.get("score", 0), current_dimension.get("score", 0))
+        confidence_delta = _delta(previous_dimension.get("confidence_score", 0), current_dimension.get("confidence_score", 0))
+        if changed_fields or abs(score_delta) >= SIGNAL_MOVE_THRESHOLD or abs(confidence_delta) >= SIGNAL_MOVE_THRESHOLD:
+            changes.append(
+                {
+                    "scope": "dimension",
+                    "dimension_id": dimension_id,
+                    "title": current_dimension.get("title", previous_dimension.get("title", dimension_id)),
+                    "change_type": "changed",
+                    "changed_fields": changed_fields,
+                    "score_delta": score_delta,
+                    "confidence_delta": confidence_delta,
+                    "previous_phase": previous_dimension.get("phase"),
+                    "current_phase": current_dimension.get("phase"),
+                }
+            )
+
+    previous_contradictions = {item.get("title") for item in previous.get("contradictions", [])}
+    current_contradictions = {item.get("title") for item in current.get("contradictions", [])}
+    for title in sorted(current_contradictions - previous_contradictions):
+        changes.append({"scope": "cycle_contradiction", "change_type": "new_contradiction", "title": title})
+    for title in sorted(previous_contradictions - current_contradictions):
+        changes.append({"scope": "cycle_contradiction", "change_type": "resolved_contradiction", "title": title})
+
+    return changes
 
 
 def _score_move(score_delta: float) -> str:

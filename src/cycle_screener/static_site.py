@@ -117,6 +117,8 @@ def _render_page(
     median_confidence = median(confidence_values) if confidence_values else 0
     generated_at = _display_datetime(report_state.get("generated_at"))
     data_as_of = escape(str(report_state.get("data_as_of", "unknown")))
+    cycle_state = dict(report_state.get("cycle_state", {}))
+    global_cycle = dict(cycle_state.get("global_equity_cycle", {}))
 
     return f"""<!doctype html>
 <html lang="en">
@@ -145,6 +147,7 @@ def _render_page(
     <a href="{escape(home_href)}">Top</a>
     <a href="#historical-charts">Historical Charts</a>
     <a href="#liquidity-credit">Liquidity/Credit</a>
+    <a href="#cycle-status">Cycle Status</a>
     <a href="#source-health">Source Health</a>
     <a href="#contradicting-evidence">Contradicting Evidence</a>
     <a href="#latest-radar">Latest Radar</a>
@@ -154,7 +157,7 @@ def _render_page(
   </nav>
   <main>
     <section class="summary-grid" aria-label="Report summary">
-      {_metric("Top subsector", str(top.get("name", "n/a")), f"Score {_fmt(top.get('opportunity_score'), 1)}" if top else "")}
+      {_metric("Global equity cycle", str(global_cycle.get("phase", "n/a")).replace("_", " "), f"Confidence {global_cycle.get('confidence', 'n/a')}")}
       {_metric("Median confidence", _pct(median_confidence), "Reviewed public facts only")}
       {_metric("Source issues", str(issue_count), "Fallbacks, stale series, or source failures")}
       {_metric("Numeric fallback", str(numeric_health.get("sample_fallback_indicator_count", 0)), f"{numeric_health.get('live_indicator_count', 0)} live indicators")}
@@ -174,6 +177,14 @@ def _render_page(
         <h2>Financial Conditions Signal Group</h2>
       </div>
       {_render_signal_groups(report_state)}
+    </section>
+
+    <section id="cycle-status" class="section">
+      <div class="section-heading">
+        <p class="eyebrow">Cycle Status And Transition Synthesis</p>
+        <h2>Current Cycle Read</h2>
+      </div>
+      {_render_cycle_state(report_state)}
     </section>
 
     <section id="source-health" class="section">
@@ -583,6 +594,135 @@ def _render_source_health(report_state: dict[str, Any]) -> str:
     return status_cards + "".join(alerts) + table
 
 
+def _render_cycle_state(report_state: dict[str, Any]) -> str:
+    cycle_state = dict(report_state.get("cycle_state", {}))
+    if not cycle_state:
+        return '<p class="empty-state">No cycle-state synthesis is available in this report snapshot.</p>'
+
+    global_cycle = dict(cycle_state.get("global_equity_cycle", {}))
+    confidence = dict(cycle_state.get("confidence", {}))
+    dimensions = list(cycle_state.get("dimensions", []))
+    oslo_groups = list(cycle_state.get("oslo_sector_read_through", []))
+    transitions = list(cycle_state.get("transition_evidence", []))
+    continuation = list(cycle_state.get("continuation_evidence", []))
+    contradictions = list(cycle_state.get("contradictions", []))
+    caveats = list(cycle_state.get("missing_data_caveats", []))
+
+    header = (
+        '<article class="cycle-headline">'
+        '<div>'
+        '<p class="eyebrow">Global Equity Cycle</p>'
+        f"<h3>{escape(str(global_cycle.get('phase', 'unknown')).replace('_', ' '))}</h3>"
+        f"<p>{escape(str(global_cycle.get('summary', 'No summary available.')))}</p>"
+        "</div>"
+        '<dl class="mini-stats mini-stats--wide">'
+        f"<div><dt>Status</dt><dd>{escape(str(global_cycle.get('status', 'unknown')).replace('_', ' '))}</dd></div>"
+        f"<div><dt>Direction</dt><dd>{escape(str(global_cycle.get('direction', 'unknown')).replace('_', ' '))}</dd></div>"
+        f"<div><dt>Score</dt><dd>{_signed(global_cycle.get('score'))}</dd></div>"
+        f"<div><dt>Confidence</dt><dd>{escape(str(global_cycle.get('confidence', 'unknown')))}</dd></div>"
+        "</dl>"
+        "</article>"
+    )
+
+    dimension_rows = []
+    for item in dimensions:
+        coverage = dict(item.get("coverage", {}))
+        evidence = list(item.get("evidence", []))[:3]
+        evidence_text = "; ".join(
+            f"{str(point.get('indicator_name', point.get('indicator_slug', '')))} {_signed(point.get('score'))}"
+            for point in evidence
+        )
+        dimension_rows.append(
+            "<tr>"
+            f"<td><strong>{escape(str(item.get('title', '')))}</strong><span>{escape(str(item.get('description', '')))}</span></td>"
+            f"<td>{escape(str(item.get('phase', '')).replace('_', ' '))}</td>"
+            f"<td>{escape(str(item.get('status', '')).replace('_', ' '))}</td>"
+            f"<td>{escape(str(item.get('direction', '')).replace('_', ' '))}</td>"
+            f"<td>{_signed(item.get('score'))}</td>"
+            f"<td>{escape(str(item.get('confidence', '')))}<span>{int(_num(coverage.get('available_count')))} of {int(_num(coverage.get('expected_count')))} inputs</span></td>"
+            f"<td>{escape(evidence_text or 'No evidence points available.')}</td>"
+            "</tr>"
+        )
+    dimension_table = (
+        '<div class="table-wrap"><table class="cycle-table">'
+        "<thead><tr><th>Dimension</th><th>Phase</th><th>Status</th><th>Direction</th><th>Score</th><th>Confidence</th><th>Largest evidence points</th></tr></thead>"
+        f"<tbody>{''.join(dimension_rows) or '<tr><td colspan=\"7\">No cycle dimensions available.</td></tr>'}</tbody></table></div>"
+    )
+
+    transition_block = _render_cycle_evidence_list("Transition Or Exit Evidence", transitions, "No transition evidence currently dominates the synthesis.")
+    continuation_block = _render_cycle_evidence_list("Continuation Or Recovery Evidence", continuation, "No continuation evidence currently dominates the synthesis.")
+    contradiction_block = _render_cycle_evidence_list("Cycle Contradictions", contradictions, "No material cycle-level contradictions were detected.")
+
+    oslo_rows = []
+    for item in oslo_groups:
+        top = ", ".join(str(sub.get("name", "")) for sub in list(item.get("top_subsectors", []))[:3])
+        oslo_rows.append(
+            "<tr>"
+            f"<td><strong>{escape(str(item.get('group_name', '')))}</strong><span>{escape(top or 'No top subsectors listed.')}</span></td>"
+            f"<td>{escape(str(item.get('phase', '')).replace('_', ' '))}</td>"
+            f"<td>{_fmt(item.get('average_score'), 1)}</td>"
+            f"<td>{_signed(item.get('recovery_potential'))}</td>"
+            f"<td>{_signed(item.get('momentum'))}</td>"
+            f"<td>{escape(str(item.get('confidence', '')))}</td>"
+            f"<td>{escape(str(item.get('read_through', '')))}</td>"
+            "</tr>"
+        )
+    oslo_table = (
+        "<h3>Oslo-Linked Sector Read-Through</h3>"
+        '<div class="table-wrap"><table class="cycle-table">'
+        "<thead><tr><th>Group</th><th>Phase</th><th>Avg score</th><th>Recovery</th><th>Momentum</th><th>Confidence</th><th>Read-through</th></tr></thead>"
+        f"<tbody>{''.join(oslo_rows) or '<tr><td colspan=\"7\">No Oslo-linked sector read-through available.</td></tr>'}</tbody></table></div>"
+    )
+
+    caveat_items = "".join(
+        "<li>"
+        f"<strong>{escape(str(item.get('dimension', '')))}:</strong> "
+        f"{escape(str(item.get('status', '')).replace('_', ' '))}. "
+        f"{escape(str(item.get('caveat', '')))}"
+        "</li>"
+        for item in caveats
+    )
+    caveat_block = (
+        "<h3>Confidence And Missing-Data Caveats</h3>"
+        '<div class="warning">'
+        f"<p><strong>{escape(str(confidence.get('label', 'unknown')).title())} confidence.</strong> {escape(str(confidence.get('summary', '')))}</p>"
+        f"<ul>{caveat_items or '<li>No caveats listed.</li>'}</ul>"
+        "</div>"
+    )
+
+    return (
+        header
+        + dimension_table
+        + '<div class="cycle-evidence-grid">'
+        + transition_block
+        + continuation_block
+        + contradiction_block
+        + "</div>"
+        + oslo_table
+        + caveat_block
+        + f"<p class=\"muted\">{escape(str(cycle_state.get('methodology_note', '')))}</p>"
+    )
+
+
+def _render_cycle_evidence_list(title: str, items: list[dict[str, Any]], empty: str) -> str:
+    rows = []
+    for item in items[:6]:
+        rows.append(
+            "<li>"
+            f"<strong>{escape(str(item.get('title', '')))}</strong>"
+            f"<span>{escape(str(item.get('summary', '')))}</span>"
+            "</li>"
+        )
+    if not rows:
+        rows.append(f"<li><span>{escape(empty)}</span></li>")
+    return (
+        '<article class="cycle-evidence-card">'
+        f"<h3>{escape(title)}</h3>"
+        f"<ul>{''.join(rows)}</ul>"
+        "</article>"
+    )
+
+
 def _render_signal_groups(report_state: dict[str, Any]) -> str:
     groups = list(report_state.get("signal_groups", []))
     if not groups:
@@ -672,6 +812,14 @@ def _render_changes(changes: dict[str, Any] | None) -> str:
         for item in changes.get("source_status_changes", [])[:8]
     )
     source_block = f"<ul>{source_rows}</ul>" if source_rows else '<p class="muted">No source status changes.</p>'
+    cycle_rows = "".join(
+        "<li>"
+        f"<strong>{escape(str(item.get('title') or item.get('scope') or item.get('dimension_id', 'cycle')))}</strong>: "
+        f"{escape(str(item.get('previous_phase', '')))} -> {escape(str(item.get('current_phase', item.get('change_type', 'changed'))))}"
+        "</li>"
+        for item in changes.get("cycle_state_changes", [])[:8]
+    )
+    cycle_block = f"<ul>{cycle_rows}</ul>" if cycle_rows else '<p class="muted">No cycle-state changes.</p>'
     research = changes.get("research_fact_changes", {})
     research_block = (
         f"<p>{len(research.get('new', []))} new, {len(research.get('changed', []))} changed, "
@@ -681,12 +829,15 @@ def _render_changes(changes: dict[str, Any] | None) -> str:
     return (
         '<div class="summary-grid summary-grid--compact">'
         f"{_metric('Subsector changes', str(summary.get('subsector_changes', 0)), 'Rank, score, signal, or cycle')}"
+        f"{_metric('Cycle changes', str(summary.get('cycle_state_changes', 0)), 'Phase, direction, confidence, or contradiction')}"
         f"{_metric('Major score moves', str(summary.get('major_score_moves', 0)), 'Absolute move >= 5 points')}"
         f"{_metric('Source changes', str(summary.get('source_status_changes', 0)), 'Latest source status')}"
         f"{_metric('New facts', str(summary.get('new_research_facts', 0)), 'Reviewed public facts')}"
         "</div>"
         '<div class="table-wrap"><table><thead><tr><th>Subsector</th><th>Rank</th><th>Score</th><th>Move</th><th>Signal deltas</th><th>Market deltas</th></tr></thead>'
         f"<tbody>{''.join(change_rows) or '<tr><td colspan=\"6\">No material subsector changes.</td></tr>'}</tbody></table></div>"
+        "<h3>Cycle State</h3>"
+        f"{cycle_block}"
         "<h3>Source Status</h3>"
         f"{source_block}"
         "<h3>Research Fact Changes</h3>"
@@ -941,7 +1092,7 @@ h4 { margin: 0 0 8px; font-size: 17px; }
 main { max-width: 1240px; margin: 0 auto; padding: 24px 28px 46px; }
 .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 26px; }
 .summary-grid--compact { margin: 0 0 18px; }
-.metric, .lead-item, .evidence-item, .chart-card, .subsector-chart-card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.metric, .lead-item, .evidence-item, .chart-card, .subsector-chart-card, .cycle-headline, .cycle-evidence-card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
 .metric { padding: 16px; }
 .metric span { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; font-weight: 700; }
 .metric strong { display: block; margin-top: 7px; font-size: 24px; line-height: 1.15; }
@@ -971,6 +1122,16 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .evidence-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .evidence-item { padding: 15px; border-left: 4px solid var(--amber); }
 .evidence-item p { margin: 8px 0 0; color: #35423b; line-height: 1.45; }
+.cycle-headline { padding: 18px; margin-bottom: 14px; border-left: 5px solid var(--green); }
+.cycle-headline h3 { margin: 0 0 10px; font-size: 28px; text-transform: capitalize; }
+.cycle-headline p { margin: 0; color: #35423b; line-height: 1.55; }
+.cycle-table td span { display: block; color: var(--muted); margin-top: 3px; font-size: 13px; line-height: 1.35; }
+.cycle-evidence-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.cycle-evidence-card { padding: 15px; }
+.cycle-evidence-card h3 { margin-top: 0; }
+.cycle-evidence-card ul { margin: 0; padding-left: 18px; }
+.cycle-evidence-card li { margin: 9px 0; line-height: 1.45; }
+.cycle-evidence-card span { display: block; margin-top: 3px; color: #35423b; }
 .chart-layer-intro { background: #eef1eb; border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin-bottom: 14px; }
 .chart-layer-intro p { margin: 0; line-height: 1.5; }
 .chart-layer-intro p + p { margin-top: 6px; }
@@ -1019,7 +1180,7 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .methodology-grid p, .methodology-grid li { line-height: 1.55; }
 .coverage-table td:nth-child(2) { font-weight: 800; text-transform: capitalize; }
 @media (max-width: 900px) {
-  .summary-grid, .lead-grid, .evidence-grid, .methodology-grid, .subsector-chart-grid { grid-template-columns: 1fr; }
+  .summary-grid, .lead-grid, .evidence-grid, .cycle-evidence-grid, .methodology-grid, .subsector-chart-grid { grid-template-columns: 1fr; }
   .masthead__inner, main { padding-left: 18px; padding-right: 18px; }
   .site-nav { padding-left: 18px; padding-right: 18px; }
   h1 { font-size: 34px; }

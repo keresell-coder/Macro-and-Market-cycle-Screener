@@ -9,6 +9,7 @@ import pandas as pd
 
 from .charts import build_chart_layer
 from .config import EXPORT_DIR, get_settings
+from .cycle_state import build_cycle_state
 from .indicators import indicator_by_slug, public_indicator_slug
 from .publication import is_public_export_path
 from .sources import SOURCE_DEFINITIONS
@@ -33,7 +34,7 @@ MARKET_COLUMNS = (
     "driver_pressure",
 )
 
-REPORT_STATE_VERSION = "2026-05-24-sprint10"
+REPORT_STATE_VERSION = "2026-05-25-sprint11"
 SCORING_METHODOLOGY_VERSION = "score-v1-public-cycle-radar"
 CREDIT_LIQUIDITY_INDICATORS = ("chicago_fed_nfci", "st_louis_financial_stress")
 MACRO_CONFIRMATION_INDICATORS = ("g20_cli", "us_cli", "europe_cli", "nasdaq_proxy")
@@ -61,6 +62,16 @@ def build_report_state(store: RadarStore | None = None) -> dict[str, Any]:
     chart_layer = build_chart_layer(observations, market_cycle, source_freshness)
 
     contradicting_evidence = _contradicting_evidence_summary(subsectors)
+    signal_groups = _signal_groups(observations, source_freshness)
+    framework_coverage = _framework_coverage()
+    cycle_state = build_cycle_state(
+        observations=observations,
+        source_freshness=source_freshness,
+        signal_groups=signal_groups,
+        subsectors=subsectors,
+        contradicting_evidence=contradicting_evidence,
+        framework_coverage=framework_coverage,
+    )
 
     return {
         "schema_version": REPORT_STATE_VERSION,
@@ -70,20 +81,21 @@ def build_report_state(store: RadarStore | None = None) -> dict[str, Any]:
             "scoring_version": SCORING_METHODOLOGY_VERSION,
             "report_state_version": REPORT_STATE_VERSION,
             "framework_reference": "docs/knowledge_base/global_macro_market_cycle_knowledge_base.md",
-            "framework_coverage": "Partial implementation of a broader macro and market-cycle framework. Current scoring covers public macro, rates, FX, commodity, OECD CLI growth proxies, market-proxy, source-health, and reviewed-public-research evidence. Sprint 10 adds a non-scoring liquidity/credit signal group and historical charts for Chicago Fed NFCI and the St. Louis Fed Financial Stress Index via public FRED CSV. Annual World Bank GDP growth remains slow-moving background context, while monthly OECD CLI data is accessed through the public DB.nomics mirror because the direct OECD SDMX endpoint is not reliably reachable from this environment. The model does not yet include earnings revisions, true valuation multiples, positioning, BIS credit/property-cycle data, or licensed subsector market data.",
-            "implementation_boundary": "Opportunity scores are research triage signals, not cycle-state labels, return forecasts, or investment advice. Missing dimensions should be treated as explicit blind spots rather than neutral evidence.",
+            "framework_coverage": "Partial implementation of a broader macro and market-cycle framework. Current scoring covers public macro, rates, FX, commodity, OECD CLI growth proxies, market-proxy, source-health, and reviewed-public-research evidence. Sprint 10 added a non-scoring liquidity/credit signal group and historical charts for Chicago Fed NFCI and the St. Louis Fed Financial Stress Index via public FRED CSV. Sprint 11 adds a public-safe rule-based cycle-state synthesis layer. Annual World Bank GDP growth remains slow-moving background context, while monthly OECD CLI data is accessed through the public DB.nomics mirror because the direct OECD SDMX endpoint is not reliably reachable from this environment. The model does not yet include earnings revisions, true valuation multiples, positioning, BIS credit/property-cycle data, or licensed subsector market data.",
+            "implementation_boundary": "Opportunity scores are research triage signals. Cycle-state labels are rule-based synthesis outputs from public/proxied evidence, not return forecasts or investment advice. Missing dimensions should be treated as explicit blind spots rather than neutral evidence.",
             "scoring": "Transparent subsector scoring from public/free indicators, explicitly labeled proxies, and visible sample fallbacks when present.",
             "research_policy": "Only reviewed public research facts are included in public report state. Unreviewed and manual evidence remain local.",
             "not_investment_advice": True,
         },
         "chart_layer": chart_layer,
-        "signal_groups": _signal_groups(observations, source_freshness),
+        "cycle_state": cycle_state,
+        "signal_groups": signal_groups,
         "subsectors": subsectors,
         "contradicting_evidence": contradicting_evidence,
         "source_status": source_status_records,
         "source_freshness": source_freshness,
         "source_health": _source_health_summary(source_freshness, source_status_records),
-        "framework_coverage": _framework_coverage(),
+        "framework_coverage": framework_coverage,
         "research_facts": _public_research_facts(research_facts),
     }
 

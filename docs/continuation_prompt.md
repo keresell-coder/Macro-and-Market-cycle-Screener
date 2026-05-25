@@ -1,54 +1,51 @@
 # Continuation Prompt
 
-Use this prompt to continue work in a fresh chat inside this project:
+Use this prompt to continue in a fresh chat.
 
 ```text
-You are working in the project folder `/Users/ke/Documents/Codex/Macro and Cycle Screener`.
+You are working in `/Users/ke/Documents/Codex/Macro and Cycle Screener`.
 
-Please first read:
+First read:
 - `PROJECT_STATE.md`
 - `README.md`
-- `docs/market_researcher_repo_evaluation.md`
+- `docs/open_data_expansion_plan.md`
+- `docs/knowledge_base_review.md`
 - `docs/github_static_report_roadmap.md`
 - `docs/github_pages_setup.md`
 - `docs/publication_policy.md`
-- `docs/knowledge_base_review.md`
-- `docs/open_data_expansion_plan.md`
 
-Current project intent:
-Build a private-first Oslo-linked Macro and Market-cycle Opportunity Radar that gets as close as practical to the reviewed global macro/market-cycle framework while using only open, reliable, credible, robust, keyless or no-credential data sources. It should be a research radar and starting point for further single-stock work, not an automatic stock-picking or investment-advice engine.
+Core aim:
+This project is a private-first macro and market-cycle radar. Its main purpose is to establish where global equities, major sectors, and Oslo-linked subsectors appear to be in the cycle now, and whether evidence points to continuation, transition, recovery, deterioration, or exit risk. Avoid drifting into non-core indicators. Add data only when it improves cycle-state classification, transition detection, contradiction evidence, confidence, or sector/subsector cycle interpretation.
 
 Current implementation:
-- Python/Streamlit local dashboard with DuckDB storage and SQLite fallback.
-- Deterministic sample mode and keyless live public-data mode.
-- Keyless live numeric indicator refresh using World Bank Pink Sheet, World Bank Indicators, DB.nomics mirror of OECD CLI data, FRED public CSV financial-conditions proxies, Norges Bank, Statistics Norway, and selected public market chart data.
-- Latest local live verification after Sprint 10: 24/24 numeric indicators covered, 7,732 observations, 0 numeric `sample_fallback` rows.
-- Explainable subsector scoring and signal heatmap.
-- Research evidence layer with highlighted drilldown conclusions, visible "Why now?", "Key debates", "Catalysts", "Risks", source evidence, and reviewed/unreviewed labels.
-- Sector price, relative price, valuation proxy, and driver charts use deterministic market-cycle sample data until reviewed public or licensed subsector market data is connected.
-- Public-safe report-state JSON and change-comparison engine.
-- Static HTML report site under `exports/site/` with Historical Charts, Liquidity And Credit, Latest Radar, Source Health, Contradicting Evidence, Changes Since Last Report, Archive, and Methodology views.
-- Public report state includes `chart_layer`, `signal_groups`, source freshness, source-health summaries, scoring version `score-v1-public-cycle-radar`, market-cycle summaries, source statuses, `contradicting_evidence`, framework coverage, and reviewed public research facts.
-- Sprint 7 proxy labels are cleaned up: the legacy internal `global_pmi` slug is displayed publicly as `global_growth_proxy` / "Global annual GDP growth proxy"; it is not PMI or OECD CLI data.
-- Sprint 8 monthly OECD CLI proxies for G20, G7, United States, China, and major Europe are loaded from the public DB.nomics mirror. Direct OECD SDMX access is documented/keyless but returned a Cloudflare challenge from this environment and is not bypassed.
-- Sprint 9 added the historical chart layer with global, regional, and sector/subsector drilldowns.
-- Sprint 10 added Chicago Fed NFCI and St. Louis Fed Financial Stress Index through public FRED CSV, a dedicated non-scoring liquidity/credit signal group, expanded supported chart histories toward 30 years, and chart layer version `sprint10-credit-liquidity-chart-layer`.
-- Chart windows use the shortest available series range in each view, are capped at 30 years, keep a displayed minimum of 10 years, and flag short-history series.
-- `FRED_API_KEY` and `EIA_API_KEY` are configured locally in `.env` and as GitHub Actions repository secrets. Do not print, commit, or publish the key values. Current FRED public CSV indicators do not require a key.
-- Static-site QA command serves the generated site locally and performs screenshot checks where Playwright is available.
-- GitHub Actions workflow for weekly/static GitHub Pages deployment. Scheduled runs are live by default and fail if numeric live data uses deterministic `sample_fallback`; manual sample mode remains available.
-- GitHub repository: `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener`.
-- Live GitHub Pages URL after deployment: `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`.
-- Remaining known non-OK source statuses: UBS public research page blocks scanning with 403; structured research evidence falls back to sample evidence when no reviewed CSV files exist.
+- Local Streamlit dashboard.
+- DuckDB storage with SQLite fallback.
+- Static GitHub Pages report generated from public-safe HTML/JSON/assets.
+- Keyless live data refresh using World Bank, DB.nomics OECD CLI mirror, FRED public CSV, Norges Bank, Statistics Norway, selected market-chart proxies, and derived public series.
+- Current Sprint 11 state: `schema_version=2026-05-25-sprint11`; latest live target remains `numeric_mode=live_numeric`, 24 live indicators, 0 numeric `sample_fallback`.
+- Implemented views: Cycle Status And Transition Synthesis, Historical Charts, Liquidity And Credit, Source Health, Contradicting Evidence, Latest Radar, Changes Since Last Report, Archive, Methodology.
+- Implemented data families: growth/turning point, commodity/inflation pressure, rates, FX, liquidity/credit, broad market-pricing proxies, source health, and Oslo-linked subsector proxy scores.
+- Implemented synthesis: public-safe `cycle_state` with global equity cycle status, growth, inflation/rates, liquidity/credit, market-pricing/risk-appetite dimensions, Oslo-linked sector read-through, transition/continuation evidence, contradictions, confidence, and missing-data caveats.
+- Known gaps: no true valuation multiples; no broad market internals; no analyst revisions/earnings estimates; no true Oslo subsector market histories; reviewed research evidence is still limited.
 
 Important constraints:
 - Do not bypass paywalls, CAPTCHAs, bot blocks, or restricted content.
-- Keep private notes, credentials, manual reports, raw licensed data, and unpublished research out of public exports.
-- Prefer free/public APIs and source-backed claims.
-- Do not assume Codex has API keys; it does not.
-- Keep unreviewed research claims separate from numeric scoring unless confidence rules are explicitly implemented.
-- The GitHub Pages target should be static HTML/JSON/assets generated by scheduled GitHub Actions, not a hosted Streamlit app.
+- Do not assume Codex has API keys.
+- Keep private notes, credentials, manual reports, raw licensed data, local databases, and unpublished research out of GitHub and public exports.
+- Missing dimensions must be shown as missing/proxied/sample-backed.
+- The GitHub Pages target must remain static HTML/JSON/assets, not hosted Streamlit.
 
-My next requested task is:
-Implement Sprint 11 from `docs/open_data_expansion_plan.md`: Valuation And Market Internals Reality Check. Add one or two robust open valuation/market-internals proxies first, keep all broad proxies clearly labeled, keep true Oslo subsector valuation multiples out of scoring unless reviewed public or licensed data is available, wire source status/freshness/tests/docs, preserve static GitHub Pages output, run local tests and static-site QA, commit/push, dispatch the live workflow, and verify Pages still shows `live_numeric` with 0 numeric `sample_fallback`.
+Next requested sprint:
+Sprint 12: Valuation And Market Internals Reality Check.
+
+Add only public-safe valuation, volatility, breadth-like, or risk-appetite proxies that improve:
+- cycle-state classification;
+- transition or exit-risk detection;
+- contradiction evidence;
+- confidence/source-health assessment;
+- Oslo-linked sector/subsector cycle interpretation.
+
+Keep broad proxies clearly labeled. Do not imply true Oslo subsector valuation multiples, analyst revisions, earnings estimates, positioning, or true subsector histories unless reviewed public or licensed data is connected.
+
+Run tests, build the static site, run static-site QA, update docs, commit, push, dispatch a live GitHub Actions workflow, and verify Pages still shows `live_numeric` with 0 numeric `sample_fallback`.
 ```

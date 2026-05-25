@@ -1,132 +1,102 @@
-# Review Of Global Macro And Market-Cycle Knowledge Base
+# Knowledge-base Review
 
-Last updated: 2026-05-24
+Last updated: 2026-05-25
 
-Reviewed file:
+Reviewed reference:
 
 - `docs/knowledge_base/global_macro_market_cycle_knowledge_base.md`
 
 ## Bottom Line
 
-The knowledge-base document is a useful conceptual roadmap for this project. Its main principle is correct: a credible macro and market-cycle radar should triangulate across growth, inflation, policy/liquidity, credit, earnings, valuation, market internals, sector behavior, source quality, and confidence. That direction matches the project intent.
+The knowledge-base direction is right: a useful macro/market-cycle radar must triangulate growth, inflation, policy/rates, liquidity/credit, market pricing, valuation, market internals, sector behavior, and source confidence.
 
-The current implementation is on the right path, but it is still a partial radar. It is strongest as a public-data macro and Oslo-linked subsector triage tool. It is not yet a full global multi-asset cycle model because several important dimensions in the knowledge base are absent, proxied, paid, delayed, or manually reviewed only.
+The current project now includes a first synthesis layer. The next important gap is improving the evidence base behind that synthesis, especially valuation, market internals, earnings, and true Oslo-linked subsector histories.
 
-## Validation Notes
+## Project Objective
 
-Several core claims in the knowledge-base document were checked against primary or official sources:
+The objective is not to collect all possible macro data.
 
-- NBER business-cycle dating: NBER says its chronology identifies peak and trough months, defines expansions from trough to peak and recessions from peak to trough, uses depth/diffusion/duration, and is retrospective rather than a real-time signal. This supports the document's warning that official recession dating is backward-looking.
-- OECD Composite Leading Indicators: OECD describes CLIs as early signals of turning points around long-term potential and as qualitative rather than quantitative short-term information. This supports using CLIs as directional turning-point inputs, not deterministic forecasts.
-- BIS financial-cycle framework: BIS financial-cycle research emphasizes credit, credit-to-GDP, and house prices as core financial-cycle components and notes financial cycles can interact with business cycles at different speeds. This supports adding credit/property-cycle dimensions later.
-- Chicago Fed NFCI: FRED/Chicago Fed describes NFCI as a weekly update on US financial conditions, with positive values tighter than average and negative values looser than average. This is relevant for future liquidity/financial-condition monitoring.
-- GICS: MSCI describes GICS as a four-tier hierarchy of sectors, industry groups, industries, and sub-industries. This validates the document's taxonomy framing, but the local project intentionally uses Oslo-linked custom subsectors rather than full global GICS.
+The objective is to classify cycle status and detect transitions:
 
-Primary-source links:
+- global equity cycle;
+- major regional/growth cycle;
+- liquidity and credit cycle;
+- inflation/rates pressure;
+- risk appetite and market pricing;
+- Oslo-linked sector/subsector phase;
+- continuation, recovery, deterioration, exit risk, or uncertainty.
 
-- NBER Business Cycle Dating: https://www.nber.org/research/business-cycle-dating
-- OECD Composite Leading Indicators: https://www.oecd.org/en/data/datasets/oecd-composite-leading-indicators-clis.html
-- BIS financial cycle paper: https://www.bis.org/publ/work395.pdf
-- Chicago Fed NFCI on FRED: https://fred.stlouisfed.org/series/NFCI
-- MSCI GICS overview: https://www.msci.com/indexes/index-resources/gics
+## Implemented Well
 
-## What The Project Already Implements
+- Public/keyless data refresh.
+- Source health and freshness.
+- Static GitHub Pages deployment.
+- Public/private boundary.
+- Growth proxies through OECD CLI mirror data.
+- Liquidity/credit first layer through FRED public CSV.
+- Historical chart layer.
+- Contradicting evidence display.
+- Framework coverage matrix.
+- Transparent subsector scoring.
 
-The current project implements these knowledge-base ideas well enough for a first working radar:
+## Main Remaining Gaps
 
-- Public-data-first macro monitoring: World Bank Pink Sheet, World Bank Indicators, Norges Bank, Statistics Norway, and selected public chart data.
-- Subsector focus: the taxonomy is Oslo-linked and granular enough to avoid overgeneralizing broad sectors.
-- Multi-signal scoring: score inputs include percentile pressure, momentum, macro tailwind, recovery potential, valuation/proxy signal, narrative divergence, and confidence.
-- Source health: public report state now exposes `source_freshness` and `source_health`, including live numeric mode, sample fallback counts, stale indicators, research page failures, and research-evidence fallback.
-- Change tracking: static reports can compare ranks, scores, signals, source status, research facts, and market-cycle summaries.
-- Public/private boundary: private notes, manual reports, raw licensed data, local databases, and local structured evidence files are excluded from public exports.
-- Research evidence guardrail: structured research facts are treated as claim data, not instructions, and unreviewed evidence does not affect numeric scoring.
-- GitHub Pages deployment: a static report is live, generated by GitHub Actions, and remains a static HTML/JSON site rather than hosted Streamlit.
+- The top-level cycle-state synthesis is rule-based and early; it needs more validation over report history.
+- Transition warnings now exist, but they still lack valuation, breadth, volatility, positioning, earnings, and true subsector history inputs.
+- No broad market internals or breadth layer.
+- No true valuation multiples for Oslo-linked subsectors.
+- No analyst earnings revisions or estimate cycle.
+- No real subsector price/relative-strength/valuation histories.
+- Research evidence still defaults to sample-backed facts unless reviewed local CSV evidence is supplied.
 
-## Main Gaps Versus The Knowledge Base
+## Recommended Next Step
 
-The current implementation does not yet cover the full framework. The main gaps are:
+Implement **Sprint 12: Valuation And Market Internals Reality Check** next, adding only data that improves the Sprint 11 synthesis.
 
-- Growth: monthly OECD CLI proxies for G20, G7, United States, China, and major Europe are now included through the public DB.nomics mirror of OECD data. The legacy internal `global_pmi` slug remains for annual World Bank GDP growth background context and is displayed publicly as `global_growth_proxy`.
-- Credit and financial cycle: Sprint 10 adds live public FRED CSV proxies for Chicago Fed NFCI and the St. Louis Fed Financial Stress Index, plus a non-scoring liquidity/credit signal group. There is still no high-yield spread, investment-grade spread, lending standards, loan growth, default, credit-to-GDP, property-price, or refinancing-wall series.
-- Earnings and margins: there is no live earnings-revisions, EPS, margin, backlog, order-intake, or analyst-estimate feed.
-- Valuation: the scoring field named `valuation_proxy` is a public-data screening proxy derived from indicator percentiles and deterministic market-cycle sample data, not true subsector valuation multiples.
-- Market internals and positioning: there is no breadth, new-high/new-low, volatility, fund-flow, CFTC positioning, margin-debt, or short-interest layer.
-- Oslo subsector market data: price, relative-price, and valuation histories remain deterministic sample proxies until reviewed public or licensed market data is connected.
-- Research evidence: public static report state contains reviewed public sample facts unless local reviewed CSV evidence is added. This should not be confused with a real analyst-reviewed evidence base.
-- Global regime classification: the static site does not yet produce a separate global cycle-state summary across growth, inflation, policy, liquidity, credit, earnings, valuation, risk appetite, breadth, and vulnerability.
+This should:
 
-## What Should Be Implemented Next
+- keep the cycle-state object as the primary report conclusion;
+- test public valuation, volatility, breadth-like, and risk-appetite proxies;
+- admit new sources only when they improve phase classification, transition warnings, contradictions, or confidence;
+- keep broad proxies clearly labeled and avoid implying true Oslo subsector valuation coverage;
+- preserve missing/proxied/sample-backed labels.
 
-Recommended next implementation work, in order:
+## Data Expansion Principle
 
-1. Add valuation and market-internals reality checks.
-   - Sprint 10 added the first live liquidity/credit proxies through FRED public CSV and kept them non-scoring. The next blind spot is valuation and market internals, but the project should keep any broad public proxies clearly labeled and avoid implying true Oslo subsector multiples or institutional market-internals data.
+Future valuation, market-internals, BIS, ECB, Eurostat, or research-data work should be admitted only when it improves the cycle synthesis.
 
-2. Extend credit/liquidity only after connector testing.
-   - BIS credit/property data, lending standards, and broader credit-spread proxies remain useful candidates, but should be added only after source-specific connector tests pass.
+Good reasons to add a source:
 
-3. Expand and align chart histories.
-   - Sprint 10 expanded supported source histories toward 30 years and fixed chart windows to use whole-month 10-30 year ranges. Future sources should preserve this policy and continue flagging short-history series.
+- it clarifies current phase;
+- it detects a transition earlier;
+- it confirms or contradicts other cycle evidence;
+- it improves confidence or freshness;
+- it directly improves sector/subsector cycle interpretation.
 
-4. Keep improving the cycle-dimension coverage matrix.
-   - Public report state already marks covered, proxied, missing, sample-backed, limited, or blocked dimensions. Future source additions should update coverage only after live data is connected and tested.
+Weak reasons to add a source:
 
-5. Add reviewed public/manual research evidence.
-   - Create reviewed CSV rows for priority subsectors. Public facts should cite public sources and remain separate from numeric scoring unless an explicit evidence-confidence model is added.
+- it is interesting but not decision-relevant;
+- it duplicates an existing proxy without improving confidence;
+- it looks precise but is licensed, restricted, stale, or semantically misleading;
+- it drifts into single-stock advice.
 
-6. Improve market-cycle and valuation data.
-   - True Oslo subsector price, relative strength, constituent, and valuation data is important but needs either reviewed public data or licensed feeds. This is a major quality upgrade but must respect publication and licensing rules.
+## Primary-source Concepts Already Reflected
 
-## What Can Be Implemented With Current Constraints
+- OECD CLI: useful as qualitative turning-point input, not deterministic forecast.
+- Chicago Fed NFCI: tighter/looser financial-conditions proxy.
+- BIS financial-cycle work: credit and property cycles matter but require tested connectors.
+- NBER cycle dating: useful framework but backward-looking, not a real-time signal.
+- GICS/sector taxonomy: useful reference, while this project intentionally uses Oslo-linked custom subsectors.
 
-Feasible without paid data or credentials:
+## Hard Boundaries
 
-- Better naming and labeling of existing proxies. Implemented in Sprint 7 for annual GDP growth, oil-price, heating-oil, broad market-chart, and valuation-proxy labels.
-- OECD CLI ingestion via a public mirror. Implemented in Sprint 8 through DB.nomics because direct OECD SDMX access is documented but blocked from this environment.
-- Static historical line-chart views using existing live/proxy/sample-backed histories, provided chart panels clearly show source, vintage, proxy/sample/missing status, and scoring inclusion. Implemented in Sprint 9.
-- FRED public CSV ingestion for selected free public macro/credit/rates series, where terms and endpoint reliability are acceptable. Implemented first for Chicago Fed NFCI and St. Louis Fed Financial Stress Index in Sprint 10.
-- More transparent methodology and coverage metadata in report state.
-- Contradicting-evidence summaries from existing signal components. Implemented in Sprint 7 static reports.
-- Public/manual reviewed research CSV ingestion using the existing schema.
-- More robust archive navigation and scheduled-run monitoring.
-- Optional local/private notes layer that is excluded from public export.
+Do not promise automatic public coverage for:
 
-Feasible with manual review, but not automatic yet:
+- analyst revisions and EPS estimates;
+- true Oslo subsector valuation multiples;
+- proprietary breadth, positioning, fund-flow, or short-interest data;
+- licensed shipping/freight datasets;
+- restricted PMI components;
+- automated paywalled or bot-blocked research extraction.
 
-- Public-source subsector primers.
-- Public facts for key debates, catalysts, and risks.
-- Manual valuation context from company filings or public exchange pages, if summarized and reviewed.
-- Oslo-linked subsector constituent mapping.
-
-## Difficult Or Impossible Without Paid/Licensed Data
-
-The following should not be promised as automatic public dashboard features unless the user provides licensed data, rights, or reviewed manual inputs:
-
-- Real-time or high-quality sector and subsector valuation multiples.
-- Analyst earnings revisions and consensus EPS estimates.
-- Proprietary PMI details beyond public headlines.
-- Euronext/Baltic/Drewry datasets where access is licensed or terms-limited.
-- Detailed shipping freight indices if behind license terms.
-- Company-level recommendation or stock-picking signals.
-- Automated scraping of paywalled research, bot-blocked pages, CAPTCHAs, or restricted content.
-
-## Honest Assessment
-
-The project is directionally correct. The architecture is sensible: local Streamlit for private analysis, static GitHub Pages for public-safe weekly output, source-health metadata, and a strict public/private boundary. The current implementation is also appropriately cautious: it does not pretend to be an investment-advice engine, and it surfaces source failures and fallback use.
-
-The biggest risk remains semantic overreach, but Sprint 7 reduced it. Annual GDP proxies are now labeled as annual GDP growth proxies rather than PMI data, the valuation proxy is described as screening context rather than a market valuation feed, and sample-backed dimensions remain visible. The next sprint should add one or two genuinely useful missing dimensions rather than broadening indiscriminately.
-
-## Changes Made From This Review
-
-- The AI-drafted knowledge base was saved into `docs/knowledge_base/global_macro_market_cycle_knowledge_base.md`.
-- Public report-state methodology now references the saved knowledge-base file.
-- Public report-state methodology now includes framework coverage and implementation-boundary text.
-- Static Methodology now displays framework reference, framework coverage, and the implementation boundary so public readers see the radar's current blind spots.
-- Static-site QA now checks for the new Framework Coverage text.
-- Public report state now includes a `framework_coverage` matrix that marks growth, inflation, rates, credit, earnings, valuation, market internals, subsector market-cycle data, and research evidence as covered, partial, proxied, sample-backed, limited, or missing.
-- Sprint 7 public report state now includes display slugs for renamed proxies and a `contradicting_evidence` summary generated from existing score components.
-- Static reports now include a "Contradicting Evidence" section and avoid presenting annual World Bank GDP growth as PMI data.
-- Sprint 8 public report state now includes monthly OECD CLI mirror indicators for G20, G7, United States, China, and major Europe, and Growth coverage is marked `partial`.
-- Sprint 9 public report state now includes a historical chart layer with global, regional, and sector/subsector views; chart metadata includes source, freshness, frequency, data class, proxy/sample/missing status, scoring inclusion, and chart-window policy metadata for 10-30 year aligned x-axes.
-- Sprint 10 public report state now includes Chicago Fed NFCI and St. Louis Fed Financial Stress Index from public FRED CSV, a dedicated non-scoring liquidity/credit signal group, expanded supported source histories toward 30 years, and Liquidity and credit framework coverage marked `partial`.
+These can only enter through reviewed manual inputs or licensed data the user has rights to use.

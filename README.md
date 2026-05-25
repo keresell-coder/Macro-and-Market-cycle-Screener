@@ -1,40 +1,75 @@
 # Oslo-Linked Macro and Market-cycle Opportunity Radar
 
-Private-first dashboard for spotting Oslo Bors-linked subsectors that may be entering recovery, becoming neglected, or showing favorable macro/cycle setups.
+Private-first research radar for macro and market-cycle work.
 
-This is a research radar, not an investment recommendation engine. It ranks subsectors using transparent indicators and shows the evidence behind the score.
+The core objective is to identify where global equities, major sectors, and Oslo-linked subsectors appear to be in the cycle now, and whether evidence points to continuation, transition, recovery, deterioration, or exit risk.
 
-## What V1 Includes
+This is not a stock-picking or investment-advice engine. It is a structured research starting point.
 
-- Opportunity Radar table and heatmap for Oslo-linked subsectors.
-- Signal heatmap before the table, focused on opportunity drivers rather than data confidence.
-- Highlighted radar-table values for signals that stand out among the currently visible subsectors.
-- Drilldown charts for sector price proxy, Oslo benchmark proxy, relative price, valuation proxy, and macro/market-cycle drivers.
-- Highlighted subsector research conclusion shown above the evidence details rather than hidden under tabs.
-- Explainable scoring across cycle pressure, recovery potential, valuation/proxy pricing, momentum, macro tailwind, and narrative divergence.
-- Research evidence profiles per subsector with "Why now?", "Key debates", "Catalysts", "Risks", and source-backed facts.
-- Reviewed/unreviewed research evidence labels; unreviewed claims are kept separate from numeric scoring.
-- Keyless public data connectors with deterministic sample fallback only when a live source fails.
-- DuckDB data store for raw observations, normalized indicators, source status, scores, research profiles, and research facts.
-- Static HTML export for private sharing across devices.
-- Public-safe static report site with Latest Radar, Source Health, Contradicting Evidence, Changes Since Last Report, Archive, and Methodology views.
-- Public-safe report-state JSON export and change-comparison engine for future weekly static reports.
-- Public source-health summaries covering numeric freshness, live numeric data, numeric sample fallback, research page failures, and research-evidence fallback.
-- Public report labels that distinguish annual GDP growth proxies, broad market/chart proxies, sample-backed market-cycle proxies, and missing dimensions instead of implying true PMI, inventory, or valuation-multiple data.
-- Monthly OECD Composite Leading Indicator growth proxies for G20, G7, United States, China, and major Europe, accessed through the public DB.nomics mirror because the direct OECD SDMX endpoint is blocked from this environment.
-- Historical chart layer at the top of the static report with a global view first, regional drilldowns, and sector/subsector drilldowns using existing live proxies and sample-backed market-cycle histories.
-- Sprint 10 liquidity/credit layer with Chicago Fed NFCI and St. Louis Fed Financial Stress Index from public FRED CSV, shown in charts and in a dedicated non-scoring financial-conditions signal group.
-- Expanded chart-source histories toward 30 years where endpoints support it, while enforcing the 10-30 year common x-axis policy and flagging short-history series.
-- Chart metadata for source, vintage/freshness, frequency, data class, proxy/sample/missing status, and scoring inclusion.
-- Chart x-axis policy using the shortest available series range in each view, capped at 30 years, with a minimum displayed range of 10 years where short-history series are flagged.
-- Contradicting Evidence summary in the static report, generated from existing recovery, macro, momentum, valuation-proxy, confidence, and sample-backed market-cycle components.
-- Framework coverage metadata showing which macro-cycle dimensions are implemented, proxied, sample-backed, or missing.
-- Scoring methodology versioning shown in the static Methodology view.
-- GitHub Actions workflow for manually or weekly building and deploying the static site to GitHub Pages.
-- Static-site QA command that serves the generated site locally and runs browser/screenshot checks when Playwright is available.
-- Manual report folder for documents you are entitled to use.
+## What It Does Today
 
-Next planned sprint: valuation and market-internals reality check, keeping broad public proxies clearly labeled unless true subsector data is reviewed or licensed.
+- Refreshes open/public macro, market, growth, rates, FX, commodity, and liquidity/credit indicators.
+- Builds local Streamlit views for private analysis.
+- Builds a static GitHub Pages report from public-safe HTML/JSON.
+- Synthesizes current cycle status and transition evidence from public/proxied inputs.
+- Tracks source freshness, source failures, and numeric sample fallback.
+- Shows historical charts for global, liquidity/credit, regional, and sector/subsector views.
+- Ranks Oslo-linked subsectors using transparent proxy signals.
+- Shows contradiction evidence when signals disagree.
+- Keeps private notes, credentials, manual reports, local databases, and unreviewed evidence out of public exports.
+
+## Current Live Sources
+
+Current keyless/default live data includes:
+
+- World Bank Pink Sheet commodity data.
+- World Bank annual GDP growth proxies.
+- DB.nomics mirror of OECD CLI data for G20, G7, US, China, and major Europe.
+- FRED public CSV for Chicago Fed NFCI and St. Louis Fed Financial Stress Index.
+- Norges Bank FX and policy-rate data.
+- Statistics Norway CPI.
+- Selected public market-chart proxies.
+
+Latest published Sprint 10 verification before the Sprint 11 deployment:
+
+- `schema_version`: `2026-05-24-sprint10`
+- `numeric_mode`: `live_numeric`
+- live indicators: 24
+- numeric `sample_fallback`: 0
+- chart layer: `sprint10-credit-liquidity-chart-layer`
+- chart-layer series: 168
+
+Known visible non-OK statuses:
+
+- UBS public research page returns 403.
+- Research evidence falls back to sample evidence if no reviewed local CSV evidence exists.
+
+## Current Limitations
+
+The project is intentionally honest about missing or proxied dimensions:
+
+- The public `global_growth_proxy` is annual World Bank GDP growth, not PMI.
+- OECD direct SDMX access is blocked from this environment; DB.nomics is used as a public mirror.
+- Subsector market-cycle histories are sample-backed proxies, not true Oslo subsector price or valuation histories.
+- True valuation multiples, analyst revisions, earnings estimates, positioning, breadth, and many market internals are not yet implemented.
+- Missing data should be read as a blind spot, not as neutral evidence.
+
+## Current Direction
+
+Sprint 11 adds **Cycle Status And Transition Synthesis**.
+
+The report now synthesizes existing indicators into explicit conclusions:
+
+- global equity cycle status;
+- growth cycle status;
+- inflation/rates pressure status;
+- liquidity/credit status;
+- risk appetite and market-pricing status;
+- sector/subsector phase;
+- transition or continuation warnings;
+- confidence and contradicting evidence.
+
+Future valuation or market-internals data should be added only when it improves this cycle synthesis. The next sprint should be **Valuation And Market Internals Reality Check**.
 
 ## Quick Start
 
@@ -46,142 +81,51 @@ python -m cycle_screener.refresh --sample
 streamlit run dashboard/app.py
 ```
 
-If you want a deterministic local demo, `--sample` creates a complete dataset so the dashboard works immediately. The normal live refresh also works without API keys.
-
-## Live Data Refresh
-
-The default live refresh does not require API keys:
+Live refresh:
 
 ```bash
 python -m cycle_screener.refresh
 ```
 
-Current keyless sources include World Bank commodity and annual GDP growth proxy data, DB.nomics mirror access to OECD monthly CLI data, FRED public CSV financial-conditions/stress proxies, Norges Bank FX and policy-rate data, Statistics Norway CPI data, and limited public market chart data for traded proxies. If a live numeric source fails, missing series are filled from deterministic sample data and marked in source status.
-
-The live refresh was verified locally without `FRED_API_KEY` or `EIA_API_KEY`: 24/24 numeric indicators were covered with 0 numeric `sample_fallback` rows. Research evidence may still fall back to sample evidence when no local reviewed CSV files exist.
-
-Optional future connectors may use:
-
-```bash
-export FRED_API_KEY="..."
-export EIA_API_KEY="..."
-```
-
-For local use, create a private `.env` file in the project folder:
-
-```text
-FRED_API_KEY=...
-EIA_API_KEY=...
-```
-
-The app loads this file automatically, and `.env` is ignored by git. For GitHub Actions, add the same values as repository secrets named `FRED_API_KEY` and `EIA_API_KEY`; never commit real keys.
-
-## Static Export
-
-```bash
-python -m cycle_screener.export_static
-```
-
-The export is written to `exports/opportunity_radar.html`. It excludes private notes and manual reports.
-
-Public-safe export targets are allowlisted in `src/cycle_screener/publication.py`. Future GitHub Pages work should publish only generated files under `exports/opportunity_radar.html`, `exports/public/`, or `exports/site/`.
-
-## Report State And Changes
-
-Sprint 3 added public-safe JSON artifacts for future static reports, and Sprint 4 turns those artifacts into a static site:
-
-```bash
-python -m cycle_screener.build_static_site --sample
-```
-
-This writes:
-
-- `exports/public/data/report_state.json`
-- `exports/public/data/latest.json`
-- `exports/site/index.html`
-- `exports/site/reports/YYYY-MM-DD.html`
-- `exports/site/data/report_state.json`
-- `exports/site/data/latest.json`
-- `exports/site/data/archive.json`
-
-To compare with a prior snapshot:
-
-```bash
-python -m cycle_screener.build_static_site --previous path/to/previous_report_state.json
-```
-
-When a previous snapshot is supplied, `exports/public/data/changes.json` and `exports/site/data/changes.json` are written with rank, score, signal, source-status, research-fact, and market-cycle deltas. The site can be opened directly from `exports/site/index.html`.
-
-The generated report-state JSON also includes `source_freshness`, `source_health`, `framework_coverage`, and a scoring methodology version. A strict live build can fail if numeric live refresh falls back to deterministic sample rows:
+Build static report:
 
 ```bash
 python -m cycle_screener.build_static_site --fail-on-numeric-sample-fallback
 python -m cycle_screener.static_site_qa exports/site
 ```
 
-## GitHub Pages Workflow
+## GitHub Pages
 
-The project is configured for GitHub repository:
-
-```text
-https://github.com/keresell-coder/Macro-and-Market-cycle-Screener
-```
-
-Sprint 5 adds `.github/workflows/weekly-report.yml`.
-
-The scheduled workflow runs weekly on Saturdays at 07:15 UTC and now defaults to `live` mode using keyless public connectors. Live builds fail if numeric indicators fall back to deterministic `sample_fallback` rows. Manual dispatch still allows `sample` mode for deterministic debugging. Optional secrets can be added later as `FRED_API_KEY` and `EIA_API_KEY`; Codex does not have those keys.
-
-GitHub Pages is enabled and the live static report is available at:
+Live site:
 
 ```text
 https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/
 ```
 
-The latest published Sprint 10 live verification reported schema `2026-05-24-sprint10`, live numeric mode, 24 live indicators, 0 numeric `sample_fallback` indicators, chart layer version `sprint10-credit-liquidity-chart-layer`, 168 chart-layer series, and one visible research-page failure for the UBS public insights page returning 403. GitHub Actions repository secrets for `FRED_API_KEY` and `EIA_API_KEY` are configured, though the current Sprint 10 FRED public CSV indicators do not require a key.
+Workflow:
 
-Details are in `docs/github_pages_setup.md`.
+- `.github/workflows/weekly-report.yml`
+- manual dispatch or weekly Saturday 07:15 UTC
+- scheduled runs default to live data
+- strict live builds fail on numeric `sample_fallback`
+- deploys only `exports/site/`
 
-## Structured Research Evidence
+## Project Map
 
-Optional public/manual evidence can be added as CSV files in `data/research_evidence/`.
-
-- `subsector_research_profiles.csv`: `subsector_slug`, `scope`, `current_phase_hypothesis`, `why_now`, `key_debates`, `catalysts`, `risks`, `review_status`, `updated_at`.
-- `research_facts.csv`: `fact_id`, `subsector_slug`, `theme`, `claim`, `source_name`, `source_url`, `source_type`, `source_quality`, `source_date`, `captured_at`, `confidence`, `review_status`, `evidence_scope`.
-
-Rows with unknown subsectors are dropped, confidence is clipped to 0-100%, and unknown review statuses become `unreviewed`.
-
-## Project Structure
-
-- `PROJECT_STATE.md` is the durable handoff file. Update it after each sprint or iteration so a fresh chat can continue without full conversation context.
-- `docs/market_researcher_repo_evaluation.md` records the 2026-05-23 review of the public Anthropic `market-researcher` plugin and possible relevance to this project.
-- `docs/github_static_report_roadmap.md` records the roadmap for a weekly GitHub Pages static report with change tracking.
-- `docs/github_pages_setup.md` explains how to enable the GitHub Pages workflow and optional secrets.
-- `docs/knowledge_base/global_macro_market_cycle_knowledge_base.md` stores the AI-drafted macro/market-cycle knowledge-base reference supplied for project planning.
-- `docs/knowledge_base_review.md` records the project-specific review of that knowledge base, including implementable, difficult, and out-of-scope items.
-- `docs/open_data_expansion_plan.md` defines the open/keyless source expansion plan and next sprint sequence.
-- `docs/continuation_prompt.md` contains a copy/paste prompt for starting fresh chats in this project.
-- `docs/next_step_prompt.md` contains a copy/paste prompt for the immediate next implementation step.
-- `src/cycle_screener/taxonomy.py` defines subsectors, drivers, proxies, and confidence levels.
-- `src/cycle_screener/sources.py` defines allowed data and research sources.
-- `src/cycle_screener/connectors.py` fetches public data and research-source status.
-- `src/cycle_screener/charts.py` builds public-safe historical chart-layer JSON from live observations and sample-backed subsector histories.
-- `src/cycle_screener/research.py` ingests structured public/manual research evidence as claim data.
-- `src/cycle_screener/publication.py` defines the public export allowlist and blocks known private paths.
-- `src/cycle_screener/report_state.py` builds public-safe report snapshots.
-- `src/cycle_screener/change_tracking.py` compares report snapshots and classifies deltas.
-- `src/cycle_screener/static_site.py` renders the static HTML report site from public-safe report snapshots.
-- `src/cycle_screener/build_static_site.py` writes JSON artifacts and the static site under `exports/site/`.
-- `src/cycle_screener/static_site_qa.py` serves generated static pages locally and verifies required page content, with optional Playwright screenshot capture.
-- `src/cycle_screener/scoring.py` calculates explainable opportunity scores.
-- `src/cycle_screener/storage.py` persists data in DuckDB, with SQLite fallback for restricted environments.
-- `dashboard/app.py` is the Streamlit app.
-- `data/manual_reports/` is for reports you have rights to use.
-- `data/research_evidence/` may contain structured public/manual-source CSV files named `subsector_research_profiles.csv` and `research_facts.csv`.
-- `data/private_notes/` and `data/raw_licensed/` are local-only folders excluded from git.
-- `docs/publication_policy.md` defines what may and may not be published later.
+- `PROJECT_STATE.md`: current state and next step.
+- `docs/open_data_expansion_plan.md`: concise sprint plan.
+- `docs/next_step_prompt.md`: immediate next-sprint copy/paste prompt.
+- `docs/continuation_prompt.md`: fresh-chat handoff prompt.
+- `docs/publication_policy.md`: public/private boundary.
+- `src/cycle_screener/connectors.py`: public data refresh.
+- `src/cycle_screener/report_state.py`: public-safe report-state builder.
+- `src/cycle_screener/charts.py`: historical chart layer.
+- `src/cycle_screener/static_site.py`: static HTML renderer.
+- `src/cycle_screener/scoring.py`: current subsector scoring.
+- `dashboard/app.py`: local Streamlit dashboard.
 
 ## Data Policy
 
-The app does not bypass paywalls or scrape restricted content. Paywalled or licensed sources should be represented as manual uploads or configured paid feeds only when you have the right to use them.
+Do not commit or publish credentials, `.env`, local databases, private notes, manual reports, raw licensed data, or unpublished research.
 
-Structured research evidence is treated as data, not instructions. It is shown in the dashboard as research context and does not change opportunity scores unless explicit confidence and scoring rules are added later.
+Paywalled or licensed data can be used only through reviewed manual inputs or licensed feeds when the user has rights to use it. Raw restricted content must stay out of public artifacts.

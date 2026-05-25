@@ -1,6 +1,6 @@
 # GitHub Pages Weekly Report Setup
 
-Last updated: 2026-05-24
+Last updated: 2026-05-25
 
 Sprint 5 adds `.github/workflows/weekly-report.yml`, which builds and deploys the static report in `exports/site/`.
 
@@ -16,7 +16,7 @@ Live GitHub Pages URL:
 https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/
 ```
 
-Current status: GitHub Pages is enabled with GitHub Actions as the deployment source. Manual live workflow runs have completed successfully after the workflow was fixed to run live refresh before static-site generation. The latest published Sprint 10 verification from run `26370387165` reports schema `2026-05-24-sprint10`, `live_numeric` mode, 24 live indicators, 0 numeric `sample_fallback` indicators, chart layer version `sprint10-credit-liquidity-chart-layer`, and 168 chart-layer series. Repository secrets named `FRED_API_KEY` and `EIA_API_KEY` are configured, though the Sprint 10 FRED public CSV indicators do not require a key.
+Current status: GitHub Pages is enabled with GitHub Actions as the deployment source. Manual live workflow runs have completed successfully after the workflow was fixed to run live refresh before static-site generation. The latest published Sprint 10 verification before the Sprint 11 deployment from run `26371447133` reports schema `2026-05-24-sprint10`, `live_numeric` mode, 24 live indicators, 0 numeric `sample_fallback` indicators, chart layer version `sprint10-credit-liquidity-chart-layer`, and 168 chart-layer series. Repository secrets named `FRED_API_KEY` and `EIA_API_KEY` are configured, though the current FRED public CSV indicators do not require a key.
 
 ## What The Workflow Does
 
@@ -29,6 +29,7 @@ Current status: GitHub Pages is enabled with GitHub Actions as the deployment so
 - Builds the static report site.
 - In live mode, fails the build if numeric indicators fall back to deterministic `sample_fallback` rows.
 - Runs static-site QA against `exports/site/` after generation.
+- Publishes the Sprint 11 cycle-state synthesis as static HTML/JSON.
 - Uploads only `exports/site/` to GitHub Pages.
 - Stores a short-lived debug artifact named `static-radar-site`.
 

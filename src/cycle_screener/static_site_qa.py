@@ -15,6 +15,8 @@ REQUIRED_PAGE_TEXT = (
     "Global View And Drilldown",
     "Liquidity And Credit",
     "Financial Conditions Signal Group",
+    "Cycle Status And Transition Synthesis",
+    "Current Cycle Read",
     "Latest Radar",
     "Source Health",
     "Contradicting Evidence",

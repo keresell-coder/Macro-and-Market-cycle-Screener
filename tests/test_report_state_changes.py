@@ -32,6 +32,12 @@ def test_report_state_contains_public_safe_snapshot() -> None:
     assert state["source_status"]
     assert state["source_freshness"]
     assert state["source_health"]
+    assert state["cycle_state"]
+    assert state["cycle_state"]["version"] == "cycle-state-v1-sprint11"
+    assert state["cycle_state"]["global_equity_cycle"]["phase"]
+    assert state["cycle_state"]["dimensions"]
+    assert state["cycle_state"]["oslo_sector_read_through"]
+    assert state["cycle_state"]["missing_data_caveats"]
     assert state["chart_layer"]
     assert state["chart_layer"]["version"] == "sprint10-credit-liquidity-chart-layer"
     assert state["chart_layer"]["chart_window_policy"]["minimum_years"] == 10
@@ -82,6 +88,16 @@ def test_compare_report_states_tracks_core_deltas() -> None:
     current["subsectors"][0]["signals"]["recovery_potential"] = 0.35
     current["subsectors"][0]["market_cycle"]["relative_price_index"] = 109.0
     current["source_status"][0]["status"] = "failed"
+    current["cycle_state"]["global_equity_cycle"]["phase"] = "transition watch"
+    current["cycle_state"]["dimensions"][0]["score"] = 0.45
+    current["cycle_state"]["contradictions"].append(
+        {
+            "title": "New contradiction",
+            "summary": "New cycle-level disagreement.",
+            "components": {"growth": 0.4, "liquidity_credit": -0.3},
+            "severity": 0.35,
+        }
+    )
     current["research_facts"][0]["confidence"] = 0.9
     current["research_facts"].append(
         {
@@ -107,6 +123,9 @@ def test_compare_report_states_tracks_core_deltas() -> None:
     assert subsector_change["signal_delta"]["recovery_potential"] == 0.25
     assert subsector_change["market_cycle_delta"]["relative_price_index"] == 9.0
     assert changes["source_status_changes"][0]["status_delta"] == "ok -> failed"
+    assert changes["summary"]["cycle_state_changes"] >= 2
+    assert any(item["scope"] == "global_equity_cycle" for item in changes["cycle_state_changes"])
+    assert any(item.get("change_type") == "new_contradiction" for item in changes["cycle_state_changes"])
     assert len(changes["research_fact_changes"]["new"]) == 1
     assert len(changes["research_fact_changes"]["changed"]) == 1
 
@@ -131,6 +150,9 @@ def test_build_static_site_writes_report_json(tmp_path) -> None:
     assert "Global View And Drilldown" in site_html
     assert "Liquidity And Credit" in site_html
     assert "Financial Conditions Signal Group" in site_html
+    assert "Cycle Status And Transition Synthesis" in site_html
+    assert "Current Cycle Read" in site_html
+    assert "Oslo-Linked Sector Read-Through" in site_html
     assert "Chart window:" in site_html
     assert "Regional Drilldown" in site_html
     assert "Sector And Subsector Drilldown" in site_html
@@ -237,6 +259,28 @@ def _state_fixture() -> dict:
                 "checked_at": "2026-05-16T08:00:00+00:00",
             }
         ],
+        "cycle_state": {
+            "global_equity_cycle": {
+                "phase": "mid-cycle continuation",
+                "status": "continuation/recovery",
+                "direction": "stable/mixed",
+                "score": 0.2,
+                "confidence": "medium",
+            },
+            "dimensions": [
+                {
+                    "dimension_id": "growth",
+                    "title": "Growth",
+                    "phase": "mid-cycle continuation",
+                    "status": "growth support",
+                    "direction": "stable/mixed",
+                    "score": 0.2,
+                    "confidence": "medium",
+                    "confidence_score": 0.6,
+                }
+            ],
+            "contradictions": [],
+        },
         "research_facts": [
             {
                 "fact_id": "oil_services-source-1",

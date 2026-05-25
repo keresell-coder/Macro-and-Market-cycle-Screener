@@ -1,6 +1,6 @@
 # Publication Policy
 
-Last updated: 2026-05-23
+Last updated: 2026-05-25
 
 This project is private-first. Public/static output may be useful later, but only generated public-safe artifacts should be published.
 
@@ -12,6 +12,7 @@ This project is private-first. Public/static output may be useful later, but onl
   - `exports/public/`;
   - `exports/site/`.
 - Methodology notes explaining scoring, source hierarchy, and limitations.
+- Public-safe cycle-state synthesis generated from already allowed public/proxied indicators and explicitly labeled caveats.
 - Public-source research facts after review, provided the claim is short, sourced, and does not reproduce restricted content.
 
 ## Must Not Be Published
