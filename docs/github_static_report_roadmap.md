@@ -22,8 +22,6 @@ GitHub Pages remains a static HTML/JSON target. It must not host Streamlit, data
 
 Latest verified published state:
 
-- GitHub Actions run: `26391185166`
-- deployed commit: `ea0307a`
 - schema: `2026-05-25-sprint11`
 - numeric mode: `live_numeric`
 - live indicators: 24

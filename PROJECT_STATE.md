@@ -93,8 +93,6 @@ Implemented sprint sequence:
 
 Latest published Sprint 11 verification:
 
-- GitHub Actions run: `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener/actions/runs/26391185166`
-- deployed commit: `ea0307a`
 - `schema_version`: `2026-05-25-sprint11`
 - `numeric_mode`: `live_numeric`
 - live indicators: 24

@@ -16,7 +16,7 @@ Live GitHub Pages URL:
 https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/
 ```
 
-Current status: GitHub Pages is enabled with GitHub Actions as the deployment source. Manual live workflow run `26391185166` deployed Sprint 11 from commit `ea0307a`. The published Pages JSON reports schema `2026-05-25-sprint11`, `live_numeric` mode, 24 live indicators, 0 numeric `sample_fallback` indicators, cycle-state phase `late-cycle/crowded risk`, cycle-state confidence `high`, chart layer version `sprint10-credit-liquidity-chart-layer`, and 168 chart-layer series. Repository secrets named `FRED_API_KEY` and `EIA_API_KEY` are configured, though the current FRED public CSV indicators do not require a key.
+Current status: GitHub Pages is enabled with GitHub Actions as the deployment source. The published Pages JSON reports schema `2026-05-25-sprint11`, `live_numeric` mode, 24 live indicators, 0 numeric `sample_fallback` indicators, cycle-state phase `late-cycle/crowded risk`, cycle-state confidence `high`, chart layer version `sprint10-credit-liquidity-chart-layer`, and 168 chart-layer series. Repository secrets named `FRED_API_KEY` and `EIA_API_KEY` are configured, though the current FRED public CSV indicators do not require a key.
 
 ## What The Workflow Does
 
