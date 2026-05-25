@@ -30,12 +30,14 @@ Current keyless/default live data includes:
 - Statistics Norway CPI.
 - Selected public market-chart proxies.
 
-Latest published Sprint 10 verification before the Sprint 11 deployment:
+Latest published Sprint 11 verification:
 
-- `schema_version`: `2026-05-24-sprint10`
+- `schema_version`: `2026-05-25-sprint11`
 - `numeric_mode`: `live_numeric`
 - live indicators: 24
 - numeric `sample_fallback`: 0
+- cycle-state phase: `late-cycle/crowded risk`
+- cycle-state confidence: `high`
 - chart layer: `sprint10-credit-liquidity-chart-layer`
 - chart-layer series: 168
 

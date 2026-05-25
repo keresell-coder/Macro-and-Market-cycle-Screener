@@ -20,12 +20,16 @@ GitHub Pages remains a static HTML/JSON target. It must not host Streamlit, data
 - Published directory: `exports/site/`
 - Public URL: `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`
 
-Latest verified published state before the Sprint 11 deployment:
+Latest verified published state:
 
-- schema: `2026-05-24-sprint10`
+- GitHub Actions run: `26391185166`
+- deployed commit: `ea0307a`
+- schema: `2026-05-25-sprint11`
 - numeric mode: `live_numeric`
 - live indicators: 24
 - numeric fallback: 0
+- cycle-state phase: `late-cycle/crowded risk`
+- cycle-state confidence: `high`
 - chart layer: `sprint10-credit-liquidity-chart-layer`
 - chart-layer series: 168
 

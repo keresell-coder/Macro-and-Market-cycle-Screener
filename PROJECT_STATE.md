@@ -91,14 +91,16 @@ Implemented sprint sequence:
 - Sprint 10: first liquidity/credit layer with FRED public CSV NFCI and financial-stress proxies.
 - Sprint 11: public-safe cycle-state and transition synthesis.
 
-Latest published Sprint 10 verification before the Sprint 11 deployment:
+Latest published Sprint 11 verification:
 
-- GitHub Actions run: `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener/actions/runs/26371447133`
-- deployed commit: `4dd5517`
-- `schema_version`: `2026-05-24-sprint10`
+- GitHub Actions run: `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener/actions/runs/26391185166`
+- deployed commit: `ea0307a`
+- `schema_version`: `2026-05-25-sprint11`
 - `numeric_mode`: `live_numeric`
 - live indicators: 24
 - numeric `sample_fallback`: 0
+- cycle-state phase: `late-cycle/crowded risk`
+- cycle-state confidence: `high`
 - chart layer: `sprint10-credit-liquidity-chart-layer`
 - chart-layer series: 168
 - liquidity/credit signal group: connected

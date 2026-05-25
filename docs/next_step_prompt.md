@@ -21,7 +21,7 @@ Current state:
 - Static GitHub Pages report is live.
 - Sprint 11 adds public-safe cycle-state synthesis in `cycle_state`.
 - Current schema is `2026-05-25-sprint11`.
-- Latest live numeric target remains `live_numeric` with 24 live indicators and 0 numeric `sample_fallback`.
+- Latest published state is `live_numeric` with 24 live indicators, 0 numeric `sample_fallback`, cycle-state phase `late-cycle/crowded risk`, and cycle-state confidence `high`.
 - Current data covers growth/turning point, inflation/commodity pressure, rates, FX, liquidity/credit, market-pricing proxies, source health, and Oslo-linked subsector proxy scores.
 - Historical chart layer, liquidity/credit signal group, and Cycle Status And Transition Synthesis section are implemented.
 - True valuation multiples, market internals, analyst revisions, earnings estimates, positioning, and true subsector market histories remain missing or sample-backed.

@@ -22,7 +22,7 @@ Current implementation:
 - DuckDB storage with SQLite fallback.
 - Static GitHub Pages report generated from public-safe HTML/JSON/assets.
 - Keyless live data refresh using World Bank, DB.nomics OECD CLI mirror, FRED public CSV, Norges Bank, Statistics Norway, selected market-chart proxies, and derived public series.
-- Current Sprint 11 state: `schema_version=2026-05-25-sprint11`; latest live target remains `numeric_mode=live_numeric`, 24 live indicators, 0 numeric `sample_fallback`.
+- Latest published Sprint 11 state: `schema_version=2026-05-25-sprint11`, `numeric_mode=live_numeric`, 24 live indicators, 0 numeric `sample_fallback`, cycle-state phase `late-cycle/crowded risk`, cycle-state confidence `high`.
 - Implemented views: Cycle Status And Transition Synthesis, Historical Charts, Liquidity And Credit, Source Health, Contradicting Evidence, Latest Radar, Changes Since Last Report, Archive, Methodology.
 - Implemented data families: growth/turning point, commodity/inflation pressure, rates, FX, liquidity/credit, broad market-pricing proxies, source health, and Oslo-linked subsector proxy scores.
 - Implemented synthesis: public-safe `cycle_state` with global equity cycle status, growth, inflation/rates, liquidity/credit, market-pricing/risk-appetite dimensions, Oslo-linked sector read-through, transition/continuation evidence, contradictions, confidence, and missing-data caveats.
