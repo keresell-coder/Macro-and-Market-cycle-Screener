@@ -36,9 +36,14 @@ INDICATORS: tuple[IndicatorDefinition, ...] = (
     IndicatorDefinition("norway_cpi", "Norway CPI", "ssb_cpi", "03013/TOTAL/KpiIndMnd", "index", "lower_tailwind", "Inflation pressure proxy."),
     IndicatorDefinition("chicago_fed_nfci", "Chicago Fed NFCI", "fred_public", "NFCI", "index", "lower_tailwind", "US financial-conditions proxy from the public FRED CSV endpoint; positive values indicate tighter-than-average conditions."),
     IndicatorDefinition("st_louis_financial_stress", "St. Louis Fed Financial Stress Index", "fred_public", "STLFSI4", "index", "lower_tailwind", "US financial-stress proxy from the public FRED CSV endpoint; higher values indicate more financial stress."),
+    IndicatorDefinition("vix_proxy", "CBOE VIX chart proxy", "yahoo_chart", "^VIX", "index", "lower_tailwind", "Broad US equity volatility proxy from a public market chart endpoint; higher volatility is treated as exit-risk pressure."),
+    IndicatorDefinition("sp500_equal_weight_proxy", "S&P 500 equal-weight ETF chart proxy", "yahoo_chart", "RSP", "USD", "mixed", "Public market-chart proxy for equal-weight US equity participation; used only to derive broad leadership context."),
+    IndicatorDefinition("sp500_cap_weight_proxy", "S&P 500 cap-weight ETF chart proxy", "yahoo_chart", "SPY", "USD", "mixed", "Public market-chart proxy for cap-weight US equity performance; used only to derive broad leadership context."),
     IndicatorDefinition("food_price_pressure", "Fish meal price proxy", "world_bank_commodity", "FISH_MEAL", "USD/metric ton", "mixed", "Seafood demand and input-cost proxy."),
     IndicatorDefinition("nasdaq_proxy", "NASDAQ Composite chart proxy", "yahoo_chart", "^IXIC", "index", "mixed", "Global technology and AI sentiment proxy from a public market chart endpoint."),
     IndicatorDefinition("oil_curve_pressure", "Brent-WTI spread proxy", "derived_public", "brent-wti", "USD/bbl", "higher_tailwind", "Oil-market pressure proxy derived from public Brent and WTI series."),
+    IndicatorDefinition("us_equity_market_cap_gdp_proxy", "US equity market-cap-to-GDP valuation proxy", "derived_public", "BOGZ1LM883164105Q/GDP", "%", "lower_tailwind", "Broad US equity valuation-pressure proxy derived from public FRED/Fed Z.1 corporate-equity market value and BEA GDP series; not an Oslo valuation multiple."),
+    IndicatorDefinition("sp500_equal_weight_leadership_proxy", "S&P 500 equal-weight leadership proxy", "derived_public", "RSP/SPY", "ratio", "higher_tailwind", "Breadth-like public chart proxy derived from S&P 500 equal-weight versus cap-weight ETF prices; not true market breadth."),
 )
 
 PUBLIC_INDICATOR_SLUGS = {

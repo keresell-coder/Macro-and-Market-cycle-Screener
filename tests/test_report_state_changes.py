@@ -33,13 +33,13 @@ def test_report_state_contains_public_safe_snapshot() -> None:
     assert state["source_freshness"]
     assert state["source_health"]
     assert state["cycle_state"]
-    assert state["cycle_state"]["version"] == "cycle-state-v1-sprint11"
+    assert state["cycle_state"]["version"] == "cycle-state-v1-sprint12"
     assert state["cycle_state"]["global_equity_cycle"]["phase"]
     assert state["cycle_state"]["dimensions"]
     assert state["cycle_state"]["oslo_sector_read_through"]
     assert state["cycle_state"]["missing_data_caveats"]
     assert state["chart_layer"]
-    assert state["chart_layer"]["version"] == "sprint10-credit-liquidity-chart-layer"
+    assert state["chart_layer"]["version"] == "sprint12-valuation-internals-chart-layer"
     assert state["chart_layer"]["chart_window_policy"]["minimum_years"] == 10
     assert state["chart_layer"]["chart_window_policy"]["maximum_years"] == 30
     assert state["chart_layer"]["views"][0]["view_id"] == "global"
@@ -49,11 +49,13 @@ def test_report_state_contains_public_safe_snapshot() -> None:
     assert state["chart_layer"]["views"][0]["chart_window"]["shortest_available_years"] <= state["chart_layer"]["views"][0]["chart_window"]["year_span"]
     assert any(view["view_id"] == "norway_oslo" for view in state["chart_layer"]["views"])
     assert any(view["view_id"] == "liquidity_credit" for view in state["chart_layer"]["views"])
+    assert any(view["view_id"] == "valuation_internals" for view in state["chart_layer"]["views"])
     assert any(sector["subsectors"] for sector in state["chart_layer"]["sector_views"])
     assert "contradicting_evidence" in state
     assert state["signal_groups"]
     assert state["signal_groups"][0]["group_id"] == "liquidity_credit"
     assert state["signal_groups"][0]["scoring_inclusion"] is False
+    assert any(group["group_id"] == "valuation_market_internals" for group in state["signal_groups"])
     assert state["research_facts"]
     assert state["methodology"]["scoring_version"]
     assert state["methodology"]["framework_reference"].endswith("global_macro_market_cycle_knowledge_base.md")
@@ -67,6 +69,8 @@ def test_report_state_contains_public_safe_snapshot() -> None:
         for item in state["source_freshness"]
     )
     assert any(item["dimension"] == "Growth" and item["status"] == "partial" for item in state["framework_coverage"])
+    assert any(item["dimension"] == "Market internals and positioning" and item["status"] == "partial" for item in state["framework_coverage"])
+    assert any(item["indicator_slug"] == "us_equity_market_cap_gdp_proxy" for item in state["source_freshness"])
     assert any(item["dimension"] == "Historical chart layer" and item["status"] == "partial" for item in state["framework_coverage"])
     assert any(item["indicator_slug"] == "g20_cli" and "OECD CLI" in item["indicator_name"] for item in state["source_freshness"])
     assert any(item["indicator_slug"] == "chicago_fed_nfci" and item["source_category"] == "deterministic_sample" for item in state["source_freshness"])

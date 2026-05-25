@@ -19,12 +19,12 @@ Build a private-first macro and market-cycle radar that establishes where global
 
 Current state:
 - Static GitHub Pages report is live.
-- Sprint 11 adds public-safe cycle-state synthesis in `cycle_state`.
-- Current schema is `2026-05-25-sprint11`.
-- Latest published state is `live_numeric` with 24 live indicators, 0 numeric `sample_fallback`, cycle-state phase `late-cycle/crowded risk`, and cycle-state confidence `high`.
-- Current data covers growth/turning point, inflation/commodity pressure, rates, FX, liquidity/credit, market-pricing proxies, source health, and Oslo-linked subsector proxy scores.
-- Historical chart layer, liquidity/credit signal group, and Cycle Status And Transition Synthesis section are implemented.
-- True valuation multiples, market internals, analyst revisions, earnings estimates, positioning, and true subsector market histories remain missing or sample-backed.
+- Sprint 12 adds public-safe cycle-state synthesis plus broad valuation, volatility, and breadth-like leadership reality checks in `cycle_state`.
+- Current schema is `2026-05-25-sprint12`.
+- Latest local state is `live_numeric` with 29 live indicators, 0 numeric `sample_fallback`, cycle-state phase `late-cycle/crowded risk`, global equity cycle confidence `high`, and overall synthesis confidence `medium`.
+- Current data covers growth/turning point, inflation/commodity pressure, rates, FX, liquidity/credit, market-pricing proxies, broad valuation/market-internals reality checks, source health, and Oslo-linked subsector proxy scores.
+- Historical chart layer, liquidity/credit signal group, valuation/market-internals signal group, and Cycle Status And Transition Synthesis section are implemented.
+- True Oslo valuation multiples, analyst revisions, earnings estimates, positioning, true breadth, and true subsector market histories remain missing or sample-backed.
 
 Important constraints:
 - Do not bypass paywalls, CAPTCHAs, bot blocks, or restricted content.
@@ -34,19 +34,19 @@ Important constraints:
 - Preserve static GitHub Pages HTML/JSON/assets; do not build hosted Streamlit.
 
 Requested next sprint:
-Implement Sprint 12: Valuation And Market Internals Reality Check.
+Implement Sprint 13: Reviewed Public Research Evidence.
 
 Scope:
-1. Keep Sprint 11 `cycle_state` as the top-level report read.
-2. Evaluate public valuation, volatility, breadth-like, and risk-appetite proxies only if they improve cycle classification, transition warnings, contradictions, or confidence.
-3. Do not present broad proxies as true Oslo subsector valuation multiples.
-4. Wire admitted indicators through source registry, freshness/source health, static methodology notes, and strict fallback handling.
-5. Extend synthesis rules only where new inputs change phase, confidence, contradiction, continuation, or exit-risk evidence.
-6. Add tests for connector parsing, phase impact, missing-data handling, contradiction visibility, and static rendering.
+1. Keep Sprint 12 `cycle_state` as the top-level report read.
+2. Add reviewed public/manual CSV facts only where they clarify subsector cycle phase, transition evidence, contradiction evidence, or caveats.
+3. Keep unreviewed claims, private notes, licensed data, and raw report content out of public exports.
+4. Do not let unreviewed research claims change numeric scoring.
+5. Preserve sample-backed labels where reviewed evidence is still missing.
+6. Add tests for evidence ingestion, public-export filtering, source/caveat visibility, and static rendering.
 7. Run local tests and static-site QA.
 8. Update docs and the continuation prompt after implementation.
 9. Commit, push, dispatch a live GitHub Actions workflow, and verify Pages still shows `live_numeric` with 0 numeric `sample_fallback`.
 
 Acceptance:
-The report should make the Sprint 11 cycle read more robust without turning into a broad data catalog or overstating proxy precision.
+The report should reduce sample research evidence without weakening the public/private boundary or overstating research precision.
 ```

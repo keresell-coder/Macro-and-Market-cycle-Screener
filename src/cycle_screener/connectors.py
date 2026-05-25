@@ -421,6 +421,16 @@ def _derive_public_indicators(indicators: Iterable[IndicatorDefinition], observa
                 series = wide["brent"] - wide["wti"]
                 rows.append(_derived_series_frame(indicator, series, "public_derived"))
                 statuses.append(_status("derived_public:oil_curve_pressure", "ok", "Derived Brent-WTI spread from public Brent and WTI series."))
+            elif indicator.slug == "us_equity_market_cap_gdp_proxy":
+                market_cap = _extra_public_series("BOGZ1LM883164105Q", settings_timeout=settings.request_timeout_seconds)
+                gdp = _extra_public_series("GDP", settings_timeout=settings.request_timeout_seconds)
+                series = market_cap.div(gdp * 1000, axis=0) * 100
+                rows.append(_derived_series_frame(indicator, series, "fred_public_derived"))
+                statuses.append(_status("derived_public:us_equity_market_cap_gdp_proxy", "ok", "Derived broad US equity market-cap-to-GDP valuation proxy from public FRED/Fed Z.1 and BEA GDP series."))
+            elif indicator.slug == "sp500_equal_weight_leadership_proxy":
+                series = wide["sp500_equal_weight_proxy"].div(wide["sp500_cap_weight_proxy"], axis=0) * 100
+                rows.append(_derived_series_frame(indicator, series, "public_market_chart_derived"))
+                statuses.append(_status("derived_public:sp500_equal_weight_leadership_proxy", "ok", "Derived S&P 500 equal-weight versus cap-weight leadership proxy from public market chart series."))
         except Exception as exc:
             statuses.append(_status(f"derived_public:{indicator.slug}", "failed", f"Could not derive {indicator.name}: {exc}"))
 

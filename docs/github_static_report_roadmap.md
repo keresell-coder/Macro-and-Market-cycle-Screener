@@ -20,16 +20,17 @@ GitHub Pages remains a static HTML/JSON target. It must not host Streamlit, data
 - Published directory: `exports/site/`
 - Public URL: `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`
 
-Latest verified published state:
+Latest local Sprint 12 state:
 
-- schema: `2026-05-25-sprint11`
+- schema: `2026-05-25-sprint12`
 - numeric mode: `live_numeric`
-- live indicators: 24
+- live indicators: 29
 - numeric fallback: 0
 - cycle-state phase: `late-cycle/crowded risk`
-- cycle-state confidence: `high`
-- chart layer: `sprint10-credit-liquidity-chart-layer`
-- chart-layer series: 168
+- global equity cycle confidence: `high`
+- overall synthesis confidence: `medium`
+- chart layer: `sprint12-valuation-internals-chart-layer`
+- chart-layer series: 176
 
 ## Current Static Views
 
@@ -48,7 +49,7 @@ Latest verified published state:
 **Cycle Status And Transition Synthesis** is now a first-class report section before Latest Radar. It makes the report’s main conclusion explicit:
 
 - current global equity cycle state;
-- current growth/rates/liquidity/market-pricing states;
+- current growth/rates/liquidity/market-pricing/valuation-internals states;
 - Oslo-linked sector/subsector phase read-through;
 - continuation or transition evidence;
 - contradictions;
@@ -67,12 +68,9 @@ Latest verified published state:
 - Sprint 9: historical chart layer.
 - Sprint 10: liquidity/credit proxies.
 - Sprint 11: cycle status and transition synthesis.
+- Sprint 12: valuation and market-internals reality check.
 
 ## Forward Roadmap
-
-### Sprint 12: Valuation And Market Internals Reality Check
-
-Add only public proxies that improve cycle-state synthesis. Avoid pretending broad proxies are true subsector valuation or institutional market internals.
 
 ### Sprint 13: Reviewed Research Evidence
 

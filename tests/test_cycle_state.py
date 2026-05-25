@@ -26,6 +26,9 @@ def test_cycle_state_classifies_constructive_public_evidence() -> None:
             "copper": "up",
             "aluminum": "up",
             "oil_curve_pressure": "up",
+            "us_equity_market_cap_gdp_proxy": "down",
+            "vix_proxy": "down",
+            "sp500_equal_weight_leadership_proxy": "up",
         }
     )
 
@@ -86,6 +89,9 @@ def test_cycle_state_surfaces_cycle_contradictions() -> None:
             "copper": "up",
             "aluminum": "up",
             "oil_curve_pressure": "up",
+            "us_equity_market_cap_gdp_proxy": "up",
+            "vix_proxy": "up",
+            "sp500_equal_weight_leadership_proxy": "down",
         }
     )
 
@@ -100,6 +106,7 @@ def test_cycle_state_surfaces_cycle_contradictions() -> None:
 
     titles = {item["title"] for item in state["contradictions"]}
     assert "Risk appetite conflicts with liquidity/credit" in titles
+    assert "Risk appetite conflicts with valuation/internals" in titles
     assert state["global_equity_cycle"]["phase"] in {"transition watch", "late-cycle/crowded risk"}
 
 

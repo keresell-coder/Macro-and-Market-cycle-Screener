@@ -34,10 +34,11 @@ MARKET_COLUMNS = (
     "driver_pressure",
 )
 
-REPORT_STATE_VERSION = "2026-05-25-sprint11"
+REPORT_STATE_VERSION = "2026-05-25-sprint12"
 SCORING_METHODOLOGY_VERSION = "score-v1-public-cycle-radar"
 CREDIT_LIQUIDITY_INDICATORS = ("chicago_fed_nfci", "st_louis_financial_stress")
 MACRO_CONFIRMATION_INDICATORS = ("g20_cli", "us_cli", "europe_cli", "nasdaq_proxy")
+VALUATION_INTERNALS_INDICATORS = ("us_equity_market_cap_gdp_proxy", "vix_proxy", "sp500_equal_weight_leadership_proxy")
 
 
 def build_report_state(store: RadarStore | None = None) -> dict[str, Any]:
@@ -81,7 +82,7 @@ def build_report_state(store: RadarStore | None = None) -> dict[str, Any]:
             "scoring_version": SCORING_METHODOLOGY_VERSION,
             "report_state_version": REPORT_STATE_VERSION,
             "framework_reference": "docs/knowledge_base/global_macro_market_cycle_knowledge_base.md",
-            "framework_coverage": "Partial implementation of a broader macro and market-cycle framework. Current scoring covers public macro, rates, FX, commodity, OECD CLI growth proxies, market-proxy, source-health, and reviewed-public-research evidence. Sprint 10 added a non-scoring liquidity/credit signal group and historical charts for Chicago Fed NFCI and the St. Louis Fed Financial Stress Index via public FRED CSV. Sprint 11 adds a public-safe rule-based cycle-state synthesis layer. Annual World Bank GDP growth remains slow-moving background context, while monthly OECD CLI data is accessed through the public DB.nomics mirror because the direct OECD SDMX endpoint is not reliably reachable from this environment. The model does not yet include earnings revisions, true valuation multiples, positioning, BIS credit/property-cycle data, or licensed subsector market data.",
+            "framework_coverage": "Partial implementation of a broader macro and market-cycle framework. Current scoring covers public macro, rates, FX, commodity, OECD CLI growth proxies, market-proxy, source-health, and reviewed-public-research evidence. Sprint 10 added a non-scoring liquidity/credit signal group and historical charts for Chicago Fed NFCI and the St. Louis Fed Financial Stress Index via public FRED CSV. Sprint 11 added a public-safe rule-based cycle-state synthesis layer. Sprint 12 adds broad public valuation, volatility, and breadth-like leadership reality checks. Annual World Bank GDP growth remains slow-moving background context, while monthly OECD CLI data is accessed through the public DB.nomics mirror because the direct OECD SDMX endpoint is not reliably reachable from this environment. The model does not yet include earnings revisions, true Oslo valuation multiples, positioning, BIS credit/property-cycle data, or licensed subsector market data.",
             "implementation_boundary": "Opportunity scores are research triage signals. Cycle-state labels are rule-based synthesis outputs from public/proxied evidence, not return forecasts or investment advice. Missing dimensions should be treated as explicit blind spots rather than neutral evidence.",
             "scoring": "Transparent subsector scoring from public/free indicators, explicitly labeled proxies, and visible sample fallbacks when present.",
             "research_policy": "Only reviewed public research facts are included in public report state. Unreviewed and manual evidence remain local.",
@@ -289,9 +290,48 @@ def _signal_groups(observations: pd.DataFrame, source_freshness: list[dict[str, 
     freshness_lookup = {str(item.get("indicator_slug", "")): item for item in source_freshness}
     credit_metrics = _indicator_signal_metrics(observations, CREDIT_LIQUIDITY_INDICATORS)
     macro_metrics = _indicator_signal_metrics(observations, MACRO_CONFIRMATION_INDICATORS)
+    internals_metrics = _indicator_signal_metrics(observations, VALUATION_INTERNALS_INDICATORS)
+
+    credit_tailwind = _mean_float([item.get("tailwind_score") for item in credit_metrics.values()])
+    macro_tailwind = _mean_float([item.get("tailwind_score") for item in macro_metrics.values()])
+    internals_tailwind = _mean_float([item.get("tailwind_score") for item in internals_metrics.values()])
+
+    return [
+        {
+            "group_id": "liquidity_credit",
+            "title": "Liquidity and credit conditions",
+            "status": _group_connection_status(CREDIT_LIQUIDITY_INDICATORS, freshness_lookup),
+            "scoring_inclusion": False,
+            "summary_label": _liquidity_label(credit_tailwind),
+            "tailwind_score": _rounded(credit_tailwind, 3),
+            "macro_confirmation": _confirmation_label(credit_tailwind, macro_tailwind),
+            "macro_tailwind_reference": _rounded(macro_tailwind, 3),
+            "methodology_note": "Non-scoring Sprint 10 signal group. Lower NFCI and lower St. Louis financial stress are treated as easier liquidity/credit conditions; higher values are treated as tighter or more stressed.",
+            "indicators": _signal_group_indicators(CREDIT_LIQUIDITY_INDICATORS, credit_metrics, freshness_lookup),
+        },
+        {
+            "group_id": "valuation_market_internals",
+            "title": "Valuation and market internals reality check",
+            "status": _group_connection_status(VALUATION_INTERNALS_INDICATORS, freshness_lookup),
+            "scoring_inclusion": False,
+            "summary_label": _valuation_internals_label(internals_tailwind),
+            "tailwind_score": _rounded(internals_tailwind, 3),
+            "macro_confirmation": _confirmation_label(internals_tailwind, macro_tailwind),
+            "macro_tailwind_reference": _rounded(macro_tailwind, 3),
+            "methodology_note": "Non-scoring Sprint 12 signal group. It uses broad public valuation, volatility, and equal-weight leadership proxies as a cycle reality check. It is not true Oslo subsector valuation, positioning, breadth, or analyst-revision coverage.",
+            "indicators": _signal_group_indicators(VALUATION_INTERNALS_INDICATORS, internals_metrics, freshness_lookup),
+        },
+    ]
+
+
+def _signal_group_indicators(
+    slugs: tuple[str, ...],
+    metrics: dict[str, dict[str, float]],
+    freshness_lookup: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
     indicators = []
-    for slug in CREDIT_LIQUIDITY_INDICATORS:
-        metric = credit_metrics.get(slug, {})
+    for slug in slugs:
+        metric = metrics.get(slug, {})
         freshness = freshness_lookup.get(slug, {})
         indicators.append(
             {
@@ -308,38 +348,23 @@ def _signal_groups(observations: pd.DataFrame, source_freshness: list[dict[str, 
                 "tailwind_score": _rounded_or_zero(metric.get("tailwind_score"), 3),
             }
         )
+    return indicators
 
-    credit_tailwind = _mean_float([item.get("tailwind_score") for item in credit_metrics.values()])
-    macro_tailwind = _mean_float([item.get("tailwind_score") for item in macro_metrics.values()])
+
+def _group_connection_status(slugs: tuple[str, ...], freshness_lookup: dict[str, dict[str, Any]]) -> str:
     fallback_used = any(
         freshness_lookup.get(slug, {}).get("has_sample_fallback")
         or freshness_lookup.get(slug, {}).get("source_category") == "numeric_sample_fallback"
-        for slug in CREDIT_LIQUIDITY_INDICATORS
+        for slug in slugs
     )
-    live_count = sum(1 for slug in CREDIT_LIQUIDITY_INDICATORS if freshness_lookup.get(slug, {}).get("source_category") == "live_numeric")
+    live_count = sum(1 for slug in slugs if freshness_lookup.get(slug, {}).get("source_category") == "live_numeric")
     if fallback_used:
-        status = "sample_fallback"
-    elif live_count == len(CREDIT_LIQUIDITY_INDICATORS):
-        status = "connected"
-    elif live_count:
-        status = "partial"
-    else:
-        status = "missing"
-
-    return [
-        {
-            "group_id": "liquidity_credit",
-            "title": "Liquidity and credit conditions",
-            "status": status,
-            "scoring_inclusion": False,
-            "summary_label": _liquidity_label(credit_tailwind),
-            "tailwind_score": _rounded(credit_tailwind, 3),
-            "macro_confirmation": _confirmation_label(credit_tailwind, macro_tailwind),
-            "macro_tailwind_reference": _rounded(macro_tailwind, 3),
-            "methodology_note": "Non-scoring Sprint 10 signal group. Lower NFCI and lower St. Louis financial stress are treated as easier liquidity/credit conditions; higher values are treated as tighter or more stressed.",
-            "indicators": indicators,
-        }
-    ]
+        return "sample_fallback"
+    if live_count == len(slugs):
+        return "connected"
+    if live_count:
+        return "partial"
+    return "missing"
 
 
 def _indicator_signal_metrics(observations: pd.DataFrame, slugs: tuple[str, ...]) -> dict[str, dict[str, float]]:
@@ -397,6 +422,14 @@ def _liquidity_label(score: float) -> str:
     return "mixed/neutral"
 
 
+def _valuation_internals_label(score: float) -> str:
+    if score >= 0.25:
+        return "valuation/internals supportive"
+    if score <= -0.25:
+        return "crowding/volatility warning"
+    return "mixed/neutral"
+
+
 def _confirmation_label(credit_tailwind: float, macro_tailwind: float) -> str:
     if abs(credit_tailwind) < 0.15 or abs(macro_tailwind) < 0.15:
         return "mixed or not decisive"
@@ -439,15 +472,15 @@ def _framework_coverage() -> list[dict[str, str]]:
         },
         {
             "dimension": "Valuation and risk premium",
-            "status": "proxied",
-            "current_coverage": "Uses a public-data scoring proxy and deterministic sample-backed market-cycle valuation history. Static charts label this as a valuation proxy, not a true multiple.",
-            "main_gap": "No true Oslo subsector valuation multiples, constituent-level valuation data, or equity-risk-premium feed.",
+            "status": "partial",
+            "current_coverage": "Sprint 12 adds a broad public US equity market-cap-to-GDP valuation-pressure proxy derived from FRED/Fed Z.1 and BEA GDP series, alongside existing public-data scoring proxies and sample-backed market-cycle valuation history.",
+            "main_gap": "No true Oslo subsector valuation multiples, constituent-level valuation data, earnings-yield layer, or equity-risk-premium feed.",
         },
         {
             "dimension": "Market internals and positioning",
-            "status": "limited",
-            "current_coverage": "NASDAQ and broad public market chart proxies only.",
-            "main_gap": "No breadth, volatility, fund-flow, short-interest, CFTC, or positioning layer.",
+            "status": "partial",
+            "current_coverage": "Sprint 12 adds broad public volatility and breadth-like leadership checks using VIX and S&P 500 equal-weight versus cap-weight market-chart proxies. These are broad reality checks, not true breadth or positioning data.",
+            "main_gap": "No true advance/decline breadth, fund-flow, short-interest, CFTC, institutional positioning, or Oslo subsector internals layer.",
         },
         {
             "dimension": "Subsector market cycle",
@@ -564,7 +597,12 @@ def _source_category(source: str, has_sample_fallback: bool, deterministic_sampl
 
 
 def _freshness_status(indicator_source: str, age_days: int) -> str:
-    stale_after, very_stale_after = (550, 800) if indicator_source == "world_bank_indicator" else (75, 125)
+    if indicator_source == "world_bank_indicator":
+        stale_after, very_stale_after = (550, 800)
+    elif indicator_source == "derived_public":
+        stale_after, very_stale_after = (250, 450)
+    else:
+        stale_after, very_stale_after = (75, 125)
     if age_days > very_stale_after:
         return "very_stale"
     if age_days > stale_after:

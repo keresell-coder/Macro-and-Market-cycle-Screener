@@ -44,24 +44,24 @@ Expected phase language should be explicit and evidence-backed, for example:
 - Public-safe report-state JSON and change tracking.
 - Strict public/private boundary for credentials, manual reports, private notes, raw licensed data, local databases, and local research evidence.
 - Scoring version: `score-v1-public-cycle-radar`.
-- Report-state schema version: `2026-05-25-sprint11`.
+- Report-state schema version: `2026-05-25-sprint12`.
 - Live Pages URL: `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`.
 - Repository: `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener`.
 
 ## Current Data Coverage
 
-Live numeric refresh is keyless by default and currently covers 24 indicators with 0 numeric `sample_fallback` rows in the latest published live run.
+Live numeric refresh is keyless by default and currently covers 29 indicators with 0 numeric `sample_fallback` rows in the latest local live run.
 
 Implemented public/live sources:
 
 - World Bank Pink Sheet: commodity and input-cost proxies.
 - World Bank Indicators: annual global and China GDP growth background proxies.
 - DB.nomics mirror of OECD CLI: G20, G7, US, China, and major Europe leading-growth proxies.
-- FRED public CSV: Chicago Fed NFCI and St. Louis Fed Financial Stress Index.
+- FRED public CSV: Chicago Fed NFCI, St. Louis Fed Financial Stress Index, and valuation-proxy dependencies.
 - Norges Bank CSV API: NOK FX and policy-rate data.
 - Statistics Norway API: Norway CPI.
 - Yahoo chart endpoint: selected broad market-chart proxies where no official keyless feed is currently wired.
-- Derived public series: Brent-WTI spread proxy.
+- Derived public series: Brent-WTI spread proxy, broad US equity market-cap-to-GDP valuation-pressure proxy, and S&P 500 equal-weight leadership proxy.
 
 Current known non-OK statuses:
 
@@ -73,7 +73,7 @@ Important boundaries:
 - The legacy internal `global_pmi` slug is publicly displayed as `global_growth_proxy`; it is World Bank annual GDP growth, not PMI.
 - OECD direct SDMX access is documented/keyless but blocked by Cloudflare from this environment; the project uses the public DB.nomics mirror and does not bypass the block.
 - Subsector price, relative-price, valuation, and driver histories remain deterministic sample-backed proxies until reviewed public or licensed data is connected.
-- True Oslo subsector valuation multiples, analyst revisions, earnings estimates, positioning, and many market-internals datasets remain missing.
+- True Oslo subsector valuation multiples, analyst revisions, earnings estimates, positioning, and true subsector market histories remain missing.
 
 ## What Has Been Built
 
@@ -90,19 +90,22 @@ Implemented sprint sequence:
 - Sprint 9: historical chart layer with global, regional, and sector/subsector views.
 - Sprint 10: first liquidity/credit layer with FRED public CSV NFCI and financial-stress proxies.
 - Sprint 11: public-safe cycle-state and transition synthesis.
+- Sprint 12: broad public valuation, volatility, and breadth-like market-internals reality checks.
 
-Latest published Sprint 11 verification:
+Latest local Sprint 12 verification:
 
-- `schema_version`: `2026-05-25-sprint11`
+- `schema_version`: `2026-05-25-sprint12`
 - `numeric_mode`: `live_numeric`
-- live indicators: 24
+- live indicators: 29
 - numeric `sample_fallback`: 0
 - cycle-state phase: `late-cycle/crowded risk`
-- cycle-state confidence: `high`
-- chart layer: `sprint10-credit-liquidity-chart-layer`
-- chart-layer series: 168
+- global equity cycle confidence: `high`
+- overall synthesis confidence: `medium`
+- chart layer: `sprint12-valuation-internals-chart-layer`
+- chart-layer series: 176
 - liquidity/credit signal group: connected
-- `chicago_fed_nfci` and `st_louis_financial_stress`: live, current, 361 monthly observations each
+- valuation/market-internals signal group: connected
+- `chicago_fed_nfci`, `st_louis_financial_stress`, `vix_proxy`, `us_equity_market_cap_gdp_proxy`, and `sp500_equal_weight_leadership_proxy`: live numeric with no sample fallback
 
 ## Current Product Shape
 
@@ -120,10 +123,10 @@ Static report views:
 
 Report-state JSON includes:
 
-- cycle-state synthesis with global equity, growth, inflation/rates, liquidity/credit, market-pricing, Oslo-linked sector read-through, transition evidence, contradictions, confidence, and missing-data caveats;
+- cycle-state synthesis with global equity, growth, inflation/rates, liquidity/credit, market-pricing, valuation/market-internals, Oslo-linked sector read-through, transition evidence, contradictions, confidence, and missing-data caveats;
 - subsector ranks, scores, and signal values;
 - historical chart layer;
-- non-scoring liquidity/credit signal group;
+- non-scoring liquidity/credit and valuation/market-internals signal groups;
 - source freshness and source health;
 - framework coverage;
 - contradiction evidence;
@@ -132,29 +135,20 @@ Report-state JSON includes:
 
 ## Current Gap
 
-Sprint 11 now produces an explicit cycle-state synthesis, but important evidence remains missing or proxied. The next useful work is not broad data collection; it is adding valuation and market-internals reality checks only where public data improves the cycle read.
+Sprint 12 adds broad public valuation, volatility, and breadth-like reality checks to the cycle-state synthesis, but important evidence remains missing or proxied. The next useful work is reviewed public/manual research evidence for priority subsectors, not broad indicator collection.
 
 ## Next Sprint
 
-Sprint 12 should be:
+Sprint 13 should be:
 
-**Valuation And Market Internals Reality Check**
+**Reviewed Public Research Evidence**
 
 Goal:
 
-Add a narrow set of public-safe valuation, volatility, breadth-like, or risk-appetite proxies that improve cycle-state classification, transition detection, contradiction evidence, or confidence.
+Reduce sample-backed research evidence by adding analyst-reviewed public/manual CSV facts for priority subsectors. Export reviewed public facts only, and keep unreviewed or restricted material local.
 
-Expected implementation:
+After Sprint 13:
 
-- Keep the Sprint 11 cycle-state layer as the top-level read.
-- Add only indicators that clarify valuation pressure, risk appetite, market internals, or exit risk.
-- Label broad proxies clearly and do not present them as true Oslo subsector valuation multiples.
-- Preserve strict numeric fallback visibility and live-build failure on numeric `sample_fallback`.
-- Extend synthesis tests where new inputs change phase, contradiction, or confidence behavior.
-
-After Sprint 12:
-
-- Sprint 13: reviewed public/manual research evidence.
 - Sprint 14: archive, monitoring, and deployment maturity.
 
 ## Operating Rules

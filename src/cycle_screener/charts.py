@@ -10,7 +10,7 @@ from .indicators import IndicatorDefinition, indicator_by_slug, public_indicator
 from .taxonomy import SUBSECTORS, Subsector
 
 
-CHART_LAYER_VERSION = "sprint10-credit-liquidity-chart-layer"
+CHART_LAYER_VERSION = "sprint12-valuation-internals-chart-layer"
 CHART_MIN_YEARS = 10
 CHART_MAX_YEARS = 30
 CHART_MAX_MONTHS = CHART_MAX_YEARS * 12 + 1
@@ -27,6 +27,9 @@ CHART_VIEW_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "global_pmi",
             "chicago_fed_nfci",
             "st_louis_financial_stress",
+            "us_equity_market_cap_gdp_proxy",
+            "vix_proxy",
+            "sp500_equal_weight_leadership_proxy",
             "brent",
             "us_natural_gas",
             "copper",
@@ -48,6 +51,13 @@ CHART_VIEW_DEFINITIONS: tuple[dict[str, Any], ...] = (
         "scope": "Liquidity/credit",
         "description": "Narrow first Sprint 10 credit/liquidity layer using public FRED CSV financial-conditions and financial-stress proxies before broader BIS or credit-spread connectors are added.",
         "indicator_slugs": ("chicago_fed_nfci", "st_louis_financial_stress", "rates_pressure", "g20_cli", "nasdaq_proxy"),
+    },
+    {
+        "view_id": "valuation_internals",
+        "title": "Valuation and market internals proxy history",
+        "scope": "Valuation/internals",
+        "description": "Sprint 12 reality-check view using broad public valuation, volatility, and equal-weight leadership proxies. This is not true Oslo subsector valuation, market breadth, positioning, or earnings-revision data.",
+        "indicator_slugs": ("us_equity_market_cap_gdp_proxy", "vix_proxy", "sp500_equal_weight_leadership_proxy", "nasdaq_proxy", "rates_pressure"),
     },
     {
         "view_id": "europe",
@@ -106,7 +116,7 @@ def build_chart_layer(
     return {
         "version": CHART_LAYER_VERSION,
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "summary": "Historical chart layer built from existing live public indicators and explicitly sample-backed subsector market-cycle histories.",
+        "summary": "Historical chart layer built from existing live public indicators, Sprint 12 broad valuation/internals reality checks, and explicitly sample-backed subsector market-cycle histories.",
         "normalization": "Most chart lines are indexed to 100 at the first available observation inside each chart window. Near-zero or sign-changing series are range-normalized around 100 to avoid distorted chart scales. Chart x-axes target a common overlapping history, are capped at 30 years, and are not compressed below 10 years; series with shorter available history are flagged in metadata.",
         "chart_window_policy": {
             "minimum_years": CHART_MIN_YEARS,

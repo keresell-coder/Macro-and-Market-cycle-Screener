@@ -13,6 +13,7 @@ This project is private-first. Public/static output may be useful later, but onl
   - `exports/site/`.
 - Methodology notes explaining scoring, source hierarchy, and limitations.
 - Public-safe cycle-state synthesis generated from already allowed public/proxied indicators and explicitly labeled caveats.
+- Broad public valuation, volatility, and leadership proxies when clearly labeled as proxies and not as true Oslo subsector valuation, breadth, positioning, or analyst-estimate data.
 - Public-source research facts after review, provided the claim is short, sourced, and does not reproduce restricted content.
 
 ## Must Not Be Published

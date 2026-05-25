@@ -45,13 +45,13 @@ Implemented:
 - Rates/policy: Norges Bank policy rate and US 10-year proxy.
 - Liquidity/credit: Chicago Fed NFCI and St. Louis Fed Financial Stress Index via FRED public CSV.
 - Market pricing: selected broad chart proxies.
+- Valuation and market internals: broad US equity market-cap-to-GDP valuation-pressure proxy, VIX chart proxy, and S&P 500 equal-weight versus cap-weight leadership proxy.
 - Oslo-linked subsector radar: proxy-based scores and sample-backed market-cycle histories.
 - Source health: freshness, failures, fallback, and strict live guard.
 
 Still missing or weak:
 
-- valuation and market-internals inputs that can improve the new cycle-state synthesis;
-- true market breadth, volatility, positioning, and valuation internals;
+- true market breadth, positioning, and valuation internals;
 - true Oslo subsector valuation multiples;
 - analyst revisions, earnings estimates, and margin-cycle data;
 - BIS/ECB/Eurostat credit/property/monetary layers;
@@ -70,36 +70,28 @@ Still missing or weak:
 - Sprint 9: historical chart layer and drilldown.
 - Sprint 10: first liquidity/credit proxies through FRED public CSV.
 - Sprint 11: cycle status and transition synthesis.
+- Sprint 12: valuation and market-internals reality check.
 
 ## Next Sprint
 
-### Sprint 12: Valuation And Market Internals Reality Check
+### Sprint 13: Reviewed Research Evidence
 
 Goal:
 
-Add only robust public proxies that improve the Sprint 11 cycle-state synthesis.
+Reduce sample-backed research evidence by adding reviewed public/manual CSV facts for priority subsectors.
 
 Scope:
 
-- Keep the existing `cycle_state` report-state metadata as the top-level conclusion layer.
-- Test public valuation, volatility, breadth-like, and risk-appetite proxies only if they improve:
-  - cycle-state classification;
-  - transition or exit-risk detection;
-  - contradiction evidence;
-  - confidence/source-health assessment.
-- Label broad proxies clearly and do not imply true Oslo subsector valuation multiples.
-- Preserve missing/proxied/sample-backed labels in the static report.
-- Add tests for any phase, confidence, or contradiction changes caused by the new inputs.
+- Keep unreviewed claims, private notes, licensed data, and raw report content out of public exports.
+- Export reviewed public facts only.
+- Prioritize facts that clarify sector/subsector cycle phase, transition evidence, contradiction evidence, or missing-data caveats.
+- Do not let unreviewed research claims change numeric scoring.
 
 Acceptance:
 
-The report should make the cycle read more robust without becoming a broad market-data catalog or overstating proxy precision.
+The report should reduce sample research evidence without weakening the publication boundary.
 
 ## Later Sprints
-
-### Sprint 13: Reviewed Research Evidence
-
-Reduce sample research evidence by adding reviewed public/manual CSV facts for priority subsectors. Export reviewed public facts only.
 
 ### Sprint 14: Archive, Monitoring, And Deployment Maturity
 

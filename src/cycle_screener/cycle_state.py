@@ -8,12 +8,13 @@ import pandas as pd
 from .indicators import indicator_by_slug, public_indicator_slug
 
 
-CYCLE_STATE_VERSION = "cycle-state-v1-sprint11"
+CYCLE_STATE_VERSION = "cycle-state-v1-sprint12"
 
 GROWTH_INDICATORS = ("g20_cli", "g7_cli", "us_cli", "china_cli", "europe_cli", "global_pmi", "china_growth_proxy")
 INFLATION_RATES_INDICATORS = ("norway_cpi", "rates_pressure", "norges_bank_policy_rate", "brent", "us_natural_gas")
 LIQUIDITY_CREDIT_INDICATORS = ("chicago_fed_nfci", "st_louis_financial_stress")
 MARKET_PRICING_INDICATORS = ("nasdaq_proxy", "copper", "aluminum", "oil_curve_pressure")
+VALUATION_INTERNALS_INDICATORS = ("us_equity_market_cap_gdp_proxy", "vix_proxy", "sp500_equal_weight_leadership_proxy")
 
 
 def build_cycle_state(
@@ -61,13 +62,23 @@ def build_cycle_state(
         _dimension(
             "market_pricing",
             "Market pricing and risk appetite",
-            "Broad market, technology, commodity, and oil-curve proxies. This is not a breadth or positioning model.",
+            "Broad market, technology, commodity, and oil-curve proxies.",
             MARKET_PRICING_INDICATORS,
             metrics,
             freshness_lookup,
             positive_label="risk appetite supportive",
             negative_label="risk appetite fading",
             use_risk_appetite=True,
+        ),
+        _dimension(
+            "valuation_internals",
+            "Valuation and market internals reality check",
+            "Broad public valuation, volatility, and breadth-like leadership proxies. This is not true Oslo subsector valuation, positioning, or analyst-revision coverage.",
+            VALUATION_INTERNALS_INDICATORS,
+            metrics,
+            freshness_lookup,
+            positive_label="valuation/internals supportive",
+            negative_label="valuation/internals warning",
         ),
     ]
 
@@ -88,8 +99,9 @@ def build_cycle_state(
         "confidence": _overall_confidence(global_equity, dimensions, missing_caveats),
         "missing_data_caveats": missing_caveats,
         "methodology_note": (
-            "Sprint 11 synthesis uses existing public indicators, source freshness, liquidity/credit signal groups, "
-            "subsector proxy scores, and contradiction evidence. It is a rule-based cycle read, not a forecast or investment advice."
+            "Sprint 12 synthesis uses existing public indicators, source freshness, liquidity/credit signals, "
+            "broad valuation/volatility/leadership reality checks, subsector proxy scores, and contradiction evidence. "
+            "It is a rule-based cycle read, not a forecast or investment advice."
         ),
     }
 
@@ -228,9 +240,10 @@ def _risk_appetite_score(metric: dict[str, float]) -> float:
 def _global_equity_cycle(dimensions: dict[str, dict[str, Any]], contradictions: list[dict[str, Any]]) -> dict[str, Any]:
     weights = {
         "growth": 0.3,
-        "inflation_rates": 0.2,
-        "liquidity_credit": 0.25,
-        "market_pricing": 0.25,
+        "inflation_rates": 0.18,
+        "liquidity_credit": 0.22,
+        "market_pricing": 0.2,
+        "valuation_internals": 0.1,
     }
     available = [key for key in weights if dimensions.get(key, {}).get("phase") != "insufficient evidence"]
     if len(available) < 3:
@@ -251,8 +264,9 @@ def _global_equity_cycle(dimensions: dict[str, dict[str, Any]], contradictions: 
     rates = float(dimensions["inflation_rates"]["score"])
     liquidity = float(dimensions["liquidity_credit"]["score"])
     market = float(dimensions["market_pricing"]["score"])
+    internals = float(dimensions.get("valuation_internals", {}).get("score", 0))
 
-    if market >= 0.25 and (rates <= -0.2 or liquidity <= -0.2) and growth >= -0.1:
+    if market >= 0.25 and (rates <= -0.2 or liquidity <= -0.2 or internals <= -0.25) and growth >= -0.1:
         phase = "late-cycle/crowded risk"
     elif weighted_score <= -0.25 or (growth <= -0.25 and liquidity <= -0.15):
         phase = "deterioration/downturn"
@@ -303,6 +317,7 @@ def _cycle_contradictions(dimensions: dict[str, dict[str, Any]], subsector_contr
     rates = float(dimensions.get("inflation_rates", {}).get("score", 0))
     liquidity = float(dimensions.get("liquidity_credit", {}).get("score", 0))
     market = float(dimensions.get("market_pricing", {}).get("score", 0))
+    internals = float(dimensions.get("valuation_internals", {}).get("score", 0))
 
     if market >= 0.25 and liquidity <= -0.2:
         records.append(_contradiction("Risk appetite conflicts with liquidity/credit", "Market-pricing proxies are firm while liquidity/credit proxies are tight or stressed.", {"market_pricing": market, "liquidity_credit": liquidity}))
@@ -312,6 +327,8 @@ def _cycle_contradictions(dimensions: dict[str, dict[str, Any]], subsector_contr
         records.append(_contradiction("Risk appetite conflicts with rates pressure", "Risk appetite is positive while inflation/rates pressure remains hostile.", {"market_pricing": market, "inflation_rates": rates}))
     if growth <= -0.25 and market >= 0.25:
         records.append(_contradiction("Market pricing is stronger than growth evidence", "Market-pricing proxies are positive while growth proxies are deteriorating.", {"growth": growth, "market_pricing": market}))
+    if market >= 0.25 and internals <= -0.25:
+        records.append(_contradiction("Risk appetite conflicts with valuation/internals", "Broad market-pricing proxies are firm while valuation, volatility, or leadership proxies warn about crowding or weak participation.", {"market_pricing": market, "valuation_internals": internals}))
 
     for item in subsector_contradictions[:3]:
         records.append(
@@ -529,7 +546,7 @@ def _confidence_summary(score: float, low_dimensions: list[str], caveats: list[d
     if low_dimensions:
         parts.append(f"Lower-confidence dimensions: {', '.join(low_dimensions[:4])}.")
     if caveats:
-        parts.append("Missing/proxied dimensions remain visible caveats, especially valuation, market internals, earnings, and true Oslo subsector histories.")
+        parts.append("Missing/proxied dimensions remain visible caveats, especially true Oslo valuation multiples, earnings, positioning, and true subsector histories.")
     return " ".join(parts)
 
 

@@ -146,7 +146,7 @@ def _render_page(
   <nav class="site-nav" aria-label="Static report views">
     <a href="{escape(home_href)}">Top</a>
     <a href="#historical-charts">Historical Charts</a>
-    <a href="#liquidity-credit">Liquidity/Credit</a>
+    <a href="#liquidity-credit">Conditions/Internals</a>
     <a href="#cycle-status">Cycle Status</a>
     <a href="#source-health">Source Health</a>
     <a href="#contradicting-evidence">Contradicting Evidence</a>
@@ -174,7 +174,7 @@ def _render_page(
     <section id="liquidity-credit" class="section">
       <div class="section-heading">
         <p class="eyebrow">Liquidity And Credit</p>
-        <h2>Financial Conditions Signal Group</h2>
+        <h2>Financial Conditions Signal Group And Market Internals Reality Check</h2>
       </div>
       {_render_signal_groups(report_state)}
     </section>

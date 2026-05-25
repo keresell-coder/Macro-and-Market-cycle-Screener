@@ -8,12 +8,12 @@ This is not a stock-picking or investment-advice engine. It is a structured rese
 
 ## What It Does Today
 
-- Refreshes open/public macro, market, growth, rates, FX, commodity, and liquidity/credit indicators.
+- Refreshes open/public macro, market, growth, rates, FX, commodity, liquidity/credit, valuation, volatility, and broad leadership proxies.
 - Builds local Streamlit views for private analysis.
 - Builds a static GitHub Pages report from public-safe HTML/JSON.
 - Synthesizes current cycle status and transition evidence from public/proxied inputs.
 - Tracks source freshness, source failures, and numeric sample fallback.
-- Shows historical charts for global, liquidity/credit, regional, and sector/subsector views.
+- Shows historical charts for global, liquidity/credit, valuation/internals, regional, and sector/subsector views.
 - Ranks Oslo-linked subsectors using transparent proxy signals.
 - Shows contradiction evidence when signals disagree.
 - Keeps private notes, credentials, manual reports, local databases, and unreviewed evidence out of public exports.
@@ -25,21 +25,23 @@ Current keyless/default live data includes:
 - World Bank Pink Sheet commodity data.
 - World Bank annual GDP growth proxies.
 - DB.nomics mirror of OECD CLI data for G20, G7, US, China, and major Europe.
-- FRED public CSV for Chicago Fed NFCI and St. Louis Fed Financial Stress Index.
+- FRED public CSV for Chicago Fed NFCI, St. Louis Fed Financial Stress Index, and valuation-proxy dependencies.
 - Norges Bank FX and policy-rate data.
 - Statistics Norway CPI.
 - Selected public market-chart proxies.
+- Derived public valuation and leadership proxies.
 
-Latest published Sprint 11 verification:
+Latest local Sprint 12 verification:
 
-- `schema_version`: `2026-05-25-sprint11`
+- `schema_version`: `2026-05-25-sprint12`
 - `numeric_mode`: `live_numeric`
-- live indicators: 24
+- live indicators: 29
 - numeric `sample_fallback`: 0
 - cycle-state phase: `late-cycle/crowded risk`
-- cycle-state confidence: `high`
-- chart layer: `sprint10-credit-liquidity-chart-layer`
-- chart-layer series: 168
+- global equity cycle confidence: `high`
+- overall synthesis confidence: `medium`
+- chart layer: `sprint12-valuation-internals-chart-layer`
+- chart-layer series: 176
 
 Known visible non-OK statuses:
 
@@ -53,12 +55,12 @@ The project is intentionally honest about missing or proxied dimensions:
 - The public `global_growth_proxy` is annual World Bank GDP growth, not PMI.
 - OECD direct SDMX access is blocked from this environment; DB.nomics is used as a public mirror.
 - Subsector market-cycle histories are sample-backed proxies, not true Oslo subsector price or valuation histories.
-- True valuation multiples, analyst revisions, earnings estimates, positioning, breadth, and many market internals are not yet implemented.
+- Broad valuation, volatility, and equal-weight leadership proxies are now connected, but true Oslo valuation multiples, analyst revisions, earnings estimates, positioning, and true breadth are not implemented.
 - Missing data should be read as a blind spot, not as neutral evidence.
 
 ## Current Direction
 
-Sprint 11 adds **Cycle Status And Transition Synthesis**.
+Sprint 12 adds **Valuation And Market Internals Reality Check**.
 
 The report now synthesizes existing indicators into explicit conclusions:
 
@@ -67,11 +69,12 @@ The report now synthesizes existing indicators into explicit conclusions:
 - inflation/rates pressure status;
 - liquidity/credit status;
 - risk appetite and market-pricing status;
+- broad valuation, volatility, and leadership reality-check status;
 - sector/subsector phase;
 - transition or continuation warnings;
 - confidence and contradicting evidence.
 
-Future valuation or market-internals data should be added only when it improves this cycle synthesis. The next sprint should be **Valuation And Market Internals Reality Check**.
+Future data should be added only when it improves this cycle synthesis. The next sprint should be **Reviewed Public Research Evidence**.
 
 ## Quick Start
 
