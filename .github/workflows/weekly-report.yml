@@ -33,7 +33,12 @@ jobs:
       EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          GIT_TERMINAL_PROMPT=0 git fetch --depth=1 origin "${GITHUB_SHA}"
+          git checkout --detach FETCH_HEAD
 
       - name: Set up Python
         uses: actions/setup-python@v6

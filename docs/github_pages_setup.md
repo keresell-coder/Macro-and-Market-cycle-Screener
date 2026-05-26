@@ -23,6 +23,7 @@ Current status: GitHub Pages is enabled with GitHub Actions as the deployment so
 - Runs on manual dispatch and weekly on Saturdays at 07:15 UTC.
 - Scheduled runs default to `live` mode using keyless public data.
 - Manual dispatch can choose `live` or deterministic `sample` mode.
+- Fetches the public repository anonymously before building, avoiding authenticated checkout failures when `GITHUB_TOKEN` checkout is unavailable.
 - Installs the Python project and test dependencies.
 - Runs the test suite.
 - Attempts to download the previous public `data/report_state.json` from GitHub Pages for change tracking.
