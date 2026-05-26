@@ -7,7 +7,6 @@ WORKFLOW = Path(".github/workflows/weekly-report.yml")
 def test_weekly_report_workflow_deploys_only_static_site() -> None:
     workflow = WORKFLOW.read_text(encoding="utf-8")
 
-    assert "actions/configure-pages@v6" in workflow
     assert "actions/upload-pages-artifact@v4" in workflow
     assert "actions/deploy-pages@v4" in workflow
     assert "path: exports/site" in workflow

@@ -49,9 +49,6 @@ jobs:
       - name: Run tests
         run: python -m pytest -q
 
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v6
-
       - name: Download previous public report state
         run: |
           set -euo pipefail
