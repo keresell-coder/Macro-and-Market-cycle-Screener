@@ -170,7 +170,7 @@ jobs:
           fi
           oidc_response=$(curl --fail --silent --show-error \
             -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
-            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https://github.com/${GITHUB_REPOSITORY}")
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https://github.com/${GITHUB_REPOSITORY_OWNER}")
           oidc_token=$(OIDC_RESPONSE="$oidc_response" python - <<'PY'
           import json
           import os
