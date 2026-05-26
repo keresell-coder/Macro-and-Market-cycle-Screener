@@ -59,7 +59,7 @@ Deployment has already been configured for this repository. For a fresh reposito
 3. Set the build and deployment source to `GitHub Actions`.
 4. Run the workflow manually from the `Actions` tab.
 
-The official GitHub Pages custom-workflow pattern can include `actions/configure-pages` and `actions/upload-pages-artifact`, but this repository is already configured for Pages. The workflow manually packages `exports/site/` as the Pages artifact and publishes with `actions/deploy-pages`.
+The official GitHub Pages custom-workflow pattern can include `actions/configure-pages`, `actions/upload-pages-artifact`, and `actions/deploy-pages`, but this repository is already configured for Pages and recent runner attempts could not download some Pages actions from GitHub codeload. The workflow manually packages `exports/site/`, uploads it as the `github-pages` artifact, then calls the GitHub Pages deployment REST API with the workflow OIDC token.
 
 ## Previous Report State
 

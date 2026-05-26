@@ -8,7 +8,9 @@ def test_weekly_report_workflow_deploys_only_static_site() -> None:
     workflow = WORKFLOW.read_text(encoding="utf-8")
 
     assert "actions/upload-artifact@v4" in workflow
-    assert "actions/deploy-pages@v5" in workflow
+    assert "pages/deployments" in workflow
+    assert "ACTIONS_ID_TOKEN_REQUEST_URL" in workflow
+    assert "PAGES_ARTIFACT_ID: ${{ needs.build.outputs.pages_artifact_id }}" in workflow
     assert "GIT_TERMINAL_PROMPT=0 git fetch --depth=1 origin" in workflow
     assert 'tar --dereference --hard-dereference --directory exports/site -cvf "$RUNNER_TEMP/github-pages.tar" .' in workflow
     assert "name: github-pages" in workflow

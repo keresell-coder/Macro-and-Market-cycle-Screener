@@ -27,6 +27,8 @@ jobs:
   build:
     name: Build static report
     runs-on: ubuntu-latest
+    outputs:
+      pages_artifact_id: ${{ steps.upload-pages-artifact.outputs.artifact-id }}
     env:
       DATA_MODE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.data_mode || 'live' }}
       FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
@@ -142,6 +144,7 @@ jobs:
           tar --dereference --hard-dereference --directory exports/site -cvf "$RUNNER_TEMP/github-pages.tar" .
 
       - name: Upload GitHub Pages artifact
+        id: upload-pages-artifact
         uses: actions/upload-artifact@v4
         with:
           name: github-pages
@@ -159,4 +162,89 @@ jobs:
     steps:
       - name: Deploy artifact
         id: deployment
-        uses: actions/deploy-pages@v5
+        run: |
+          set -euo pipefail
+          if [ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ] || [ -z "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]; then
+            echo "OIDC token request environment is not available."
+            exit 1
+          fi
+          oidc_response=$(curl --fail --silent --show-error \
+            -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https://github.com/${GITHUB_REPOSITORY}")
+          oidc_token=$(OIDC_RESPONSE="$oidc_response" python - <<'PY'
+          import json
+          import os
+          print(json.loads(os.environ["OIDC_RESPONSE"])["value"])
+          PY
+          )
+          deploy_payload=$(ARTIFACT_ID="${PAGES_ARTIFACT_ID}" OIDC_TOKEN="$oidc_token" python - <<'PY'
+          import json
+          import os
+          print(json.dumps({
+              "artifact_id": int(os.environ["ARTIFACT_ID"]),
+              "environment": "github-pages",
+              "pages_build_version": os.environ["GITHUB_SHA"],
+              "oidc_token": os.environ["OIDC_TOKEN"],
+          }))
+          PY
+          )
+          http_status=$(curl --silent --show-error --location \
+            --request POST \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            --header "Content-Type: application/json" \
+            --output pages_deployment.json \
+            --write-out "%{http_code}" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages/deployments" \
+            --data "$deploy_payload")
+          if [ "$http_status" != "200" ]; then
+            echo "Pages deployment API returned HTTP ${http_status}"
+            cat pages_deployment.json
+            exit 1
+          fi
+          page_url=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          response = json.loads(Path("pages_deployment.json").read_text(encoding="utf-8"))
+          url = str(response.get("page_url", ""))
+          if url and not url.startswith(("http://", "https://")):
+              url = "https://" + url
+          print(url)
+          PY
+          )
+          echo "page_url=${page_url}" >> "$GITHUB_OUTPUT"
+          status_url=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          print(json.loads(Path("pages_deployment.json").read_text(encoding="utf-8"))["status_url"])
+          PY
+          )
+          for _ in $(seq 1 60); do
+            curl --fail --silent --show-error \
+              --header "Accept: application/vnd.github+json" \
+              --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "$status_url" --output pages_deployment_status.json
+            deployment_status=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          print(json.loads(Path("pages_deployment_status.json").read_text(encoding="utf-8")).get("status", "unknown"))
+          PY
+          )
+            echo "Pages deployment status: ${deployment_status}"
+            if [ "$deployment_status" = "succeed" ]; then
+              exit 0
+            fi
+            if [ "$deployment_status" = "failed" ] || [ "$deployment_status" = "errored" ]; then
+              cat pages_deployment_status.json
+              exit 1
+            fi
+            sleep 5
+          done
+          echo "Timed out waiting for Pages deployment."
+          cat pages_deployment_status.json
+          exit 1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PAGES_ARTIFACT_ID: ${{ needs.build.outputs.pages_artifact_id }}
