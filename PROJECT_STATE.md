@@ -82,6 +82,7 @@ Current known non-OK statuses:
 
 - UBS public research page returns 403 and is reported as a visible source failure.
 - Structured research evidence uses committed reviewed public CSV facts by default. Sample research evidence is now limited to explicit sample builds or environments where neither public nor local structured files exist.
+- Sprint 14 code is pushed and locally verified, but GitHub Actions currently fails during checkout with a GitHub account/repository access 403. Until that access issue is resolved, GitHub Pages remains on the previous Sprint 13 deployment.
 
 Important boundaries:
 
@@ -127,6 +128,15 @@ Latest local Sprint 14 verification:
 - liquidity/credit signal group: connected
 - valuation/market-internals signal group: connected
 - `chicago_fed_nfci`, `st_louis_financial_stress`, `vix_proxy`, `us_equity_market_cap_gdp_proxy`, and `sp500_equal_weight_leadership_proxy`: live numeric with no sample fallback
+
+Latest published Pages verification:
+
+- `schema_version`: `2026-05-26-sprint13`
+- `numeric_mode`: `live_numeric`
+- live indicators: 29
+- numeric `sample_fallback`: 0
+- reviewed public research facts: 13
+- publication-status metadata: not yet published because the Sprint 14 GitHub Actions checkout is blocked
 
 ## Current Product Shape
 
