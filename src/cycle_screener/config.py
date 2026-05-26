@@ -45,19 +45,21 @@ CACHE_DIR = DATA_DIR / "cache"
 EXPORT_DIR = ROOT / "exports"
 MANUAL_REPORT_DIR = DATA_DIR / "manual_reports"
 RESEARCH_EVIDENCE_DIR = DATA_DIR / "research_evidence"
+PUBLIC_RESEARCH_EVIDENCE_DIR = DATA_DIR / "public_research_evidence"
 
 
 @dataclass(frozen=True)
 class Settings:
     database_path: Path = CACHE_DIR / "cycle_radar.duckdb"
     research_evidence_dir: Path = RESEARCH_EVIDENCE_DIR
+    public_research_evidence_dir: Path = PUBLIC_RESEARCH_EVIDENCE_DIR
     fred_api_key: str | None = os.getenv("FRED_API_KEY")
     eia_api_key: str | None = os.getenv("EIA_API_KEY")
     request_timeout_seconds: int = int(os.getenv("REQUEST_TIMEOUT_SECONDS", "20"))
 
 
 def ensure_directories() -> None:
-    for path in [DATA_DIR, CACHE_DIR, EXPORT_DIR, MANUAL_REPORT_DIR, RESEARCH_EVIDENCE_DIR]:
+    for path in [DATA_DIR, CACHE_DIR, EXPORT_DIR, MANUAL_REPORT_DIR, RESEARCH_EVIDENCE_DIR, PUBLIC_RESEARCH_EVIDENCE_DIR]:
         path.mkdir(parents=True, exist_ok=True)
 
 

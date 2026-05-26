@@ -1,6 +1,8 @@
 # Evaluation: Anthropic `market-researcher` Repo Elements
 
-Last updated: 2026-05-23
+Last updated: 2026-05-25
+
+Status: historical design note. Current implementation state and next sprint live in `PROJECT_STATE.md`.
 
 Source reviewed: <https://github.com/anthropics/financial-services/tree/main/plugins/agent-plugins/market-researcher>
 
@@ -92,13 +94,12 @@ Add a "sector research layer" rather than a full market-researcher agent:
 - Do not publish generated research notes without review.
 - Do not implement deck generation before the dashboard and research store are mature.
 
-## Suggested Next Implementation Step
+## Historical Suggested Implementation Step
 
-If approved later, implement a first small version:
+This was the original small-version recommendation. Several pieces have since been implemented; keep this section only as context for future research-layer work.
 
 1. Add `research_facts` and `subsector_research_profiles` tables.
 2. Add a manual/public-source ingestion path that extracts source-backed claims but marks them as unreviewed.
 3. Add a `Research Evidence` tab in the Streamlit dashboard.
 4. Add a `Why now?`, `Key debates`, and `Catalysts` section to each subsector drilldown.
 5. Keep generated research evidence separate from numeric scoring until reviewed or until confidence rules are explicit.
-

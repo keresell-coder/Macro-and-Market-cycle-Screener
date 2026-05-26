@@ -76,12 +76,19 @@ def load_research_evidence(settings: Settings, sample: bool = False) -> tuple[pd
             [_status("sample_research_evidence", "ok", "Loaded deterministic sample research profiles and source-backed facts.")],
         )
 
-    profiles_path = settings.research_evidence_dir / "subsector_research_profiles.csv"
-    facts_path = settings.research_evidence_dir / "research_facts.csv"
+    public_profiles_path = settings.public_research_evidence_dir / "subsector_research_profiles.csv"
+    public_facts_path = settings.public_research_evidence_dir / "research_facts.csv"
+    local_profiles_path = settings.research_evidence_dir / "subsector_research_profiles.csv"
+    local_facts_path = settings.research_evidence_dir / "research_facts.csv"
     statuses: list[ResearchIngestionStatus] = []
 
-    profiles = _read_optional_csv(profiles_path, PROFILE_COLUMNS)
-    facts = _read_optional_csv(facts_path, FACT_COLUMNS)
+    public_profiles = _read_optional_csv(public_profiles_path, PROFILE_COLUMNS)
+    public_facts = _read_optional_csv(public_facts_path, FACT_COLUMNS)
+    local_profiles = _read_optional_csv(local_profiles_path, PROFILE_COLUMNS)
+    local_facts = _read_optional_csv(local_facts_path, FACT_COLUMNS)
+
+    profiles = pd.concat([public_profiles, local_profiles], ignore_index=True)
+    facts = pd.concat([local_facts, public_facts], ignore_index=True)
 
     if profiles.empty and facts.empty:
         statuses.append(
@@ -99,7 +106,9 @@ def load_research_evidence(settings: Settings, sample: bool = False) -> tuple[pd
         _status(
             "research_evidence_files",
             "ok",
-            f"Ingested {len(profiles)} profiles and {len(facts)} claim rows from structured CSV evidence files.",
+            "Ingested "
+            f"{len(public_profiles)} public-reviewed profiles, {len(public_facts)} public-reviewed claim rows, "
+            f"{len(local_profiles)} local profiles, and {len(local_facts)} local claim rows from structured CSV evidence files.",
         )
     )
     return profiles, facts, statuses

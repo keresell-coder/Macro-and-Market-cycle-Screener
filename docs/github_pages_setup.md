@@ -1,8 +1,8 @@
 # GitHub Pages Weekly Report Setup
 
-Last updated: 2026-05-25
+Last updated: 2026-05-26
 
-Sprint 5 adds `.github/workflows/weekly-report.yml`, which builds and deploys the static report in `exports/site/`.
+`.github/workflows/weekly-report.yml` builds and deploys the static report in `exports/site/`.
 
 GitHub repository:
 
@@ -16,7 +16,7 @@ Live GitHub Pages URL:
 https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/
 ```
 
-Current status: GitHub Pages is enabled with GitHub Actions as the deployment source. The latest local Sprint 12 build reports schema `2026-05-25-sprint12`, `live_numeric` mode, 29 live indicators, 0 numeric `sample_fallback` indicators, cycle-state phase `late-cycle/crowded risk`, global equity cycle confidence `high`, overall synthesis confidence `medium`, chart layer version `sprint12-valuation-internals-chart-layer`, and 176 chart-layer series. Repository secrets named `FRED_API_KEY` and `EIA_API_KEY` are configured, though the current FRED public CSV indicators do not require a key.
+Current status: GitHub Pages is enabled with GitHub Actions as the deployment source. Latest published verification lives in `PROJECT_STATE.md`. Repository secrets named `FRED_API_KEY` and `EIA_API_KEY` are configured, though the current default live refresh does not require a key.
 
 ## What The Workflow Does
 
@@ -29,7 +29,8 @@ Current status: GitHub Pages is enabled with GitHub Actions as the deployment so
 - Builds the static report site.
 - In live mode, fails the build if numeric indicators fall back to deterministic `sample_fallback` rows.
 - Runs static-site QA against `exports/site/` after generation.
-- Publishes the Sprint 12 cycle-state synthesis and valuation/internals reality checks as static HTML/JSON.
+- Publishes the current cycle-state synthesis as static HTML/JSON.
+- Publishes reviewed public research facts from the report-state JSON, while private/manual evidence remains outside `exports/site/`.
 - Uploads only `exports/site/` to GitHub Pages.
 - Stores a short-lived debug artifact named `static-radar-site`.
 
@@ -89,11 +90,4 @@ In live mode the workflow passes `--fail-on-numeric-sample-fallback`, so numeric
 
 ## Publication Boundary
 
-The workflow deploys only `exports/site/`. It does not deploy:
-
-- local databases or cache files;
-- `.env` files or credentials;
-- `data/manual_reports/`;
-- `data/private_notes/`;
-- `data/raw_licensed/`;
-- `data/research_evidence/`.
+The workflow deploys only `exports/site/`. See `docs/publication_policy.md` for the authoritative public/private boundary.

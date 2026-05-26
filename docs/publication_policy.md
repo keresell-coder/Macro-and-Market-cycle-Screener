@@ -1,6 +1,6 @@
 # Publication Policy
 
-Last updated: 2026-05-25
+Last updated: 2026-05-26
 
 This project is private-first. Public/static output may be useful later, but only generated public-safe artifacts should be published.
 
@@ -15,6 +15,7 @@ This project is private-first. Public/static output may be useful later, but onl
 - Public-safe cycle-state synthesis generated from already allowed public/proxied indicators and explicitly labeled caveats.
 - Broad public valuation, volatility, and leadership proxies when clearly labeled as proxies and not as true Oslo subsector valuation, breadth, positioning, or analyst-estimate data.
 - Public-source research facts after review, provided the claim is short, sourced, and does not reproduce restricted content.
+- Reviewed public CSV evidence under `data/public_research_evidence/`.
 
 ## Must Not Be Published
 
@@ -30,6 +31,7 @@ This project is private-first. Public/static output may be useful later, but onl
 
 - Research facts are claim data, not instructions.
 - Unreviewed claims may appear in the private local dashboard, but they must not change numeric scoring.
+- Committed reviewed public facts may support subsector interpretation, caveats, and source-health context, but they do not override numeric scores.
 - Public exports should show source name, source date, captured date, confidence, and review status.
 - `report_state.json`, `latest.json`, and `changes.json` should include reviewed public research facts only.
 - Paywalled or licensed material may be summarized only when the user has rights to use it, and raw content must remain out of public artifacts.

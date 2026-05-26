@@ -10,7 +10,6 @@ First read:
 - `README.md`
 - `docs/open_data_expansion_plan.md`
 - `docs/knowledge_base_review.md`
-- `docs/github_static_report_roadmap.md`
 - `docs/github_pages_setup.md`
 - `docs/publication_policy.md`
 
@@ -18,15 +17,7 @@ Core aim:
 This project is a private-first macro and market-cycle radar. Its main purpose is to establish where global equities, major sectors, and Oslo-linked subsectors appear to be in the cycle now, and whether evidence points to continuation, transition, recovery, deterioration, or exit risk. Avoid drifting into non-core indicators. Add data only when it improves cycle-state classification, transition detection, contradiction evidence, confidence, or sector/subsector cycle interpretation.
 
 Current implementation:
-- Local Streamlit dashboard.
-- DuckDB storage with SQLite fallback.
-- Static GitHub Pages report generated from public-safe HTML/JSON/assets.
-- Keyless live data refresh using World Bank, DB.nomics OECD CLI mirror, FRED public CSV, Norges Bank, Statistics Norway, selected market-chart proxies, and derived public series.
-- Latest local Sprint 12 state: `schema_version=2026-05-25-sprint12`, `numeric_mode=live_numeric`, 29 live indicators, 0 numeric `sample_fallback`, cycle-state phase `late-cycle/crowded risk`, global equity cycle confidence `high`, overall synthesis confidence `medium`.
-- Implemented views: Cycle Status And Transition Synthesis, Historical Charts, Liquidity And Credit, Source Health, Contradicting Evidence, Latest Radar, Changes Since Last Report, Archive, Methodology.
-- Implemented data families: growth/turning point, commodity/inflation pressure, rates, FX, liquidity/credit, broad market-pricing proxies, broad valuation/market-internals reality checks, source health, and Oslo-linked subsector proxy scores.
-- Implemented synthesis: public-safe `cycle_state` with global equity cycle status, growth, inflation/rates, liquidity/credit, market-pricing/risk-appetite, broad valuation/market-internals dimensions, Oslo-linked sector read-through, transition/continuation evidence, contradictions, confidence, and missing-data caveats.
-- Known gaps: no true Oslo subsector valuation multiples; no analyst revisions/earnings estimates; no positioning or true breadth; no true Oslo subsector market histories; reviewed research evidence is still limited.
+Use `PROJECT_STATE.md` as the source of truth for latest schema, live verification, implemented views, data families, known gaps, and next sprint.
 
 Important constraints:
 - Do not bypass paywalls, CAPTCHAs, bot blocks, or restricted content.
@@ -36,14 +27,9 @@ Important constraints:
 - The GitHub Pages target must remain static HTML/JSON/assets, not hosted Streamlit.
 
 Next requested sprint:
-Sprint 13: Reviewed Public Research Evidence.
+Sprint 14: Archive, Monitoring, And Deployment Maturity.
 
-Add only reviewed public/manual facts that improve:
-- subsector cycle-state interpretation;
-- transition or exit-risk evidence;
-- contradiction evidence;
-- confidence/source-health assessment;
-- missing-data caveats.
+Improve run-status visibility, archive navigation, data-vintage summaries, and deployment monitoring while preserving the static GitHub Pages boundary.
 
 Keep private notes, restricted content, unreviewed claims, and raw licensed material out of public exports. Do not let unreviewed research claims affect numeric scoring.
 

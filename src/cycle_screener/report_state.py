@@ -34,7 +34,7 @@ MARKET_COLUMNS = (
     "driver_pressure",
 )
 
-REPORT_STATE_VERSION = "2026-05-25-sprint12"
+REPORT_STATE_VERSION = "2026-05-26-sprint13"
 SCORING_METHODOLOGY_VERSION = "score-v1-public-cycle-radar"
 CREDIT_LIQUIDITY_INDICATORS = ("chicago_fed_nfci", "st_louis_financial_stress")
 MACRO_CONFIRMATION_INDICATORS = ("g20_cli", "us_cli", "europe_cli", "nasdaq_proxy")
@@ -82,10 +82,10 @@ def build_report_state(store: RadarStore | None = None) -> dict[str, Any]:
             "scoring_version": SCORING_METHODOLOGY_VERSION,
             "report_state_version": REPORT_STATE_VERSION,
             "framework_reference": "docs/knowledge_base/global_macro_market_cycle_knowledge_base.md",
-            "framework_coverage": "Partial implementation of a broader macro and market-cycle framework. Current scoring covers public macro, rates, FX, commodity, OECD CLI growth proxies, market-proxy, source-health, and reviewed-public-research evidence. Sprint 10 added a non-scoring liquidity/credit signal group and historical charts for Chicago Fed NFCI and the St. Louis Fed Financial Stress Index via public FRED CSV. Sprint 11 added a public-safe rule-based cycle-state synthesis layer. Sprint 12 adds broad public valuation, volatility, and breadth-like leadership reality checks. Annual World Bank GDP growth remains slow-moving background context, while monthly OECD CLI data is accessed through the public DB.nomics mirror because the direct OECD SDMX endpoint is not reliably reachable from this environment. The model does not yet include earnings revisions, true Oslo valuation multiples, positioning, BIS credit/property-cycle data, or licensed subsector market data.",
+            "framework_coverage": "Partial implementation of a broader macro and market-cycle framework. Current scoring covers public macro, rates, FX, commodity, OECD CLI growth proxies, market-proxy, source-health, and reviewed-public-research evidence. Sprint 10 added a non-scoring liquidity/credit signal group and historical charts for Chicago Fed NFCI and the St. Louis Fed Financial Stress Index via public FRED CSV. Sprint 11 added a public-safe rule-based cycle-state synthesis layer. Sprint 12 adds broad public valuation, volatility, and breadth-like leadership reality checks. Sprint 13 adds reviewed public research facts for Oslo-linked subsector cycle interpretation without changing numeric scoring. Annual World Bank GDP growth remains slow-moving background context, while monthly OECD CLI data is accessed through the public DB.nomics mirror because the direct OECD SDMX endpoint is not reliably reachable from this environment. The model does not yet include earnings revisions, true Oslo valuation multiples, positioning, BIS credit/property-cycle data, or licensed subsector market data.",
             "implementation_boundary": "Opportunity scores are research triage signals. Cycle-state labels are rule-based synthesis outputs from public/proxied evidence, not return forecasts or investment advice. Missing dimensions should be treated as explicit blind spots rather than neutral evidence.",
             "scoring": "Transparent subsector scoring from public/free indicators, explicitly labeled proxies, and visible sample fallbacks when present.",
-            "research_policy": "Only reviewed public research facts are included in public report state. Unreviewed and manual evidence remain local.",
+            "research_policy": "Only reviewed public research facts are included in public report state. Unreviewed claims, private notes, and restricted/manual evidence remain local and do not affect numeric scoring.",
             "not_investment_advice": True,
         },
         "chart_layer": chart_layer,

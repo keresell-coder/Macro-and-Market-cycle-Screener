@@ -143,7 +143,11 @@ def test_structured_research_evidence_ingestion_sanitizes_rows(tmp_path) -> None
         ]
     ).to_csv(evidence_dir / "subsector_research_profiles.csv", index=False)
 
-    settings = Settings(database_path=tmp_path / "radar.duckdb", research_evidence_dir=evidence_dir)
+    settings = Settings(
+        database_path=tmp_path / "radar.duckdb",
+        research_evidence_dir=evidence_dir,
+        public_research_evidence_dir=tmp_path / "public_research_evidence",
+    )
     profiles, facts, statuses = load_research_evidence(settings, sample=False)
 
     assert len(profiles) == 1
@@ -152,6 +156,80 @@ def test_structured_research_evidence_ingestion_sanitizes_rows(tmp_path) -> None
     assert facts["confidence"].iloc[0] == 1.0
     assert facts["review_status"].iloc[0] == "unreviewed"
     assert statuses[0].status == "ok"
+
+
+def test_public_reviewed_research_evidence_is_ingested_without_sample_fallback(tmp_path) -> None:
+    public_evidence_dir = tmp_path / "public_research_evidence"
+    public_evidence_dir.mkdir()
+    pd.DataFrame(
+        [
+            {
+                "fact_id": "oil-services-public-reviewed",
+                "subsector_slug": "oil_services",
+                "theme": "transition_evidence",
+                "claim": "Reviewed public fact for oil services.",
+                "source_name": "Public source",
+                "source_url": "https://example.com/public",
+                "source_quality": "official",
+                "confidence": 0.8,
+                "review_status": "reviewed",
+                "evidence_scope": "public",
+            }
+        ]
+    ).to_csv(public_evidence_dir / "research_facts.csv", index=False)
+
+    settings = Settings(
+        database_path=tmp_path / "radar.duckdb",
+        research_evidence_dir=tmp_path / "private_research_evidence",
+        public_research_evidence_dir=public_evidence_dir,
+    )
+    profiles, facts, statuses = load_research_evidence(settings, sample=False)
+
+    assert profiles.empty
+    assert facts["fact_id"].tolist() == ["oil-services-public-reviewed"]
+    assert statuses[0].source_slug == "research_evidence_files"
+    assert statuses[0].status == "ok"
+    assert "public-reviewed" in statuses[0].message
+
+
+def test_public_reviewed_fact_wins_duplicate_local_fact_id(tmp_path) -> None:
+    public_evidence_dir = tmp_path / "public_research_evidence"
+    local_evidence_dir = tmp_path / "private_research_evidence"
+    public_evidence_dir.mkdir()
+    local_evidence_dir.mkdir()
+    columns = {
+        "fact_id": "oil-services-duplicate",
+        "subsector_slug": "oil_services",
+        "theme": "transition_evidence",
+        "source_name": "Public source",
+        "source_url": "https://example.com/public",
+        "source_quality": "official",
+        "confidence": 0.8,
+        "review_status": "reviewed",
+        "evidence_scope": "public",
+    }
+    pd.DataFrame([{**columns, "claim": "Reviewed public fact."}]).to_csv(public_evidence_dir / "research_facts.csv", index=False)
+    pd.DataFrame(
+        [
+            {
+                **columns,
+                "claim": "Local duplicate should not override the public-reviewed bundle.",
+                "source_url": "https://example.com/local",
+                "review_status": "unreviewed",
+                "evidence_scope": "manual_public",
+            }
+        ]
+    ).to_csv(local_evidence_dir / "research_facts.csv", index=False)
+
+    settings = Settings(
+        database_path=tmp_path / "radar.duckdb",
+        research_evidence_dir=local_evidence_dir,
+        public_research_evidence_dir=public_evidence_dir,
+    )
+    _, facts, _ = load_research_evidence(settings, sample=False)
+
+    assert facts["claim"].tolist() == ["Reviewed public fact."]
+    assert facts["evidence_scope"].tolist() == ["public"]
 
 
 def test_public_export_allowlist_blocks_private_paths() -> None:

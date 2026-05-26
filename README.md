@@ -16,11 +16,12 @@ This is not a stock-picking or investment-advice engine. It is a structured rese
 - Shows historical charts for global, liquidity/credit, valuation/internals, regional, and sector/subsector views.
 - Ranks Oslo-linked subsectors using transparent proxy signals.
 - Shows contradiction evidence when signals disagree.
+- Includes reviewed public research facts for Oslo-linked subsector cycle interpretation without changing numeric scoring.
 - Keeps private notes, credentials, manual reports, local databases, and unreviewed evidence out of public exports.
 
-## Current Live Sources
+## Live Sources
 
-Current keyless/default live data includes:
+Keyless/default live refresh includes:
 
 - World Bank Pink Sheet commodity data.
 - World Bank annual GDP growth proxies.
@@ -30,23 +31,9 @@ Current keyless/default live data includes:
 - Statistics Norway CPI.
 - Selected public market-chart proxies.
 - Derived public valuation and leadership proxies.
+- Committed reviewed public research-evidence CSVs under `data/public_research_evidence/`.
 
-Latest local Sprint 12 verification:
-
-- `schema_version`: `2026-05-25-sprint12`
-- `numeric_mode`: `live_numeric`
-- live indicators: 29
-- numeric `sample_fallback`: 0
-- cycle-state phase: `late-cycle/crowded risk`
-- global equity cycle confidence: `high`
-- overall synthesis confidence: `medium`
-- chart layer: `sprint12-valuation-internals-chart-layer`
-- chart-layer series: 176
-
-Known visible non-OK statuses:
-
-- UBS public research page returns 403.
-- Research evidence falls back to sample evidence if no reviewed local CSV evidence exists.
+Current schema, latest verification, known source issues, and next sprint live in `PROJECT_STATE.md`.
 
 ## Current Limitations
 
@@ -56,25 +43,8 @@ The project is intentionally honest about missing or proxied dimensions:
 - OECD direct SDMX access is blocked from this environment; DB.nomics is used as a public mirror.
 - Subsector market-cycle histories are sample-backed proxies, not true Oslo subsector price or valuation histories.
 - Broad valuation, volatility, and equal-weight leadership proxies are now connected, but true Oslo valuation multiples, analyst revisions, earnings estimates, positioning, and true breadth are not implemented.
+- Reviewed public research facts improve subsector interpretation and caveats, but they do not override numeric scoring.
 - Missing data should be read as a blind spot, not as neutral evidence.
-
-## Current Direction
-
-Sprint 12 adds **Valuation And Market Internals Reality Check**.
-
-The report now synthesizes existing indicators into explicit conclusions:
-
-- global equity cycle status;
-- growth cycle status;
-- inflation/rates pressure status;
-- liquidity/credit status;
-- risk appetite and market-pricing status;
-- broad valuation, volatility, and leadership reality-check status;
-- sector/subsector phase;
-- transition or continuation warnings;
-- confidence and contradicting evidence.
-
-Future data should be added only when it improves this cycle synthesis. The next sprint should be **Reviewed Public Research Evidence**.
 
 ## Quick Start
 
@@ -118,15 +88,19 @@ Workflow:
 ## Project Map
 
 - `PROJECT_STATE.md`: current state and next step.
-- `docs/open_data_expansion_plan.md`: concise sprint plan.
-- `docs/next_step_prompt.md`: immediate next-sprint copy/paste prompt.
+- `docs/open_data_expansion_plan.md`: data-admission rules and future source candidates.
 - `docs/continuation_prompt.md`: fresh-chat handoff prompt.
 - `docs/publication_policy.md`: public/private boundary.
+- `docs/github_pages_setup.md`: GitHub Pages workflow setup and deployment mechanics.
+- `docs/knowledge_base_review.md`: short review of the durable macro-cycle knowledge base.
+- `docs/knowledge_base/global_macro_market_cycle_knowledge_base.md`: durable framework reference.
+- `docs/market_researcher_repo_evaluation.md`: historical design note for research-layer ideas.
 - `src/cycle_screener/connectors.py`: public data refresh.
 - `src/cycle_screener/report_state.py`: public-safe report-state builder.
 - `src/cycle_screener/charts.py`: historical chart layer.
 - `src/cycle_screener/static_site.py`: static HTML renderer.
 - `src/cycle_screener/scoring.py`: current subsector scoring.
+- `data/public_research_evidence/`: reviewed public CSV facts and profiles safe to commit.
 - `dashboard/app.py`: local Streamlit dashboard.
 
 ## Data Policy
