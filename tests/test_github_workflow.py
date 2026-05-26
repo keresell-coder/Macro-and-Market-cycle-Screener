@@ -7,9 +7,10 @@ WORKFLOW = Path(".github/workflows/weekly-report.yml")
 def test_weekly_report_workflow_deploys_only_static_site() -> None:
     workflow = WORKFLOW.read_text(encoding="utf-8")
 
-    assert "actions/upload-pages-artifact@v4" in workflow
-    assert "actions/deploy-pages@v4" in workflow
-    assert "path: exports/site" in workflow
+    assert "actions/upload-artifact@v4" in workflow
+    assert "actions/deploy-pages@v5" in workflow
+    assert 'tar --dereference --hard-dereference --directory exports/site -cvf "$RUNNER_TEMP/github-pages.tar" .' in workflow
+    assert "name: github-pages" in workflow
     assert "python -m pytest -q" in workflow
     assert "python -m cycle_screener.build_static_site" in workflow
 

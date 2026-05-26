@@ -33,7 +33,7 @@ Current status: GitHub Pages is enabled with GitHub Actions as the deployment so
 - Publishes the current cycle-state synthesis as static HTML/JSON.
 - Publishes static run-status, data-vintage, deployment, and archive-continuity metadata.
 - Publishes reviewed public research facts from the report-state JSON, while private/manual evidence remains outside `exports/site/`.
-- Uploads only `exports/site/` to GitHub Pages.
+- Packages only `exports/site/` into the Pages artifact.
 - Stores a short-lived debug artifact named `static-radar-site`.
 
 ## API Keys
@@ -58,7 +58,7 @@ Deployment has already been configured for this repository. For a fresh reposito
 3. Set the build and deployment source to `GitHub Actions`.
 4. Run the workflow manually from the `Actions` tab.
 
-The official GitHub Pages custom-workflow pattern can include `actions/configure-pages`, but this repository is already configured for Pages. The workflow publishes with `actions/upload-pages-artifact` and `actions/deploy-pages` to keep the deploy path minimal.
+The official GitHub Pages custom-workflow pattern can include `actions/configure-pages` and `actions/upload-pages-artifact`, but this repository is already configured for Pages. The workflow manually packages `exports/site/` as the Pages artifact and publishes with `actions/deploy-pages`.
 
 ## Previous Report State
 

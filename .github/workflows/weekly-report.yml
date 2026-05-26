@@ -131,10 +131,18 @@ jobs:
           path: exports/site
           retention-days: 14
 
+      - name: Package GitHub Pages artifact
+        run: |
+          set -euo pipefail
+          tar --dereference --hard-dereference --directory exports/site -cvf "$RUNNER_TEMP/github-pages.tar" .
+
       - name: Upload GitHub Pages artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-artifact@v4
         with:
-          path: exports/site
+          name: github-pages
+          path: ${{ runner.temp }}/github-pages.tar
+          if-no-files-found: error
+          retention-days: 1
 
   deploy:
     name: Deploy to GitHub Pages
@@ -146,4 +154,4 @@ jobs:
     steps:
       - name: Deploy artifact
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
