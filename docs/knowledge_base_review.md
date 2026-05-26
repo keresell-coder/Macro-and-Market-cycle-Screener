@@ -38,12 +38,13 @@ The objective is to classify cycle status and detect transitions:
 
 ## Recommended Next Step
 
-Implement **Sprint 14: Archive, Monitoring, And Deployment Maturity** next, improving run-status visibility and archive quality without weakening the static/public boundary.
+Implement **Sprint 15: Report-History Validation And Signal Calibration** next, using accumulated public snapshots to validate whether phase labels, transition warnings, contradiction evidence, and confidence rules behave coherently over time.
 
 This should:
 
 - keep the cycle-state object as the primary report conclusion;
-- show report vintages, run status, source-health changes, and deployment state clearly;
+- use archive and change-history metadata as the validation surface;
+- identify weak or unstable confidence rules before adding more indicators;
 - preserve strict numeric sample-fallback failure in live builds;
 - keep unreviewed, private, licensed, or restricted evidence local;
 - preserve missing/proxied/sample-backed labels.

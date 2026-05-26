@@ -27,9 +27,9 @@ Important constraints:
 - The GitHub Pages target must remain static HTML/JSON/assets, not hosted Streamlit.
 
 Next requested sprint:
-Sprint 14: Archive, Monitoring, And Deployment Maturity.
+Sprint 15: Report-History Validation And Signal Calibration.
 
-Improve run-status visibility, archive navigation, data-vintage summaries, and deployment monitoring while preserving the static GitHub Pages boundary.
+Use accumulated public snapshots to review whether phase labels, transition evidence, contradictions, and confidence rules behave coherently over time. Keep it static/public-safe and do not add new indicators unless they directly improve cycle-state validation.
 
 Keep private notes, restricted content, unreviewed claims, and raw licensed material out of public exports. Do not let unreviewed research claims affect numeric scoring.
 

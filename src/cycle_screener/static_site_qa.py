@@ -13,6 +13,8 @@ from urllib.request import urlopen
 REQUIRED_PAGE_TEXT = (
     "Historical Charts",
     "Global View And Drilldown",
+    "Run Status",
+    "Deployment And Data Vintage",
     "Liquidity And Credit",
     "Financial Conditions Signal Group",
     "Cycle Status And Transition Synthesis",

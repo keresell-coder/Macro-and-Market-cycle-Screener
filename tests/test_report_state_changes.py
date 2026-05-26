@@ -103,6 +103,7 @@ def test_compare_report_states_tracks_core_deltas() -> None:
         }
     )
     current["research_facts"][0]["confidence"] = 0.9
+    current["publication_status"] = {"build_mode": "live"}
     current["research_facts"].append(
         {
             "fact_id": "oil_services-new",
@@ -152,6 +153,8 @@ def test_build_static_site_writes_report_json(tmp_path) -> None:
     site_html = site_index.read_text(encoding="utf-8")
     assert "Historical Charts" in site_html
     assert "Global View And Drilldown" in site_html
+    assert "Run Status" in site_html
+    assert "Deployment And Data Vintage" in site_html
     assert "Liquidity And Credit" in site_html
     assert "Financial Conditions Signal Group" in site_html
     assert "Cycle Status And Transition Synthesis" in site_html
@@ -169,10 +172,48 @@ def test_build_static_site_writes_report_json(tmp_path) -> None:
     assert "Framework coverage" in site_html
     assert "Changes Since Last Report" in site_html
     assert "Archive" in site_html
+    assert "Archive coverage" in site_html
     assert "Methodology" in site_html
     assert (site_index.parent / "data" / "latest.json").exists()
     assert (site_index.parent / "data" / "changes.json").exists()
+    archive = json.loads((site_index.parent / "data" / "archive.json").read_text(encoding="utf-8"))
+    assert archive[0]["numeric_mode"]
+    assert "numeric_sample_fallback_count" in archive[0]
+    latest = json.loads((site_index.parent / "data" / "latest.json").read_text(encoding="utf-8"))
+    assert latest["publication_status"]["site_target"] == "GitHub Pages static HTML/JSON/assets"
+    assert latest["publication_status"]["previous_report_state_supplied"] is True
     assert Path(result["weekly_report"]).exists()
+
+
+def test_build_static_site_preserves_previous_archive_entries(tmp_path) -> None:
+    refresh(sample=True)
+    previous_archive = tmp_path / "previous_archive.json"
+    previous_archive.write_text(
+        json.dumps(
+            [
+                {
+                    "date": "2026-05-25",
+                    "file": "2026-05-25.html",
+                    "label": "Archived report",
+                    "numeric_mode": "live_numeric",
+                    "numeric_sample_fallback_count": 0,
+                    "live_indicator_count": 29,
+                    "cycle_phase": "late-cycle/crowded risk",
+                    "cycle_confidence": "high",
+                    "data_as_of": "2026-05-24",
+                    "commit_sha": "abcdef1234567890",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    result = build_static_site(sample=False, previous_archive=previous_archive)
+
+    archive = json.loads((Path(result["site_index"]).parent / "data" / "archive.json").read_text(encoding="utf-8"))
+    assert len(archive) >= 2
+    assert any(item["file"] == "2026-05-25.html" for item in archive)
+    assert archive[0]["label"] == "Current report"
 
 
 def test_numeric_sample_fallback_is_visible_and_can_fail_live_build(tmp_path) -> None:

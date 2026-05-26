@@ -55,15 +55,24 @@ Rules remain:
 - Prioritize facts that clarify sector/subsector cycle phase, transition evidence, contradiction evidence, or missing-data caveats.
 - Do not let unreviewed research claims change numeric scoring.
 
+## Current Archive And Monitoring Layer
+
+Sprint 14 added static publication metadata and archive continuity:
+
+- `publication_status` in public report-state JSON.
+- Run-status and data-vintage display in the static site.
+- Previous `archive.json` reuse in GitHub Actions.
+- Archived report-page download before rebuild, so historical report links can persist across static deployments.
+- Enhanced archive rows with cycle phase, numeric mode, fallback count, data vintage, and commit metadata.
+
 ## Near-Term Admission Priority
 
-### Archive And Monitoring Maturity
+### Report-History Validation And Signal Calibration
 
-- Archive navigation.
-- Run-status display.
-- Data-vintage summaries.
-- Weekly monitoring.
-- BIS, ECB, and Eurostat credit/property/monetary layers only after connector testing proves they improve the cycle read.
+- Review accumulated public snapshots for phase-label stability.
+- Check whether transition and contradiction rules behave coherently as evidence changes.
+- Use archive and change-history metadata to identify weak confidence rules.
+- BIS, ECB, and Eurostat credit/property/monetary layers remain later candidates only after connector testing proves they improve the cycle read.
 
 ## Candidate Sources For Testing
 

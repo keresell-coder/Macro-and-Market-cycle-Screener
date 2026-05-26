@@ -28,3 +28,5 @@ def test_weekly_report_workflow_defaults_to_live_data_with_sample_option() -> No
     assert "FRED_API_KEY: ${{ secrets.FRED_API_KEY }}" in workflow
     assert "EIA_API_KEY: ${{ secrets.EIA_API_KEY }}" in workflow
     assert "CYCLE_RADAR_PREVIOUS_STATE_URL" in workflow
+    assert "previous_archive.json" in workflow
+    assert "--previous-archive" in workflow

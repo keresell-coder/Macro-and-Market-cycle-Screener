@@ -28,6 +28,7 @@ def build_site_files(
     report_state: dict[str, Any],
     changes: dict[str, Any] | None,
     site_dir: Path | None = None,
+    previous_archive_entries: list[dict[str, Any]] | None = None,
 ) -> dict[str, str | None]:
     output_dir = site_dir or EXPORT_DIR / "site"
     _ensure_public_output(output_dir)
@@ -49,7 +50,7 @@ def build_site_files(
     else:
         _write_json(changes_path, changes)
 
-    archive_entries = _archive_entries(reports_dir, report_page.name)
+    archive_entries = _archive_entries(reports_dir, report_page.name, report_state, previous_archive_entries or [])
     _write_json(data_dir / "archive.json", archive_entries)
 
     index_path = output_dir / "index.html"
@@ -146,6 +147,7 @@ def _render_page(
   <nav class="site-nav" aria-label="Static report views">
     <a href="{escape(home_href)}">Top</a>
     <a href="#historical-charts">Historical Charts</a>
+    <a href="#run-status">Run Status</a>
     <a href="#liquidity-credit">Conditions/Internals</a>
     <a href="#cycle-status">Cycle Status</a>
     <a href="#source-health">Source Health</a>
@@ -161,6 +163,14 @@ def _render_page(
       {_metric("Median confidence", _pct(median_confidence), "Reviewed public facts only")}
       {_metric("Source issues", str(issue_count), "Fallbacks, stale series, or source failures")}
       {_metric("Numeric fallback", str(numeric_health.get("sample_fallback_indicator_count", 0)), f"{numeric_health.get('live_indicator_count', 0)} live indicators")}
+    </section>
+
+    <section id="run-status" class="section">
+      <div class="section-heading">
+        <p class="eyebrow">Run Status</p>
+        <h2>Deployment And Data Vintage</h2>
+      </div>
+      {_render_run_status(report_state, archive_entries)}
     </section>
 
     <section id="historical-charts" class="section section--charts">
@@ -594,6 +604,61 @@ def _render_source_health(report_state: dict[str, Any]) -> str:
     return status_cards + "".join(alerts) + table
 
 
+def _render_run_status(report_state: dict[str, Any], archive_entries: list[dict[str, Any]]) -> str:
+    publication = dict(report_state.get("publication_status", {}))
+    run = dict(publication.get("run", {}))
+    source_health = dict(report_state.get("source_health", {}))
+    numeric = dict(source_health.get("numeric", {}))
+    evidence = dict(source_health.get("research_evidence", {}))
+    cycle_state = dict(report_state.get("cycle_state", {}))
+    confidence = dict(cycle_state.get("confidence", {}))
+    run_url = str(run.get("run_url", ""))
+    run_label = str(run.get("run_id", "")) or "local"
+    run_value = f'<a href="{escape(run_url)}">{escape(run_label)}</a>' if run_url.startswith("https://") else escape(run_label)
+    commit = str(run.get("commit_sha", ""))
+    commit_short = commit[:7] if commit else "local"
+    archive_dates = [str(item.get("date", "")) for item in archive_entries if item.get("date")]
+    archive_detail = f"{archive_dates[-1]} to {archive_dates[0]}" if len(archive_dates) > 1 else (archive_dates[0] if archive_dates else "current report only")
+    data_vintage_detail = f"Generated {_display_datetime(report_state.get('generated_at'))}"
+    numeric_detail = f"{numeric.get('live_indicator_count', 0)} live, {numeric.get('sample_fallback_indicator_count', 0)} numeric fallback"
+
+    cards = (
+        '<div class="summary-grid summary-grid--compact">'
+        f"{_metric('Build status', str(publication.get('status', 'unknown')).replace('_', ' '), str(publication.get('site_target', 'static site')))}"
+        f"{_metric('Build mode', str(publication.get('build_mode', 'unknown')), 'Strict fallback guard on' if publication.get('strict_numeric_sample_fallback_guard') else 'Strict fallback guard off')}"
+        f"{_metric('Data vintage', str(report_state.get('data_as_of', 'unknown')), data_vintage_detail)}"
+        f"{_metric('Numeric mode', str(numeric.get('mode', 'unknown')).replace('_', ' '), numeric_detail)}"
+        f"{_metric('Research evidence', 'fallback' if evidence.get('fallback_used') else 'structured', str(evidence.get('message', evidence.get('mode', ''))))}"
+        f"{_metric('Archive coverage', str(len(archive_entries)), archive_detail)}"
+        "</div>"
+    )
+
+    details = (
+        '<div class="run-status-grid">'
+        '<article class="status-panel">'
+        "<h3>Publication Run</h3>"
+        '<dl class="mini-stats mini-stats--wide">'
+        f"<div><dt>Provider</dt><dd>{escape(str(run.get('provider', 'local')))}</dd></div>"
+        f"<div><dt>Workflow run</dt><dd>{run_value}</dd></div>"
+        f"<div><dt>Ref</dt><dd>{escape(str(run.get('ref', '')) or 'local')}</dd></div>"
+        f"<div><dt>Commit</dt><dd>{escape(commit_short)}</dd></div>"
+        "</dl>"
+        f"<p class=\"muted\">{escape(str(publication.get('status_summary', 'Static report generated.')))}</p>"
+        "</article>"
+        '<article class="status-panel">'
+        "<h3>Monitoring Snapshot</h3>"
+        "<ul>"
+        f"<li>Previous report state supplied: {escape('yes' if publication.get('previous_report_state_supplied') else 'no')}.</li>"
+        f"<li>Previous archive supplied: {escape('yes' if publication.get('previous_archive_supplied') else 'no')}.</li>"
+        f"<li>Synthesis confidence: {escape(str(confidence.get('label', 'unknown')))} ({_fmt(confidence.get('score'), 3)}).</li>"
+        f"<li>Research evidence fallback: {escape('yes' if evidence.get('fallback_used') else 'no')}.</li>"
+        "</ul>"
+        "</article>"
+        "</div>"
+    )
+    return cards + details
+
+
 def _render_cycle_state(report_state: dict[str, Any]) -> str:
     cycle_state = dict(report_state.get("cycle_state", {}))
     if not cycle_state:
@@ -848,11 +913,21 @@ def _render_changes(changes: dict[str, Any] | None) -> str:
 def _render_archive(entries: list[dict[str, str]], report_prefix: str) -> str:
     if not entries:
         return '<p class="empty-state">No archived report pages have been generated yet.</p>'
-    items = "".join(
-        f"<li><a href=\"{escape(report_prefix)}/{escape(entry['file'])}\">{escape(entry['date'])}</a><span>{escape(entry['label'])}</span></li>"
+    rows = "".join(
+        "<tr>"
+        f"<td><a href=\"{escape(report_prefix)}/{escape(str(entry.get('file', '')))}\">{escape(str(entry.get('date', '')))}</a><span>{escape(str(entry.get('label', '')))}</span></td>"
+        f"<td>{escape(str(entry.get('cycle_phase', 'unknown')).replace('_', ' '))}<span>{escape(str(entry.get('cycle_confidence', '')))}</span></td>"
+        f"<td>{escape(str(entry.get('numeric_mode', 'unknown')).replace('_', ' '))}<span>{int(_num(entry.get('live_indicator_count')))} live, {int(_num(entry.get('numeric_sample_fallback_count')))} fallback</span></td>"
+        f"<td>{escape(str(entry.get('data_as_of', 'unknown')))}</td>"
+        f"<td>{escape(str(entry.get('commit_sha', ''))[:7] or 'n/a')}</td>"
+        "</tr>"
         for entry in entries
     )
-    return f'<ul class="archive-list">{items}</ul>'
+    return (
+        '<div class="table-wrap"><table class="archive-table">'
+        "<thead><tr><th>Report</th><th>Cycle phase</th><th>Numeric data</th><th>Data vintage</th><th>Commit</th></tr></thead>"
+        f"<tbody>{rows}</tbody></table></div>"
+    )
 
 
 def _render_methodology(report_state: dict[str, Any], data_prefix: str) -> str:
@@ -972,14 +1047,47 @@ def _signal_description(signal: str) -> str:
     return descriptions[signal]
 
 
-def _archive_entries(reports_dir: Path, current_file: str) -> list[dict[str, str]]:
+def _archive_entries(
+    reports_dir: Path,
+    current_file: str,
+    report_state: dict[str, Any],
+    previous_entries: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
     files = {path.name for path in reports_dir.glob("*.html")}
     files.add(current_file)
-    entries = []
-    for filename in sorted(files, reverse=True):
+    entries_by_file = {
+        str(entry.get("file", "")): dict(entry)
+        for entry in previous_entries
+        if str(entry.get("file", "")).endswith(".html")
+    }
+    for filename in files:
         date_label = filename.removesuffix(".html")
-        entries.append({"date": date_label, "file": filename, "label": "Current report" if filename == current_file else "Archived report"})
-    return entries
+        entries_by_file.setdefault(filename, {"date": date_label, "file": filename, "label": "Archived report"})
+    entries_by_file[current_file] = _archive_entry_for_current_report(report_state, current_file)
+    return sorted(entries_by_file.values(), key=lambda item: str(item.get("date", "")), reverse=True)
+
+
+def _archive_entry_for_current_report(report_state: dict[str, Any], current_file: str) -> dict[str, Any]:
+    numeric = dict(report_state.get("source_health", {}).get("numeric", {}))
+    global_cycle = dict(report_state.get("cycle_state", {}).get("global_equity_cycle", {}))
+    publication = dict(report_state.get("publication_status", {}))
+    run = dict(publication.get("run", {}))
+    return {
+        "date": current_file.removesuffix(".html"),
+        "file": current_file,
+        "label": "Current report",
+        "generated_at": str(report_state.get("generated_at", "")),
+        "data_as_of": str(report_state.get("data_as_of", "")),
+        "schema_version": str(report_state.get("schema_version", "")),
+        "numeric_mode": str(numeric.get("mode", "")),
+        "live_indicator_count": int(_num(numeric.get("live_indicator_count"))),
+        "numeric_sample_fallback_count": int(_num(numeric.get("sample_fallback_indicator_count"))),
+        "cycle_phase": str(global_cycle.get("phase", "")),
+        "cycle_confidence": str(global_cycle.get("confidence", "")),
+        "research_fact_count": len(report_state.get("research_facts", [])),
+        "run_url": str(run.get("run_url", "")),
+        "commit_sha": str(run.get("commit_sha", "")),
+    }
 
 
 def _write_json(path: Path, payload: Any) -> None:
@@ -1167,10 +1275,12 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .mini-stats div { background: #f1f4ef; border-radius: 6px; padding: 9px; }
 .mini-stats dt { color: var(--muted); font-size: 12px; }
 .mini-stats dd { margin: 4px 0 0; font-weight: 800; }
-.archive-list { margin: 0; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
-.archive-list li { display: flex; justify-content: space-between; gap: 16px; padding: 13px 15px; border-bottom: 1px solid #e8ebe5; }
-.archive-list li:last-child { border-bottom: 0; }
-.archive-list span, .muted { color: var(--muted); }
+.run-status-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.status-panel { padding: 15px; }
+.status-panel h3 { margin-top: 0; }
+.status-panel li { margin: 7px 0; line-height: 1.45; }
+.archive-table td span { display: block; color: var(--muted); margin-top: 3px; font-size: 13px; }
+.muted { color: var(--muted); }
 .empty-state { margin: 0; padding: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; color: var(--muted); }
 .warning { margin: 10px 0; padding: 13px 15px; background: #fff8e8; border: 1px solid #e2c27b; border-radius: 8px; color: #463615; }
 .warning ul { margin: 8px 0 0; padding-left: 18px; }
@@ -1180,7 +1290,7 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .methodology-grid p, .methodology-grid li { line-height: 1.55; }
 .coverage-table td:nth-child(2) { font-weight: 800; text-transform: capitalize; }
 @media (max-width: 900px) {
-  .summary-grid, .lead-grid, .evidence-grid, .cycle-evidence-grid, .methodology-grid, .subsector-chart-grid { grid-template-columns: 1fr; }
+  .summary-grid, .lead-grid, .evidence-grid, .cycle-evidence-grid, .methodology-grid, .subsector-chart-grid, .run-status-grid { grid-template-columns: 1fr; }
   .masthead__inner, main { padding-left: 18px; padding-right: 18px; }
   .site-nav { padding-left: 18px; padding-right: 18px; }
   h1 { font-size: 34px; }

@@ -145,7 +145,7 @@ def generate_sample_research_facts() -> pd.DataFrame:
                 "theme": "key_debate",
                 "claim": _debate_fact_for(subsector),
                 "source_name": "Project research framework",
-                "source_url": "docs/market_researcher_repo_evaluation.md",
+                "source_url": "docs/knowledge_base_review.md",
                 "source_type": "internal_methodology",
                 "source_quality": "sample",
                 "source_date": today,

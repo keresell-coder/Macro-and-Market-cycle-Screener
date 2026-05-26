@@ -44,7 +44,7 @@ Expected phase language should be explicit and evidence-backed, for example:
 - Public-safe report-state JSON and change tracking.
 - Strict public/private boundary for credentials, manual reports, private notes, raw licensed data, local databases, local research evidence, and the public-reviewed evidence bundle.
 - Scoring version: `score-v1-public-cycle-radar`.
-- Report-state schema version: `2026-05-26-sprint13`.
+- Report-state schema version: `2026-05-26-sprint14`.
 - Live Pages URL: `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`.
 - Repository: `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener`.
 
@@ -59,7 +59,6 @@ Use these files to avoid duplicated project state:
 - `docs/publication_policy.md`: public/private boundary.
 - `docs/knowledge_base_review.md`: concise review of the durable framework reference.
 - `docs/knowledge_base/global_macro_market_cycle_knowledge_base.md`: long-lived macro-cycle framework.
-- `docs/market_researcher_repo_evaluation.md`: historical design note for research-layer ideas.
 - `docs/continuation_prompt.md`: fresh-chat handoff prompt generated from this state file.
 
 ## Current Data Coverage
@@ -108,15 +107,18 @@ Implemented sprint sequence:
 - Sprint 11: public-safe cycle-state and transition synthesis.
 - Sprint 12: broad public valuation, volatility, and breadth-like market-internals reality checks.
 - Sprint 13: reviewed public research evidence bundle and ingestion path for subsector cycle interpretation.
+- Sprint 14: static run-status, deployment metadata, data-vintage summary, and archive-continuity support.
 
-Latest local Sprint 13 verification:
+Latest local Sprint 14 verification:
 
-- `schema_version`: `2026-05-26-sprint13`
+- `schema_version`: `2026-05-26-sprint14`
 - `numeric_mode`: `live_numeric`
 - live indicators: 29
 - numeric `sample_fallback`: 0
 - reviewed public research facts: 13
 - research-evidence fallback: false
+- publication-status metadata: connected
+- previous archive preservation: connected in workflow
 - cycle-state phase: `late-cycle/crowded risk`
 - global equity cycle confidence: `high`
 - overall synthesis confidence: `medium`
@@ -134,6 +136,7 @@ Static report views:
 - Historical Charts.
 - Liquidity And Credit.
 - Source Health.
+- Run Status.
 - Contradicting Evidence.
 - Latest Radar.
 - Changes Since Last Report.
@@ -147,6 +150,7 @@ Report-state JSON includes:
 - historical chart layer;
 - non-scoring liquidity/credit and valuation/market-internals signal groups;
 - source freshness and source health;
+- publication/run status, deployment target, data vintage, and archive metadata;
 - framework coverage;
 - contradiction evidence;
 - market-cycle summaries;
@@ -154,17 +158,17 @@ Report-state JSON includes:
 
 ## Current Gap
 
-Sprint 13 adds reviewed public research facts for priority subsectors, but important evidence remains missing or proxied. The next useful work is archive, monitoring, and deployment maturity, not broad indicator collection.
+Sprint 14 adds archive and deployment visibility, but important evidence remains missing or proxied. The next useful work is report-history validation and signal calibration using accumulated public snapshots, not broad indicator collection.
 
 ## Next Sprint
 
-Sprint 14 should be:
+Sprint 15 should be:
 
-**Archive, Monitoring, And Deployment Maturity**
+**Report-History Validation And Signal Calibration**
 
 Goal:
 
-Improve run-status visibility, archive navigation, data-vintage summaries, and deployment monitoring while preserving the static Pages boundary and strict fallback checks.
+Use accumulated report snapshots to review whether phase labels, transition evidence, contradictions, and confidence rules behave coherently over time. Keep it static/public-safe and do not add new indicators unless they directly improve cycle-state validation.
 
 ## Operating Rules
 

@@ -13,6 +13,7 @@ This project is private-first. Public/static output may be useful later, but onl
   - `exports/site/`.
 - Methodology notes explaining scoring, source hierarchy, and limitations.
 - Public-safe cycle-state synthesis generated from already allowed public/proxied indicators and explicitly labeled caveats.
+- Public-safe publication/run metadata for static GitHub Actions deployments, including workflow run ID, commit SHA, ref, archive metadata, and data vintage.
 - Broad public valuation, volatility, and leadership proxies when clearly labeled as proxies and not as true Oslo subsector valuation, breadth, positioning, or analyst-estimate data.
 - Public-source research facts after review, provided the claim is short, sourced, and does not reproduce restricted content.
 - Reviewed public CSV evidence under `data/public_research_evidence/`.
@@ -33,7 +34,7 @@ This project is private-first. Public/static output may be useful later, but onl
 - Unreviewed claims may appear in the private local dashboard, but they must not change numeric scoring.
 - Committed reviewed public facts may support subsector interpretation, caveats, and source-health context, but they do not override numeric scores.
 - Public exports should show source name, source date, captured date, confidence, and review status.
-- `report_state.json`, `latest.json`, and `changes.json` should include reviewed public research facts only.
+- `report_state.json`, `latest.json`, `changes.json`, and `archive.json` should include reviewed public research facts only.
 - Paywalled or licensed material may be summarized only when the user has rights to use it, and raw content must remain out of public artifacts.
 
 ## GitHub Pages Boundary

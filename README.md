@@ -13,6 +13,7 @@ This is not a stock-picking or investment-advice engine. It is a structured rese
 - Builds a static GitHub Pages report from public-safe HTML/JSON.
 - Synthesizes current cycle status and transition evidence from public/proxied inputs.
 - Tracks source freshness, source failures, and numeric sample fallback.
+- Shows static run status, data vintage, deployment metadata, and archive continuity.
 - Shows historical charts for global, liquidity/credit, valuation/internals, regional, and sector/subsector views.
 - Ranks Oslo-linked subsectors using transparent proxy signals.
 - Shows contradiction evidence when signals disagree.
@@ -94,7 +95,6 @@ Workflow:
 - `docs/github_pages_setup.md`: GitHub Pages workflow setup and deployment mechanics.
 - `docs/knowledge_base_review.md`: short review of the durable macro-cycle knowledge base.
 - `docs/knowledge_base/global_macro_market_cycle_knowledge_base.md`: durable framework reference.
-- `docs/market_researcher_repo_evaluation.md`: historical design note for research-layer ideas.
 - `src/cycle_screener/connectors.py`: public data refresh.
 - `src/cycle_screener/report_state.py`: public-safe report-state builder.
 - `src/cycle_screener/charts.py`: historical chart layer.

@@ -26,10 +26,12 @@ Current status: GitHub Pages is enabled with GitHub Actions as the deployment so
 - Installs the Python project and test dependencies.
 - Runs the test suite.
 - Attempts to download the previous public `data/report_state.json` from GitHub Pages for change tracking.
+- Attempts to download the previous public `data/archive.json` and archived report pages so archive links can persist across static rebuilds.
 - Builds the static report site.
 - In live mode, fails the build if numeric indicators fall back to deterministic `sample_fallback` rows.
 - Runs static-site QA against `exports/site/` after generation.
 - Publishes the current cycle-state synthesis as static HTML/JSON.
+- Publishes static run-status, data-vintage, deployment, and archive-continuity metadata.
 - Publishes reviewed public research facts from the report-state JSON, while private/manual evidence remains outside `exports/site/`.
 - Uploads only `exports/site/` to GitHub Pages.
 - Stores a short-lived debug artifact named `static-radar-site`.
@@ -75,7 +77,7 @@ Example value:
 https://example.com/data/report_state.json
 ```
 
-If no previous report is found, the site still builds and the Changes view says no previous snapshot was supplied.
+If no previous report is found, the site still builds and the Changes view says no previous snapshot was supplied. If no previous archive is found, the Archive view starts with the current report and expands on later successful deploys.
 
 ## Current Deployment Recommendation
 
@@ -83,7 +85,9 @@ The scheduled workflow is set to `live`. After material workflow or data-source 
 
 - the generated static site;
 - `exports/site/data/latest.json`;
+- `exports/site/data/archive.json`;
 - source status rows for numeric fallback;
+- the Run Status section;
 - the debug artifact named `static-radar-site`.
 
 In live mode the workflow passes `--fail-on-numeric-sample-fallback`, so numeric fallback will block publication instead of silently affecting the radar.
