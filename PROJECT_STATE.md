@@ -1,6 +1,6 @@
 # Project State: Oslo Macro and Market-cycle Opportunity Radar
 
-Last updated: 2026-05-26
+Last updated: 2026-07-24
 
 ## Core Aim
 
@@ -63,7 +63,7 @@ Use these files to avoid duplicated project state:
 
 ## Current Data Coverage
 
-Live numeric refresh is keyless by default and currently covers 29 indicators with 0 numeric `sample_fallback` rows in the latest local live run.
+Live numeric refresh is keyless by default and currently covers 29 indicators with 0 numeric `sample_fallback` rows in the latest published live run.
 
 Reviewed public research evidence currently covers 13 public facts and 13 public-reviewed profiles, one per Oslo-linked subsector. These facts are short, sourced, reviewed, and non-scoring.
 
@@ -81,8 +81,9 @@ Implemented public/live sources:
 Current known non-OK statuses:
 
 - UBS public research page returns 403 and is reported as a visible source failure.
+- Norway CPI is currently reported as stale by the source-freshness policy.
 - Structured research evidence uses committed reviewed public CSV facts by default. Sample research evidence is now limited to explicit sample builds or environments where neither public nor local structured files exist.
-- Sprint 14 code is pushed and locally verified, but GitHub Actions currently fails during checkout with a GitHub account/repository access 403. Until that access issue is resolved, GitHub Pages remains on the previous Sprint 13 deployment.
+- GitHub Actions checkout now uses an anonymous public fetch, and the live build/deployment workflow is operating successfully.
 
 Important boundaries:
 
@@ -131,12 +132,18 @@ Latest local Sprint 14 verification:
 
 Latest published Pages verification:
 
-- `schema_version`: `2026-05-26-sprint13`
+- verified: `2026-07-24`
+- `schema_version`: `2026-05-26-sprint14`
+- `data_as_of`: `2026-07-24`
 - `numeric_mode`: `live_numeric`
 - live indicators: 29
 - numeric `sample_fallback`: 0
 - reviewed public research facts: 13
-- publication-status metadata: not yet published because the Sprint 14 GitHub Actions checkout is blocked
+- research-evidence fallback: false
+- publication status: `generated`
+- workflow run: `30089612697`
+- published commit: `24d8184993914e8ca92e409dcefc33f40b42ae17`
+- checkout, static-site QA, artifact upload, and Pages deployment: successful
 
 ## Current Product Shape
 
