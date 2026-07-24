@@ -141,8 +141,7 @@ Latest published Pages verification:
 - reviewed public research facts: 13
 - research-evidence fallback: false
 - publication status: `generated`
-- workflow run: `30089612697`
-- published commit: `24d8184993914e8ca92e409dcefc33f40b42ae17`
+- exact workflow run and published commit: recorded in the live `data/report_state.json` publication-status metadata
 - checkout, static-site QA, artifact upload, and Pages deployment: successful
 
 ## Current Product Shape
