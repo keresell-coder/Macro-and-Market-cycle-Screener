@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from .cycle_state import classify_global_phase
 
 
-HISTORY_VALIDATION_VERSION = "report-history-validation-v1-sprint15"
+HISTORY_VALIDATION_VERSION = "report-history-consistency-v2-sprint16"
 MAX_HISTORY_SNAPSHOTS = 60
 CONFIDENCE_THRESHOLDS = (
     (0.75, "high"),
@@ -44,10 +45,13 @@ def build_report_history_validation(
     rule_replay = _rule_replay(ordered)
 
     full_count = sum(bool(item.get("full_state")) for item in ordered)
-    if len(ordered) >= 4 and full_count >= 2:
+    history_span_days = _history_span_days(ordered)
+    if full_count >= 12 and history_span_days >= 90:
         history_depth = "established"
-    elif len(ordered) >= 2:
+    elif full_count >= 6 and history_span_days >= 28:
         history_depth = "developing"
+    elif len(ordered) >= 2:
+        history_depth = "preliminary"
     else:
         history_depth = "insufficient"
 
@@ -67,15 +71,25 @@ def build_report_history_validation(
 
     if review_flags:
         calibration_status = "needs_review"
-    elif history_depth != "established":
-        calibration_status = "limited_history"
+    elif rule_replay.get("status") == "aligned" and confidence_calibration.get("status") == "aligned":
+        calibration_status = "implementation_replay_passed"
     else:
-        calibration_status = "coherent"
+        calibration_status = "limited_history"
+
+    if full_count >= 26 and history_span_days >= 365:
+        empirical_validation_status = "established"
+    elif full_count >= 12 and history_span_days >= 90:
+        empirical_validation_status = "developing"
+    else:
+        empirical_validation_status = "insufficient_history"
 
     return {
         "version": HISTORY_VALIDATION_VERSION,
         "calibration_status": calibration_status,
         "history_depth": history_depth,
+        "history_span_days": history_span_days,
+        "empirical_validation_status": empirical_validation_status,
+        "independent_validation": False,
         "snapshot_count": len(ordered),
         "full_state_snapshot_count": full_count,
         "compact_snapshot_count": len(ordered) - full_count,
@@ -97,10 +111,12 @@ def build_report_history_validation(
             confidence_calibration,
         ),
         "methodology_note": (
-            "Validation reuses only accumulated public report snapshots and archive summaries. "
+            "This report-history consistency check reuses only accumulated public report snapshots and archive summaries. "
             "It does not add indicators, change numeric scoring, or admit research claims. "
-            "Compact archive rows validate headline phase persistence; full report states also validate "
-            "transition evidence, contradictions, rule replay, and confidence-label thresholds."
+            "Compact archive rows check headline phase persistence; full report states also replay "
+            "transition evidence, contradictions, phase rules, and confidence-label thresholds. "
+            "Rule replay uses the published rules and therefore checks implementation consistency, not "
+            "independent calibration, predictive accuracy, or investment outcomes."
         ),
         "snapshots": ordered,
     }
@@ -371,11 +387,12 @@ def _summary(
     confidence: dict[str, Any],
 ) -> str:
     return (
-        f"Calibration status is {calibration_status.replace('_', ' ')} across {snapshot_count} public snapshots "
+        f"Report-history status is {calibration_status.replace('_', ' ')} across {snapshot_count} public snapshots "
         f"({full_count} full report states; history depth {history_depth}). "
         f"Headline phase stability is {str(phase_stability.get('status', '')).replace('_', ' ')}; "
         f"phase-rule replay is {str(rule_replay.get('status', '')).replace('_', ' ')} and confidence labels are "
-        f"{str(confidence.get('status', '')).replace('_', ' ')}."
+        f"{str(confidence.get('status', '')).replace('_', ' ')}. This is an implementation consistency check, "
+        "not an independent backtest."
     )
 
 
@@ -404,6 +421,17 @@ def _snapshot_sort_key(item: dict[str, Any]) -> tuple[str, str]:
 
 def _snapshot_date(item: dict[str, Any]) -> str:
     return str(item.get("generated_at") or item.get("data_as_of") or "")[:10]
+
+
+def _history_span_days(snapshots: list[dict[str, Any]]) -> int:
+    if len(snapshots) < 2:
+        return 0
+    try:
+        start = datetime.fromisoformat(_snapshot_date(snapshots[0])).date()
+        end = datetime.fromisoformat(_snapshot_date(snapshots[-1])).date()
+    except ValueError:
+        return 0
+    return max(0, (end - start).days)
 
 
 def _optional_float(value: Any) -> float | None:

@@ -35,7 +35,7 @@ def export_static() -> str:
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Oslo Macro and Market-cycle Opportunity Radar</title>
+  <title>Oslo Macro and Market-Cycle Radar</title>
   <style>
     body {{ margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f6f7f4; color: #18201b; }}
     header {{ padding: 28px 32px 18px; background: #12332d; color: #fff; }}
@@ -54,14 +54,14 @@ def export_static() -> str:
 </head>
 <body>
   <header>
-    <h1>Oslo Macro and Market-cycle Opportunity Radar</h1>
-    <p>Explainable subsector research leads. Not investment advice. Refreshed: {refreshed}</p>
+    <h1>Oslo Macro and Market-Cycle Radar</h1>
+    <p>Explainable cycle states and subsector research priorities. Not investment advice. Refreshed: {refreshed}</p>
   </header>
   <main>
     <section>
       <table>
         <thead>
-          <tr><th>Rank</th><th>Subsector</th><th>Group</th><th>Score</th><th>Recovery</th><th>Momentum</th><th>Confidence</th><th>Evidence</th></tr>
+          <tr><th>Research rank</th><th>Subsector</th><th>Group</th><th>Priority index</th><th>Recovery</th><th>Momentum</th><th>Signal-data quality</th><th>Evidence</th></tr>
         </thead>
         <tbody>{rows}</tbody>
       </table>

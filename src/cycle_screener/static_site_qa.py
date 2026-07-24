@@ -11,22 +11,18 @@ from urllib.request import urlopen
 
 
 REQUIRED_PAGE_TEXT = (
-    "Historical Charts",
-    "Global View And Drilldown",
-    "Run Status",
-    "Deployment And Data Vintage",
-    "Liquidity And Credit",
-    "Financial Conditions Signal Group",
-    "Cycle Status And Transition Synthesis",
-    "Current Cycle Read",
-    "Report-History Validation",
-    "Signal Calibration And Coherence",
-    "Latest Radar",
-    "Source Health",
-    "Contradicting Evidence",
-    "Changes Since Last Report",
-    "Archive",
-    "Methodology",
+    "Oslo Macro and Market-Cycle Radar",
+    "Current Global Equity State",
+    "Cycle Curve And State Map",
+    "Where Markets And Subsectors Sit Now",
+    "Oslo-Linked Subsector Signals",
+    "Research Triggers, Continuation And Risk Alerts",
+    "What Supports Or Contradicts The Read",
+    "Trust And Methods",
+    "Data Quality, Model Support And Historical Evidence",
+    "One-page weekly PDF",
+    "Cycle-position discount",
+    "Implementation replay",
     "Scoring version",
     "Framework coverage",
 )
@@ -51,12 +47,24 @@ def run_static_site_qa(site_dir: Path) -> dict[str, Any]:
     history_validation_path = site_dir / "data" / "history_validation.json"
     if not history_validation_path.exists():
         raise FileNotFoundError(f"Missing history validation JSON: {history_validation_path}")
+    weekly_pdf_path = site_dir / "weekly" / "weekly-cycle-brief.pdf"
+    if not weekly_pdf_path.exists():
+        raise FileNotFoundError(f"Missing weekly one-page PDF: {weekly_pdf_path}")
+    if weekly_pdf_path.stat().st_size < 4_000 or not weekly_pdf_path.read_bytes().startswith(b"%PDF"):
+        raise AssertionError(f"Weekly PDF is missing or unexpectedly small: {weekly_pdf_path}")
+    from pypdf import PdfReader
+
+    weekly_pdf = PdfReader(str(weekly_pdf_path))
+    if len(weekly_pdf.pages) != 1:
+        raise AssertionError(f"Weekly PDF must contain exactly one page: {weekly_pdf_path}")
 
     with _static_server(site_dir) as base_url:
         html = _fetch_text(f"{base_url}/index.html")
         missing = [text for text in REQUIRED_PAGE_TEXT if text not in html]
         if missing:
             raise AssertionError(f"Static index is missing required text: {', '.join(missing)}")
+        if 'href="weekly/weekly-cycle-brief.pdf"' not in html:
+            raise AssertionError("Static index is missing the fixed weekly PDF link.")
         screenshot_result = _optional_playwright_screenshot(f"{base_url}/index.html", site_dir)
 
     return {
@@ -102,6 +110,7 @@ def _optional_playwright_screenshot(url: str, site_dir: Path) -> dict[str, str]:
     screenshot_dir = site_dir / "qa"
     screenshot_dir.mkdir(parents=True, exist_ok=True)
     screenshot_path = screenshot_dir / "index-desktop.png"
+    mobile_screenshot_path = screenshot_dir / "index-mobile.png"
 
     try:
         with sync_playwright() as playwright:
@@ -112,13 +121,21 @@ def _optional_playwright_screenshot(url: str, site_dir: Path) -> dict[str, str]:
                 if page.get_by_text(text).count() == 0:
                     raise AssertionError(f"Browser QA could not find visible text: {text}")
             page.screenshot(path=str(screenshot_path), full_page=True)
+            page.set_viewport_size({"width": 390, "height": 844})
+            page.goto(url, wait_until="networkidle")
+            overflow = page.evaluate("document.documentElement.scrollWidth - document.documentElement.clientWidth")
+            if overflow > 1:
+                raise AssertionError(f"Mobile layout has {overflow}px horizontal document overflow.")
+            page.screenshot(path=str(mobile_screenshot_path), full_page=True)
             browser.close()
     except PlaywrightError as exc:
         return {"status": "skipped", "reason": f"playwright browser unavailable: {exc}"}
 
     if screenshot_path.stat().st_size < 10_000:
         raise AssertionError(f"Screenshot is unexpectedly small: {screenshot_path}")
-    return {"status": "captured", "path": str(screenshot_path)}
+    if mobile_screenshot_path.stat().st_size < 10_000:
+        raise AssertionError(f"Mobile screenshot is unexpectedly small: {mobile_screenshot_path}")
+    return {"status": "captured", "path": str(screenshot_path), "mobile_path": str(mobile_screenshot_path)}
 
 
 def main() -> None:

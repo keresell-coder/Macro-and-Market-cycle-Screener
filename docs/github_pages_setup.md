@@ -16,6 +16,12 @@ Live GitHub Pages URL:
 https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/
 ```
 
+Fixed latest one-page weekly PDF:
+
+```text
+https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/weekly/weekly-cycle-brief.pdf
+```
+
 Current status: GitHub Pages is enabled with GitHub Actions as the deployment source. Latest published verification lives in `PROJECT_STATE.md`. Repository secrets named `FRED_API_KEY` and `EIA_API_KEY` are configured, though the current default live refresh does not require a key.
 
 ## What The Workflow Does
@@ -35,6 +41,8 @@ Current status: GitHub Pages is enabled with GitHub Actions as the deployment so
 - Publishes static run-status, data-vintage, deployment, and archive-continuity metadata.
 - Carries forward a bounded public report-history validation record through the prior public report state.
 - Publishes `data/history_validation.json` with phase stability, phase-rule replay, transition/contradiction continuity, and confidence-threshold checks.
+- Publishes the decision-first cycle dashboard and `decision_support` report-state object with separate data-quality, model-support, and historical-validation fields.
+- Generates an A4 one-page weekly cycle brief, verifies that it is a valid one-page PDF, and publishes both a dated copy and the fixed `weekly/weekly-cycle-brief.pdf` latest copy.
 - Publishes reviewed public research facts from the report-state JSON, while private/manual evidence remains outside `exports/site/`.
 - Packages only `exports/site/` into the Pages artifact.
 - Stores a short-lived debug artifact named `static-radar-site`.
@@ -90,6 +98,7 @@ The scheduled workflow is set to `live`. After material workflow or data-source 
 - `exports/site/data/latest.json`;
 - `exports/site/data/archive.json`;
 - `exports/site/data/history_validation.json`;
+- `exports/site/weekly/weekly-cycle-brief.pdf`;
 - source status rows for numeric fallback;
 - the Run Status section;
 - the debug artifact named `static-radar-site`.

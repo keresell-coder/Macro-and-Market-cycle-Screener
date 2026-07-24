@@ -36,9 +36,11 @@ def test_history_validation_replays_rules_and_preserves_scoring_state() -> None:
     validation = build_report_history_validation(current, previous, archive)
 
     assert current == original
-    assert validation["version"] == "report-history-validation-v1-sprint15"
-    assert validation["calibration_status"] == "coherent"
-    assert validation["history_depth"] == "established"
+    assert validation["version"] == "report-history-consistency-v2-sprint16"
+    assert validation["calibration_status"] == "implementation_replay_passed"
+    assert validation["history_depth"] == "preliminary"
+    assert validation["empirical_validation_status"] == "insufficient_history"
+    assert validation["independent_validation"] is False
     assert validation["snapshot_count"] == 4
     assert validation["full_state_snapshot_count"] == 2
     assert validation["phase_stability"]["status"] == "stable"

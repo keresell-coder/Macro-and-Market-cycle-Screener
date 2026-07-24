@@ -26,12 +26,13 @@ The objective is to classify cycle status and detect transitions:
 - Oslo-linked sector/subsector phase;
 - continuation, recovery, deterioration, exit risk, or uncertainty.
 
-## Current Validation Read
+## Current Consistency And Validation Read
 
-- Sprint 15 now replays the top-level phase rule and confidence thresholds against accumulated public report snapshots.
-- The first validation window contains four public snapshots and two full report states.
-- The headline phase is stable, phase-rule replay and confidence labels align, transition evidence is stable, and contradiction evidence evolves without a wholesale reset.
-- This is an initial coherence check, not a long-horizon backtest.
+- Sprint 16 replays the top-level phase rule and confidence thresholds against accumulated public report snapshots.
+- The current window contains five public snapshots, three full report states, and 59 calendar days.
+- The headline phase is stable and the implementation replay aligns.
+- This proves reproducibility under the published rules. It does not independently validate predictive accuracy, transition timing, expected returns, or investment outcomes.
+- Public trust semantics now separate data quality, model support, and historical validation.
 
 ## Main Remaining Gaps
 
@@ -42,10 +43,11 @@ The objective is to classify cycle status and detect transitions:
 - No analyst earnings revisions or estimate cycle.
 - No real subsector price/relative-strength/valuation histories.
 - Research evidence now includes committed reviewed public CSV facts, but true Oslo valuation, earnings, positioning, and subsector-history inputs remain missing.
+- Most subsectors have only one reviewed public fact, so source diversity and explicit counterevidence remain limited.
 
 ## Recommended Next Step
 
-Implement **Sprint 16: History Depth And Boundary Sensitivity** next.
+Implement **Sprint 17: Subsector Evidence Depth And Boundary Sensitivity** next.
 
 This should:
 
@@ -53,6 +55,8 @@ This should:
 - accumulate full public report states through the existing static workflow;
 - identify phase labels that sit close to active decision boundaries;
 - distinguish persistent threshold crossings from one-run noise before changing rules;
+- link each priority subsector conclusion to confirming and contradicting evidence;
+- strengthen direct subsector data only when it closes a published classification gap;
 - preserve strict numeric sample-fallback failure in live builds;
 - keep unreviewed, private, licensed, or restricted evidence local;
 - preserve missing/proxied/sample-backed labels.

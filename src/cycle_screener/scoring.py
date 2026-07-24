@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import pandas as pd
 
 from .indicators import indicator_by_slug
+from .signal_metrics import build_indicator_metrics
 from .taxonomy import SUBSECTORS
 
 
@@ -69,35 +70,7 @@ def calculate_scores(observations: pd.DataFrame, research_mentions: pd.DataFrame
 
 
 def _indicator_metrics(observations: pd.DataFrame) -> dict[str, dict[str, float | str]]:
-    definitions = indicator_by_slug()
-    metrics: dict[str, dict[str, float | str]] = {}
-    if observations.empty:
-        return metrics
-
-    frame = observations.copy()
-    frame["observed_at"] = pd.to_datetime(frame["observed_at"], errors="coerce")
-    frame = frame.dropna(subset=["observed_at", "value"]).sort_values(["indicator_slug", "observed_at"])
-    for slug, group in frame.groupby("indicator_slug"):
-        values = group["value"].astype(float).tail(60)
-        if values.empty:
-            continue
-        latest = float(values.iloc[-1])
-        percentile = float((values <= latest).mean())
-        if len(values) >= 7:
-            recent = float(values.tail(3).mean())
-            prior = float(values.iloc[-6:-3].mean())
-            denominator = abs(prior) if abs(prior) > 1e-9 else 1.0
-            momentum = (recent - prior) / denominator
-        else:
-            momentum = 0.0
-        definition = definitions.get(slug)
-        metrics[slug] = {
-            "latest": latest,
-            "percentile": percentile,
-            "momentum": _clip(momentum * 8),
-            "higher_is": definition.higher_is if definition else "mixed",
-        }
-    return metrics
+    return build_indicator_metrics(observations)
 
 
 def _tailwind_adjusted_metric(item: dict[str, float | str]) -> float:

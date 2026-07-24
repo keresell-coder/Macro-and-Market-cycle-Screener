@@ -16,6 +16,9 @@ First read:
 Core aim:
 This project is a private-first macro and market-cycle radar. Its main purpose is to establish where global equities, major sectors, and Oslo-linked subsectors appear to be in the cycle now, and whether evidence points to continuation, transition, recovery, deterioration, or exit risk. Avoid drifting into non-core indicators. Add data only when it improves cycle-state classification, transition detection, contradiction evidence, confidence, or sector/subsector cycle interpretation.
 
+Investor-use framing:
+Use depressed or deteriorating areas as research candidates only when stabilization and improving momentum appear; let supported positive trends continue while their invalidation evidence remains absent; treat late-cycle/crowded configurations as do-not-chase and exit-risk alerts. The radar is one research input, not an entry/exit or stock-selection engine.
+
 Current implementation:
 Use `PROJECT_STATE.md` as the source of truth for latest schema, live verification, implemented views, data families, known gaps, and next sprint.
 
@@ -24,12 +27,12 @@ Important constraints:
 - Do not assume Codex has API keys.
 - Keep private notes, credentials, manual reports, raw licensed data, local databases, and unpublished research out of GitHub and public exports.
 - Missing dimensions must be shown as missing/proxied/sample-backed.
-- The GitHub Pages target must remain static HTML/JSON/assets, not hosted Streamlit.
+- The GitHub Pages target must remain static HTML/JSON/PDF/assets, not hosted Streamlit.
 
 Next requested sprint:
-Sprint 16: History Depth And Boundary Sensitivity.
+Sprint 17: Subsector Evidence Depth And Boundary Sensitivity.
 
-Accumulate more full public snapshots and test whether phase labels remain stable near decision thresholds. Add boundary-distance and persistence diagnostics before changing phase or confidence rules. Keep it static/public-safe and do not add new indicators unless they directly resolve a demonstrated validation weakness.
+Accumulate more full public snapshots and test whether phase labels remain stable near decision thresholds. Add boundary-distance and persistence diagnostics before changing phase or confidence rules. Strengthen priority-subsector conclusions with claim-linked confirming and contradicting public evidence. Keep it static/public-safe and do not add new indicators unless they directly resolve a demonstrated validation or subsector-interpretation weakness.
 
 Keep private notes, restricted content, unreviewed claims, and raw licensed material out of public exports. Do not let unreviewed research claims affect numeric scoring.
 

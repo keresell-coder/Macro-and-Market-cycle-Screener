@@ -6,9 +6,10 @@ from typing import Any
 import pandas as pd
 
 from .indicators import indicator_by_slug, public_indicator_slug
+from .signal_metrics import build_indicator_metrics
 
 
-CYCLE_STATE_VERSION = "cycle-state-v1-sprint12"
+CYCLE_STATE_VERSION = "cycle-state-v2-sprint16"
 
 GROWTH_INDICATORS = ("g20_cli", "g7_cli", "us_cli", "china_cli", "europe_cli", "global_pmi", "china_growth_proxy")
 INFLATION_RATES_INDICATORS = ("norway_cpi", "rates_pressure", "norges_bank_policy_rate", "brent", "us_natural_gas")
@@ -99,9 +100,10 @@ def build_cycle_state(
         "confidence": _overall_confidence(global_equity, dimensions, missing_caveats),
         "missing_data_caveats": missing_caveats,
         "methodology_note": (
-            "Sprint 12 synthesis uses existing public indicators, source freshness, liquidity/credit signals, "
+            "Sprint 16 synthesis uses existing public indicators, frequency-aware signal horizons, source freshness, liquidity/credit signals, "
             "broad valuation/volatility/leadership reality checks, subsector proxy scores, and contradiction evidence. "
-            "It is a rule-based cycle read, not a forecast or investment advice."
+            "Coverage confidence describes data availability and agreement, not empirical accuracy. "
+            "This is a rule-based cycle read, not a forecast, timing signal, or investment advice."
         ),
     }
 
@@ -153,6 +155,9 @@ def _dimension(
                 "percentile": _rounded(metric["percentile"], 3),
                 "momentum": _rounded(metric["momentum"], 3),
                 "score": _rounded(score, 3),
+                "frequency_bucket": str(metric.get("frequency_bucket", "unknown")),
+                "momentum_horizon": str(metric.get("momentum_horizon", "unknown")),
+                "observation_count_used": int(metric.get("observation_count_used", 0) or 0),
                 "latest_observed_at": str(freshness.get("latest_observed_at", "")),
                 "source_category": source_category,
                 "freshness_status": freshness_status,
@@ -178,6 +183,7 @@ def _dimension(
         "direction_score": _rounded(direction_score, 3),
         "confidence": _confidence_label(confidence_score),
         "confidence_score": _rounded(confidence_score, 3),
+        "confidence_type": "data_coverage_and_freshness",
         "coverage": {
             "available_count": len(evidence),
             "expected_count": len(slugs),
@@ -192,45 +198,7 @@ def _dimension(
 
 
 def _indicator_metrics(observations: pd.DataFrame) -> dict[str, dict[str, float]]:
-    if observations.empty:
-        return {}
-    definitions = indicator_by_slug()
-    frame = observations.copy()
-    frame["observed_at_sort"] = pd.to_datetime(frame["observed_at"], errors="coerce")
-    frame["value"] = pd.to_numeric(frame["value"], errors="coerce")
-    frame = frame.dropna(subset=["indicator_slug", "observed_at_sort", "value"]).sort_values(["indicator_slug", "observed_at_sort"])
-
-    result: dict[str, dict[str, float]] = {}
-    for slug, group in frame.groupby("indicator_slug"):
-        values = group["value"].astype(float).tail(120)
-        if values.empty:
-            continue
-        latest = float(values.iloc[-1])
-        percentile = float((values <= latest).mean())
-        if len(values) >= 7:
-            recent = float(values.tail(3).mean())
-            prior = float(values.iloc[-6:-3].mean())
-            denominator = abs(prior) if abs(prior) > 1e-9 else 1.0
-            momentum = _clip(((recent - prior) / denominator) * 8)
-        else:
-            momentum = 0.0
-        definition = definitions.get(str(slug))
-        higher_is = definition.higher_is if definition else "mixed"
-        result[str(slug)] = {
-            "latest": latest,
-            "percentile": percentile,
-            "momentum": momentum,
-            "tailwind_score": _tailwind_score(percentile, momentum, higher_is),
-        }
-    return result
-
-
-def _tailwind_score(percentile: float, momentum: float, higher_is: str) -> float:
-    if higher_is == "higher_tailwind":
-        return _clip((percentile - 0.5) * 1.4 + momentum * 0.6)
-    if higher_is == "lower_tailwind":
-        return _clip((0.5 - percentile) * 1.4 - momentum * 0.6)
-    return _clip((0.5 - abs(percentile - 0.5)) * 0.6 + momentum * 0.4)
+    return build_indicator_metrics(observations)
 
 
 def _risk_appetite_score(metric: dict[str, float]) -> float:
@@ -254,6 +222,7 @@ def _global_equity_cycle(dimensions: dict[str, dict[str, Any]], contradictions: 
             "score": 0.0,
             "confidence": "low",
             "confidence_score": 0.0,
+            "confidence_type": "data_coverage_and_signal_agreement",
             "summary": "Not enough public indicator coverage is available to classify the global equity cycle.",
             "primary_evidence": [],
         }
@@ -290,6 +259,7 @@ def _global_equity_cycle(dimensions: dict[str, dict[str, Any]], contradictions: 
         "score": _rounded(weighted_score, 3),
         "confidence": _confidence_label(confidence_score),
         "confidence_score": _rounded(confidence_score, 3),
+        "confidence_type": "data_coverage_and_signal_agreement",
         "summary": _global_summary(phase, weighted_score, direction, contradictions),
         "primary_evidence": [
             {
@@ -377,7 +347,7 @@ def _oslo_read_through(subsectors: list[dict[str, Any]]) -> list[dict[str, Any]]
         macro = _mean([float(item.get("signals", {}).get("macro_tailwind", 0) or 0) for item in items])
         confidence = _mean([float(item.get("signals", {}).get("confidence", 0) or 0) for item in items])
         score = _mean([float(item.get("opportunity_score", 0) or 0) for item in items])
-        phase = _subsector_phase(recovery, momentum, macro, score, confidence)
+        phase = classify_subsector_phase(recovery, momentum, macro, score, confidence)
         top_items = sorted(items, key=lambda item: int(item.get("rank", 999)))[:3]
         records.append(
             {
@@ -463,6 +433,7 @@ def _overall_confidence(global_equity: dict[str, Any], dimensions: list[dict[str
     return {
         "label": _confidence_label(score),
         "score": _rounded(score, 3),
+        "confidence_type": "model_support_not_empirical_accuracy",
         "low_confidence_dimensions": low_dimensions,
         "summary": _confidence_summary(score, low_dimensions, caveats),
     }
@@ -521,7 +492,13 @@ def _confidence_label(score: float) -> str:
     return "very low"
 
 
-def _subsector_phase(recovery: float, momentum: float, macro: float, score: float, confidence: float) -> str:
+def classify_subsector_phase(
+    recovery: float,
+    momentum: float,
+    macro: float,
+    score: float,
+    confidence: float,
+) -> str:
     if confidence < 0.35:
         return "insufficient evidence"
     if momentum >= 0.25 and recovery < 0.05 and score >= 58:

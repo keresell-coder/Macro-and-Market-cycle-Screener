@@ -17,6 +17,7 @@ def test_weekly_report_workflow_deploys_only_static_site() -> None:
     assert "python -m pytest -q" in workflow
     assert "python -m cycle_screener.build_static_site" in workflow
     assert "exports/site/data/history_validation.json" in workflow
+    assert "exports/site/weekly/weekly-cycle-brief.pdf" in workflow
 
 
 def test_weekly_report_workflow_defaults_to_live_data_with_sample_option() -> None:

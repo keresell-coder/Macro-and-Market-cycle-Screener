@@ -10,11 +10,13 @@ from typing import Any
 
 from .change_tracking import compare_report_states
 from .config import EXPORT_DIR
+from .decision_support import build_decision_support
 from .history_validation import build_report_history_validation
 from .publication import is_public_export_path
 from .refresh import refresh
 from .report_state import build_report_state
 from .static_site import build_site_files
+from .weekly_pdf import build_weekly_pdf
 
 
 def build_static_site(
@@ -44,6 +46,7 @@ def build_static_site(
         previous_state=previous_state,
         previous_archive_entries=previous_archive_entries,
     )
+    current_state["decision_support"] = build_decision_support(current_state, changes=None)
     current_state = _with_publication_status(
         current_state,
         sample=sample,
@@ -61,18 +64,23 @@ def build_static_site(
     changes = None
     if previous_state:
         changes = compare_report_states(previous_state, current_state)
+        current_state["decision_support"] = build_decision_support(current_state, changes=changes)
+        report_state_path.write_text(json.dumps(current_state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        latest_path.write_text(json.dumps(current_state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         changes_path = target_dir / "changes.json"
         changes_path.write_text(json.dumps(changes, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     else:
         (target_dir / "changes.json").unlink(missing_ok=True)
 
     site_result = build_site_files(current_state, changes, site_dir=site_dir, previous_archive_entries=previous_archive_entries)
+    pdf_result = build_weekly_pdf(current_state, Path(site_result["site_index"]).parent)
 
     return {
         "report_state": str(report_state_path),
         "latest": str(latest_path),
         "changes": str(changes_path) if changes_path else None,
         **site_result,
+        **pdf_result,
     }
 
 
@@ -114,7 +122,7 @@ def _with_publication_status(
     state["publication_status"] = {
         "status": "generated",
         "status_summary": "Static report generated successfully. GitHub Pages deployment completes after the workflow deploy job publishes exports/site/.",
-        "site_target": "GitHub Pages static HTML/JSON/assets",
+        "site_target": "GitHub Pages static HTML/JSON/PDF/assets",
         "build_mode": "sample" if sample else "live",
         "strict_numeric_sample_fallback_guard": strict_numeric_sample_fallback_guard,
         "previous_report_state_supplied": previous_state_supplied,
@@ -165,6 +173,7 @@ def main() -> None:
         print("No previous report provided; change report not written.")
     print(f"Static site written to {result['site_index']}")
     print(f"Weekly report page written to {result['weekly_report']}")
+    print(f"Weekly one-page PDF written to {result['weekly_pdf_latest']}")
 
 
 if __name__ == "__main__":

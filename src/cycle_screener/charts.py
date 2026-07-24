@@ -86,7 +86,7 @@ MARKET_CHART_COLUMNS = {
     "price_index": "Subsector price proxy",
     "benchmark_index": "Oslo benchmark proxy",
     "relative_price_index": "Relative subsector price proxy",
-    "valuation_proxy": "Valuation proxy",
+    "valuation_proxy": "Cycle-position proxy",
 }
 
 
@@ -253,7 +253,7 @@ def _subsector_chart_record(
             "view_id": f"{subsector.slug}_scoring_proxies",
             "title": f"{subsector.name}: scoring proxy histories",
             "scope": subsector.name,
-            "description": f"Live public indicators currently used in the {subsector.name} opportunity score where data exists.",
+            "description": f"Live public indicators currently used in the {subsector.name} research-priority score where data exists.",
             "indicator_slugs": subsector.proxy_indicators,
         },
         observations,
@@ -297,7 +297,7 @@ def _market_cycle_view(subsector: Subsector, market_cycle: pd.DataFrame, columns
                 "data_class": "sample_backed_proxy",
                 "proxy_status": "sample_backed",
                 "scoring_inclusion": False,
-                "scoring_note": "Not included in the opportunity score. Used as visible subsector context and contradiction evidence only.",
+                "scoring_note": "Not included in the research-priority score. Used as visible subsector context and contradiction evidence only.",
                 "latest_value": latest.get("value"),
                 "latest_indexed_value": latest.get("indexed_value") if not raw else None,
                 "first_observed_at": str(first.get("date", "")),
@@ -470,7 +470,7 @@ def _scoring_lookup() -> dict[str, list[str]]:
 
 def _scoring_note(subsector_names: list[str]) -> str:
     if not subsector_names:
-        return "Not included in current opportunity scoring."
+        return "Not included in current research-priority scoring."
     if len(subsector_names) <= 3:
         return f"Included in current scoring for {', '.join(subsector_names)}."
     return f"Included in current scoring for {len(subsector_names)} subsectors."
@@ -527,7 +527,7 @@ def _market_description(column: str) -> str:
         "price_index": "Synthetic subsector price proxy for development and visual context.",
         "benchmark_index": "Synthetic Oslo benchmark proxy for development and visual context.",
         "relative_price_index": "Synthetic relative subsector price proxy versus the benchmark proxy.",
-        "valuation_proxy": "Valuation proxy only; not a true market valuation multiple.",
+        "valuation_proxy": "Sample-backed cycle-position proxy only; not a true market valuation multiple.",
         "driver_pressure": "Synthetic driver-pressure signal on a standardized scale.",
     }
     return descriptions.get(column, column.replace("_", " "))

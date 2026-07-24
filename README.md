@@ -1,4 +1,4 @@
-# Oslo-Linked Macro and Market-cycle Opportunity Radar
+# Oslo-Linked Macro and Market-Cycle Radar
 
 Private-first research radar for macro and market-cycle work.
 
@@ -10,16 +10,21 @@ This is not a stock-picking or investment-advice engine. It is a structured rese
 
 - Refreshes open/public macro, market, growth, rates, FX, commodity, liquidity/credit, valuation, volatility, and broad leadership proxies.
 - Builds local Streamlit views for private analysis.
-- Builds a static GitHub Pages report from public-safe HTML/JSON.
+- Builds a static GitHub Pages report from public-safe HTML/JSON/PDF assets.
 - Synthesizes current cycle status and transition evidence from public/proxied inputs.
+- Opens with a decision-first view: current state, direction, change, invalidation evidence, and separate trust measures.
+- Shows a cycle curve and phase map for the global market, Oslo-linked sectors, and all 13 subsectors. The curve is a state map, not a timing forecast.
+- Gives every subsector an expandable investor-use summary, confirmation requirement, evidence boundary, and primary missing-data gap.
+- Separates data quality, model support, and historical validation instead of presenting one ambiguous confidence label.
 - Tracks source freshness, source failures, and numeric sample fallback.
 - Shows static run status, data vintage, deployment metadata, and archive continuity.
-- Validates phase stability, phase-rule replay, transition evidence, contradictions, and confidence labels against accumulated public report snapshots.
+- Checks phase stability, phase-rule replay, transition evidence, contradictions, and confidence-label consistency against accumulated public report snapshots. This is implementation replay, not independent calibration.
 - Shows historical charts for global, liquidity/credit, valuation/internals, regional, and sector/subsector views.
-- Ranks Oslo-linked subsectors using transparent proxy signals.
+- Uses a transparent research-priority index for triage. It is not expected return, valuation, or an entry/exit signal.
 - Shows contradiction evidence when signals disagree.
 - Includes reviewed public research facts for Oslo-linked subsector cycle interpretation without changing numeric scoring.
 - Keeps private notes, credentials, manual reports, local databases, and unreviewed evidence out of public exports.
+- Generates a public-safe, one-page A4 weekly PDF with a fixed mobile-friendly URL.
 
 ## Live Sources
 
@@ -46,7 +51,8 @@ The project is intentionally honest about missing or proxied dimensions:
 - Subsector market-cycle histories are sample-backed proxies, not true Oslo subsector price or valuation histories.
 - Broad valuation, volatility, and equal-weight leadership proxies are now connected, but true Oslo valuation multiples, analyst revisions, earnings estimates, positioning, and true breadth are not implemented.
 - Reviewed public research facts improve subsector interpretation and caveats, but they do not override numeric scoring.
-- Report-history calibration currently has only a small number of public snapshots; coherent behavior is visible, but this is not a long-horizon backtest.
+- Report history currently has too few independent, time-separated full states for empirical calibration or a long-horizon backtest.
+- Subsector phase labels remain macro-proxy research classifications until true subsector price, valuation, earnings, positioning, and primary-driver histories are connected.
 - Missing data should be read as a blind spot, not as neutral evidence.
 
 ## Quick Start
@@ -72,12 +78,24 @@ python -m cycle_screener.build_static_site --fail-on-numeric-sample-fallback
 python -m cycle_screener.static_site_qa exports/site
 ```
 
+The build also creates:
+
+- local latest brief: `output/pdf/weekly-cycle-brief.pdf`;
+- public latest brief: `exports/site/weekly/weekly-cycle-brief.pdf`;
+- a dated public PDF alongside the fixed latest copy.
+
 ## GitHub Pages
 
 Live site:
 
 ```text
 https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/
+```
+
+Fixed weekly one-page PDF:
+
+```text
+https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/weekly/weekly-cycle-brief.pdf
 ```
 
 Workflow:
@@ -99,6 +117,9 @@ Workflow:
 - `docs/knowledge_base/global_macro_market_cycle_knowledge_base.md`: durable framework reference.
 - `src/cycle_screener/connectors.py`: public data refresh.
 - `src/cycle_screener/report_state.py`: public-safe report-state builder.
+- `src/cycle_screener/decision_support.py`: investor-use framing, cycle-map records, trust separation, and subsector evidence boundaries.
+- `src/cycle_screener/signal_metrics.py`: frequency-aware percentile and momentum transformations.
+- `src/cycle_screener/weekly_pdf.py`: public-safe one-page weekly PDF.
 - `src/cycle_screener/charts.py`: historical chart layer.
 - `src/cycle_screener/static_site.py`: static HTML renderer.
 - `src/cycle_screener/scoring.py`: current subsector scoring.

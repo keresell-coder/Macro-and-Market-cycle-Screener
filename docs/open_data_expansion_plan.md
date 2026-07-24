@@ -74,15 +74,19 @@ Sprint 15 added public-safe report-history validation:
 - confidence label-to-score threshold checks;
 - a standalone static `data/history_validation.json` asset.
 
-The first Sprint 15 window is coherent but shallow: four public snapshots, two full report states, and no phase changes. No scoring or confidence threshold was changed.
+Sprint 16 reclassifies this layer correctly as report-history consistency rather than empirical calibration. The current window has five public snapshots, three full report states, and 59 calendar days. Implementation replay passes, but empirical validation remains insufficient.
+
+Sprint 16 also makes percentile and momentum transformations frequency-aware. Daily and weekly observations are reduced to month-end; monthly and quarterly signals use suitable multi-period horizons; annual GDP momentum is damped structural context. No new indicator was admitted for this change.
 
 ## Near-Term Admission Priority
 
-### History Depth And Boundary Sensitivity
+### Subsector Evidence Depth And Boundary Sensitivity
 
 - Accumulate more full public snapshots before retuning rules.
 - Measure distance to active phase boundaries and require persistence before treating small threshold crossings as a cycle transition.
 - Use observed rule mismatch, excessive phase churn, or abrupt evidence resets as the admission test for any calibration change.
+- Require claim-linked, confirming and contradicting evidence for priority subsectors before strengthening qualitative conclusions.
+- Prioritize direct subsector data only where it closes a named gap shown in the public subsector card.
 - BIS, ECB, and Eurostat credit/property/monetary layers remain later candidates only after connector testing proves they improve the cycle read.
 
 ## Candidate Sources For Testing

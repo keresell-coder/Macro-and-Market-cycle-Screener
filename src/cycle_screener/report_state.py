@@ -9,9 +9,10 @@ import pandas as pd
 
 from .charts import build_chart_layer
 from .config import EXPORT_DIR, get_settings
-from .cycle_state import build_cycle_state
+from .cycle_state import build_cycle_state, classify_subsector_phase
 from .indicators import indicator_by_slug, public_indicator_slug
 from .publication import is_public_export_path
+from .signal_metrics import build_indicator_metrics
 from .sources import SOURCE_DEFINITIONS
 from .storage import RadarStore
 
@@ -34,8 +35,8 @@ MARKET_COLUMNS = (
     "driver_pressure",
 )
 
-REPORT_STATE_VERSION = "2026-07-24-sprint15"
-SCORING_METHODOLOGY_VERSION = "score-v1-public-cycle-radar"
+REPORT_STATE_VERSION = "2026-07-24-sprint16"
+SCORING_METHODOLOGY_VERSION = "score-v2-frequency-aware-cycle-radar"
 CREDIT_LIQUIDITY_INDICATORS = ("chicago_fed_nfci", "st_louis_financial_stress")
 MACRO_CONFIRMATION_INDICATORS = ("g20_cli", "us_cli", "europe_cli", "nasdaq_proxy")
 VALUATION_INTERNALS_INDICATORS = ("us_equity_market_cap_gdp_proxy", "vix_proxy", "sp500_equal_weight_leadership_proxy")
@@ -82,9 +83,9 @@ def build_report_state(store: RadarStore | None = None) -> dict[str, Any]:
             "scoring_version": SCORING_METHODOLOGY_VERSION,
             "report_state_version": REPORT_STATE_VERSION,
             "framework_reference": "docs/knowledge_base/global_macro_market_cycle_knowledge_base.md",
-            "framework_coverage": "Partial implementation of a broader macro and market-cycle framework. Current scoring covers public macro, rates, FX, commodity, OECD CLI growth proxies, market-proxy, source-health, and reviewed-public-research evidence. Sprint 10 added a non-scoring liquidity/credit signal group and historical charts for Chicago Fed NFCI and the St. Louis Fed Financial Stress Index via public FRED CSV. Sprint 11 added a public-safe rule-based cycle-state synthesis layer. Sprint 12 adds broad public valuation, volatility, and breadth-like leadership reality checks. Sprint 13 adds reviewed public research facts for Oslo-linked subsector cycle interpretation without changing numeric scoring. Sprint 14 adds static run-status, data-vintage, deployment, and archive-continuity metadata. Sprint 15 validates phase, transition, contradiction, and confidence behavior against accumulated public report snapshots without adding indicators or changing numeric scoring. Annual World Bank GDP growth remains slow-moving background context, while monthly OECD CLI data is accessed through the public DB.nomics mirror because the direct OECD SDMX endpoint is not reliably reachable from this environment. The model does not yet include earnings revisions, true Oslo valuation multiples, positioning, BIS credit/property-cycle data, or licensed subsector market data.",
-            "implementation_boundary": "Opportunity scores are research triage signals. Cycle-state labels are rule-based synthesis outputs from public/proxied evidence, not return forecasts or investment advice. Missing dimensions should be treated as explicit blind spots rather than neutral evidence.",
-            "scoring": "Transparent subsector scoring from public/free indicators, explicitly labeled proxies, and visible sample fallbacks when present.",
+            "framework_coverage": "Partial implementation of a broader macro and market-cycle framework. Current scoring covers public macro, rates, FX, commodity, OECD CLI growth proxies, market proxies, source health, and reviewed public research evidence. Sprint 16 makes signal windows frequency-aware, separates data quality from model support and historical validation, and presents a decision-first cycle map without adding indicators. Annual World Bank GDP growth is damped slow-moving context; daily and weekly observations are reduced to month-end before time-aware momentum and percentile calculations. Monthly OECD CLI data is accessed through the public DB.nomics mirror because the direct OECD SDMX endpoint is not reliably reachable from this environment. The model still lacks earnings revisions, true Oslo valuation multiples, positioning, BIS credit/property-cycle data, and licensed subsector market data.",
+            "implementation_boundary": "Research-priority scores are triage signals, not expected returns. Cycle-state labels are rule-based synthesis outputs from public/proxied evidence, not forecasts, timing signals, or investment advice. Missing dimensions are explicit blind spots rather than neutral evidence.",
+            "scoring": "Transparent frequency-aware subsector scoring from public/free indicators, explicitly labeled proxies, and visible sample fallbacks when present. It combines contrarian recovery potential with momentum confirmation and macro context.",
             "research_policy": "Only reviewed public research facts are included in public report state. Unreviewed claims, private notes, and restricted/manual evidence remain local and do not affect numeric scoring.",
             "not_investment_advice": True,
         },
@@ -118,12 +119,21 @@ def _subsector_record(rank: int, row: pd.Series, market_cycle: pd.DataFrame, res
     slug = str(row["slug"])
     signals = {column: _rounded(row[column], 3) for column in SIGNAL_COLUMNS if column in row}
     latest_market_cycle = _latest_market_cycle(slug, market_cycle)
+    cycle_phase = classify_subsector_phase(
+        recovery=float(signals.get("recovery_potential", 0) or 0),
+        momentum=float(signals.get("momentum", 0) or 0),
+        macro=float(signals.get("macro_tailwind", 0) or 0),
+        score=float(row["opportunity_score"]),
+        confidence=float(signals.get("confidence", 0) or 0),
+    )
     return {
         "slug": slug,
         "name": str(row["name"]),
         "group_name": str(row["group_name"]),
         "rank": rank,
         "opportunity_score": _rounded(row["opportunity_score"], 1),
+        "cycle_phase": cycle_phase,
+        "cycle_direction": _direction_label(float(signals.get("momentum", 0) or 0)),
         "signals": signals,
         "data_confidence": str(row.get("data_confidence", "")),
         "explanation": str(row.get("explanation", "")),
@@ -349,6 +359,9 @@ def _signal_group_indicators(
                 "percentile": _rounded_or_zero(metric.get("percentile"), 3),
                 "momentum": _rounded_or_zero(metric.get("momentum"), 3),
                 "tailwind_score": _rounded_or_zero(metric.get("tailwind_score"), 3),
+                "frequency_bucket": str(metric.get("frequency_bucket", "unknown")),
+                "momentum_horizon": str(metric.get("momentum_horizon", "unknown")),
+                "observation_count_used": int(metric.get("observation_count_used", 0) or 0),
             }
         )
     return indicators
@@ -371,45 +384,15 @@ def _group_connection_status(slugs: tuple[str, ...], freshness_lookup: dict[str,
 
 
 def _indicator_signal_metrics(observations: pd.DataFrame, slugs: tuple[str, ...]) -> dict[str, dict[str, float]]:
-    if observations.empty:
-        return {}
-    indicator_lookup = indicator_by_slug()
-    frame = observations.copy()
-    frame["observed_at_sort"] = pd.to_datetime(frame["observed_at"], errors="coerce")
-    frame["value"] = pd.to_numeric(frame["value"], errors="coerce")
-    frame = frame.dropna(subset=["observed_at_sort", "value"]).sort_values(["indicator_slug", "observed_at_sort"])
-    metrics: dict[str, dict[str, float]] = {}
-    for slug in slugs:
-        group = frame[frame["indicator_slug"].astype(str) == slug]["value"].astype(float).tail(120)
-        if group.empty:
-            continue
-        latest = float(group.iloc[-1])
-        percentile = float((group <= latest).mean())
-        if len(group) >= 7:
-            recent = float(group.tail(3).mean())
-            prior = float(group.iloc[-6:-3].mean())
-            denominator = abs(prior) if abs(prior) > 1e-9 else 1.0
-            momentum = max(min(((recent - prior) / denominator) * 8, 1.0), -1.0)
-        else:
-            momentum = 0.0
-        higher_is = indicator_lookup[slug].higher_is if slug in indicator_lookup else "mixed"
-        metrics[slug] = {
-            "latest": latest,
-            "percentile": percentile,
-            "momentum": momentum,
-            "tailwind_score": _tailwind_score(percentile, momentum, higher_is),
-        }
-    return metrics
+    return build_indicator_metrics(observations, slugs)
 
 
-def _tailwind_score(percentile: float, momentum: float, higher_is: str) -> float:
-    if higher_is == "higher_tailwind":
-        value = (percentile - 0.5) * 1.4 + momentum * 0.6
-    elif higher_is == "lower_tailwind":
-        value = (0.5 - percentile) * 1.4 - momentum * 0.6
-    else:
-        value = (0.5 - abs(percentile - 0.5)) * 0.6 + momentum * 0.4
-    return max(min(value, 1.0), -1.0)
+def _direction_label(momentum: float) -> str:
+    if momentum >= 0.15:
+        return "improving"
+    if momentum <= -0.15:
+        return "deteriorating"
+    return "stable/mixed"
 
 
 def _mean_float(values: list[object]) -> float:
@@ -499,9 +482,9 @@ def _framework_coverage() -> list[dict[str, str]]:
         },
         {
             "dimension": "Research evidence",
-            "status": "sample_backed",
-            "current_coverage": "Reviewed public sample facts plus optional local reviewed CSV ingestion; sample facts are visible as sample-backed context.",
-            "main_gap": "Needs analyst-reviewed public/manual CSV evidence for priority subsectors.",
+            "status": "limited",
+            "current_coverage": "Committed reviewed public facts and reviewed subsector profiles, with one current fact per Oslo-linked subsector. Facts remain non-scoring.",
+            "main_gap": "Needs multiple independent, claim-linked sources per subsector, including confirming and contradicting evidence with explicit review dates.",
         },
     ]
 
@@ -558,8 +541,8 @@ def _subsector_contradictions(name: str, signals: dict[str, Any], market_cycle: 
     if valuation >= 0.2 and market_valuation >= 110:
         records.append(
             _contradiction(
-                "Scoring valuation proxy conflicts with sample market-cycle valuation",
-                f"{name} has a positive valuation signal, but the sample-backed market-cycle valuation proxy is elevated.",
+                "Cycle-position discount conflicts with sample market-cycle proxy",
+                f"{name} has a positive cycle-position discount signal, but the sample-backed market-cycle proxy is elevated.",
                 {"valuation_proxy": valuation, "market_cycle_valuation_pressure": (market_valuation - 100) / 100},
             )
         )

@@ -36,7 +36,7 @@ def test_report_state_contains_public_safe_snapshot() -> None:
     assert state["source_freshness"]
     assert state["source_health"]
     assert state["cycle_state"]
-    assert state["cycle_state"]["version"] == "cycle-state-v1-sprint12"
+    assert state["cycle_state"]["version"] == "cycle-state-v2-sprint16"
     assert state["cycle_state"]["global_equity_cycle"]["phase"]
     assert state["cycle_state"]["dimensions"]
     assert state["cycle_state"]["oslo_sector_read_through"]
@@ -81,7 +81,16 @@ def test_report_state_contains_public_safe_snapshot() -> None:
     assert {"source", "latest_observed_at", "frequency", "data_class", "proxy_status", "scoring_inclusion"}.issubset(global_series)
 
     first = state["subsectors"][0]
-    assert {"slug", "rank", "opportunity_score", "signals", "market_cycle", "reviewed_public_fact_ids"}.issubset(first)
+    assert {
+        "slug",
+        "rank",
+        "opportunity_score",
+        "cycle_phase",
+        "cycle_direction",
+        "signals",
+        "market_cycle",
+        "reviewed_public_fact_ids",
+    }.issubset(first)
     assert "relative_price_index" in first["market_cycle"]
     assert all(fact["source_url"] for fact in state["research_facts"])
     assert state["source_health"]["numeric"]["sample_build_indicator_count"] == len(state["source_freshness"])
@@ -177,31 +186,28 @@ def test_build_static_site_writes_report_json(tmp_path) -> None:
 
     site_index = Path(result["site_index"])
     site_html = site_index.read_text(encoding="utf-8")
-    assert "Historical Charts" in site_html
-    assert "Global View And Drilldown" in site_html
-    assert "Run Status" in site_html
-    assert "Deployment And Data Vintage" in site_html
-    assert "Liquidity And Credit" in site_html
-    assert "Financial Conditions Signal Group" in site_html
-    assert "Cycle Status And Transition Synthesis" in site_html
-    assert "Current Cycle Read" in site_html
-    assert "Report-History Validation" in site_html
-    assert "Signal Calibration And Coherence" in site_html
+    assert "Oslo Macro and Market-Cycle Radar" in site_html
+    assert "Current Global Equity State" in site_html
+    assert "Cycle Curve And State Map" in site_html
+    assert "Where Markets And Subsectors Sit Now" in site_html
+    assert "Research Triggers, Continuation And Risk Alerts" in site_html
+    assert "Data Quality, Model Support And Historical Evidence" in site_html
+    assert "Consistency status" in site_html
     assert "Oslo-Linked Sector Read-Through" in site_html
     assert "Chart window:" in site_html
     assert "Regional Drilldown" in site_html
     assert "Sector And Subsector Drilldown" in site_html
     assert "sample-backed market-cycle proxy history" in site_html
-    assert "Latest Radar" in site_html
-    assert "Source Health" in site_html
-    assert "Freshness And Fallbacks" in site_html
-    assert "Contradicting Evidence" in site_html
+    assert "Open source freshness and fallback details" in site_html
+    assert "Open detailed subsector contradictions" in site_html
+    assert "Cycle-position discount" in site_html
     assert "Scoring version" in site_html
     assert "Framework coverage" in site_html
-    assert "Changes Since Last Report" in site_html
-    assert "Archive" in site_html
+    assert "What Moved" in site_html
+    assert "Open archive" in site_html
     assert "Archive coverage" in site_html
-    assert "Methodology" in site_html
+    assert "Open full methodology and coverage gaps" in site_html
+    assert 'href="weekly/weekly-cycle-brief.pdf"' in site_html
     assert (site_index.parent / "data" / "latest.json").exists()
     assert (site_index.parent / "data" / "changes.json").exists()
     assert (site_index.parent / "data" / "history_validation.json").exists()
@@ -209,10 +215,13 @@ def test_build_static_site_writes_report_json(tmp_path) -> None:
     assert archive[0]["numeric_mode"]
     assert "numeric_sample_fallback_count" in archive[0]
     latest = json.loads((site_index.parent / "data" / "latest.json").read_text(encoding="utf-8"))
-    assert latest["publication_status"]["site_target"] == "GitHub Pages static HTML/JSON/assets"
+    assert latest["publication_status"]["site_target"] == "GitHub Pages static HTML/JSON/PDF/assets"
     assert latest["publication_status"]["previous_report_state_supplied"] is True
-    assert latest["report_history_validation"]["version"] == "report-history-validation-v1-sprint15"
+    assert latest["report_history_validation"]["version"] == "report-history-consistency-v2-sprint16"
+    assert latest["decision_support"]["trust"]["historical_validation"]["label"] in {"insufficient", "developing", "established"}
     assert Path(result["weekly_report"]).exists()
+    assert Path(result["weekly_pdf_latest"]).exists()
+    assert Path(result["weekly_pdf_local"]).exists()
 
 
 def test_build_static_site_preserves_previous_archive_entries(tmp_path) -> None:
