@@ -488,8 +488,12 @@ def _derive_public_indicators(indicators: Iterable[IndicatorDefinition], observa
                 rows.append(_derived_series_frame(indicator, series, "public_derived"))
                 statuses.append(_status("derived_public:oil_curve_pressure", "ok", "Derived Brent-WTI spread from public Brent and WTI series."))
             elif indicator.slug == "us_equity_market_cap_gdp_proxy":
-                market_cap = _extra_public_series("BOGZ1LM883164105Q", settings_timeout=settings.request_timeout_seconds)
-                gdp = _extra_public_series("GDP", settings_timeout=settings.request_timeout_seconds)
+                valuation_inputs = _extra_public_series_batch(
+                    ("BOGZ1LM883164105Q", "GDP"),
+                    settings_timeout=settings.request_timeout_seconds,
+                )
+                market_cap = valuation_inputs["BOGZ1LM883164105Q"]
+                gdp = valuation_inputs["GDP"]
                 series = market_cap.div(gdp * 1000, axis=0) * 100
                 rows.append(_derived_series_frame(indicator, series, "fred_public_derived"))
                 statuses.append(_status("derived_public:us_equity_market_cap_gdp_proxy", "ok", "Derived broad US equity market-cap-to-GDP valuation proxy from public FRED/Fed Z.1 and BEA GDP series."))
@@ -504,13 +508,33 @@ def _derive_public_indicators(indicators: Iterable[IndicatorDefinition], observa
 
 
 def _extra_public_series(series_id: str, settings_timeout: int) -> pd.Series:
-    response = requests.get("https://fred.stlouisfed.org/graph/fredgraph.csv", params={"id": series_id}, timeout=settings_timeout)
-    response.raise_for_status()
-    frame = pd.read_csv(StringIO(response.text))
-    value_column = [column for column in frame.columns if column != "observation_date"][0]
+    return _extra_public_series_batch((series_id,), settings_timeout)[series_id]
+
+
+def _extra_public_series_batch(series_ids: tuple[str, ...], settings_timeout: int) -> dict[str, pd.Series]:
+    definitions = [
+        IndicatorDefinition(series_id, series_id, "fred_public", series_id, "", "mixed", "")
+        for series_id in series_ids
+    ]
+    settings = Settings(request_timeout_seconds=settings_timeout)
+    series: dict[str, pd.Series] = {}
+    for definition in definitions:
+        frame, fetch_error = _fetch_fred_batch([definition], settings)
+        if frame is None:
+            raise RuntimeError(f"Could not fetch public FRED CSV input {definition.source_key}: {fetch_error}")
+        series[definition.source_key] = _public_series_from_fred_frame(frame, definition.source_key)
+    return series
+
+
+def _public_series_from_fred_frame(frame: pd.DataFrame, value_column: str) -> pd.Series:
+    if "observation_date" not in frame or value_column not in frame:
+        raise ValueError(f"FRED CSV did not include observation_date and {value_column}.")
+    frame = frame.copy()
     frame["observed_at"] = pd.to_datetime(frame["observation_date"], errors="coerce")
     frame["value"] = pd.to_numeric(frame[value_column].replace(".", pd.NA), errors="coerce")
     frame = frame.dropna(subset=["observed_at", "value"]).set_index("observed_at")["value"].resample("ME").last().dropna()
+    if frame.empty:
+        raise ValueError(f"FRED CSV series {value_column} contained no numeric observations.")
     return frame
 
 

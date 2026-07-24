@@ -4,7 +4,7 @@ import os
 
 import pandas as pd
 
-from cycle_screener.connectors import _dbnomics_series_to_monthly_frame, _derive_public_indicators, _fred_csv_to_monthly_frame, _parse_world_bank_monthly_prices, _resolve_world_bank_commodity_column, _wide_monthly_column
+from cycle_screener.connectors import _dbnomics_series_to_monthly_frame, _derive_public_indicators, _extra_public_series_batch, _fred_csv_to_monthly_frame, _parse_world_bank_monthly_prices, _resolve_world_bank_commodity_column, _wide_monthly_column
 from cycle_screener.config import _load_dotenv_file
 from cycle_screener.config import Settings
 from cycle_screener.indicators import IndicatorDefinition
@@ -111,6 +111,31 @@ def test_public_derived_indicators_use_fetched_series() -> None:
     assert frame["indicator_slug"].tolist() == ["oil_curve_pressure"]
     assert frame["value"].tolist() == [5.0]
     assert statuses[0].status == "ok"
+
+
+def test_extra_fred_inputs_use_resilient_batch_fetch(monkeypatch) -> None:
+    raw = pd.DataFrame(
+        {
+            "observation_date": ["2025-10-01", "2026-01-01"],
+            "BOGZ1LM883164105Q": [95_071_807.0, 91_857_203.0],
+            "GDP": [31_422.526, 31_865.721],
+        }
+    )
+    calls = []
+
+    def fake_fetch(indicators, settings):
+        source_key = indicators[0].source_key
+        calls.append((source_key, settings.request_timeout_seconds))
+        return raw[["observation_date", source_key]], None
+
+    monkeypatch.setattr("cycle_screener.connectors._fetch_fred_batch", fake_fetch)
+
+    series = _extra_public_series_batch(("BOGZ1LM883164105Q", "GDP"), settings_timeout=37)
+
+    assert calls == [("BOGZ1LM883164105Q", 37), ("GDP", 37)]
+    assert series["BOGZ1LM883164105Q"].iloc[-1] == 91_857_203.0
+    assert series["GDP"].iloc[-1] == 31_865.721
+    assert series["GDP"].index[-1].date().isoformat() == "2026-01-31"
 
 
 def test_sample_refresh_persists_research_evidence() -> None:
