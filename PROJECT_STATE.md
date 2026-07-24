@@ -148,21 +148,29 @@ Latest local Sprint 16 verification:
 - valuation/market-internals signal group: connected
 - `chicago_fed_nfci`, `st_louis_financial_stress`, `vix_proxy`, `us_equity_market_cap_gdp_proxy`, and `sp500_equal_weight_leadership_proxy`: live numeric with no sample fallback
 
-Latest published Pages verification before the Sprint 16 deployment:
+Latest published Sprint 16 Pages verification:
 
 - verified: `2026-07-24`
-- `schema_version`: `2026-07-24-sprint15`
+- `schema_version`: `2026-07-24-sprint16`
 - `data_as_of`: `2026-07-24`
 - `numeric_mode`: `live_numeric`
 - live indicators: 29
 - numeric `sample_fallback`: 0
 - reviewed public research facts: 13
 - research-evidence fallback: false
+- global phase: `late-cycle/crowded risk`
+- global direction: `stable/mixed`
+- data quality: `high`
+- model support: `medium`
+- historical validation: `insufficient`
 - report-history validation asset: `data/history_validation.json`
-- report-history validation: `coherent` under the superseded Sprint 15 terminology
+- report-history consistency: `implementation_replay_passed`
+- empirical validation: `insufficient_history`
+- fixed one-page PDF: `weekly/weekly-cycle-brief.pdf`, A4, exactly one page
 - publication status: `generated`
-- exact workflow run and published commit: recorded in the live `data/report_state.json` publication-status metadata
-- checkout, static-site QA, artifact upload, and Pages deployment: successful
+- workflow run: `30101542622` (`Weekly static radar report #39`)
+- published commit: `5dde667845da49092d07cf8c86ec5a40bc2f3c95`
+- checkout, tests, live build, strict sample-fallback guard, static-site QA, PDF QA, artifact upload, and Pages deployment: successful
 
 ## Current Product Shape
 
