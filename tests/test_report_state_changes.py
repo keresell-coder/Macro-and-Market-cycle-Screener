@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 import json
 from pathlib import Path
 
@@ -10,6 +11,8 @@ from cycle_screener.build_static_site import build_static_site
 from cycle_screener.change_tracking import compare_report_states
 from cycle_screener.refresh import refresh
 from cycle_screener.report_state import build_report_state
+from cycle_screener.report_state import _data_as_of
+from cycle_screener.report_state import _source_freshness
 from cycle_screener.sample_data import (
     generate_sample_market_cycle,
     generate_sample_observations,
@@ -82,6 +85,29 @@ def test_report_state_contains_public_safe_snapshot() -> None:
     assert "relative_price_index" in first["market_cycle"]
     assert all(fact["source_url"] for fact in state["research_facts"])
     assert state["source_health"]["numeric"]["sample_build_indicator_count"] == len(state["source_freshness"])
+
+
+def test_report_state_caps_future_month_end_dates() -> None:
+    future_month_end = (pd.Timestamp(date.today()) + pd.offsets.MonthEnd(1)).date().isoformat()
+    observations = pd.DataFrame(
+        [
+            {
+                "indicator_slug": "brent",
+                "observed_at": future_month_end,
+                "value": 70.0,
+                "source": "world_bank_commodity",
+            }
+        ]
+    )
+    market_cycle = pd.DataFrame([{"observed_at": future_month_end}])
+
+    freshness = _source_freshness(observations, [])
+
+    assert _data_as_of(observations, market_cycle) == date.today().isoformat()
+    assert freshness[0]["latest_observed_at"] == date.today().isoformat()
+    assert freshness[0]["raw_latest_observed_at"] == future_month_end
+    assert freshness[0]["future_dated_observation"] is True
+    assert freshness[0]["age_days"] == 0
 
 
 def test_compare_report_states_tracks_core_deltas() -> None:

@@ -4,7 +4,7 @@ import os
 
 import pandas as pd
 
-from cycle_screener.connectors import _dbnomics_series_to_monthly_frame, _derive_public_indicators, _fred_csv_to_monthly_frame
+from cycle_screener.connectors import _dbnomics_series_to_monthly_frame, _derive_public_indicators, _fred_csv_to_monthly_frame, _parse_world_bank_monthly_prices, _resolve_world_bank_commodity_column, _wide_monthly_column
 from cycle_screener.config import _load_dotenv_file
 from cycle_screener.config import Settings
 from cycle_screener.indicators import IndicatorDefinition
@@ -51,6 +51,29 @@ def test_fred_public_csv_parser_preserves_long_chart_history() -> None:
     assert len(frame) == 361
     assert frame["observed_at"].iloc[0] == "1995-08-31"
     assert frame["observed_at"].iloc[-1] == "2025-08-31"
+
+
+def test_world_bank_pink_sheet_parser_handles_named_headers() -> None:
+    raw = pd.DataFrame(
+        [
+            ["World Bank Commodity Price Data", None, None, None],
+            ["Updated on July 02, 2026", None, None, None],
+            [None, "Crude oil, Brent", "Natural gas, US", "Fish meal"],
+            [None, "($/bbl)", "($/mmbtu)", "($/mt)"],
+            ["2026M05", 64.1, 3.2, "…"],
+            ["2026M06", 66.2, 3.4, 1510.0],
+        ]
+    )
+    indicator = IndicatorDefinition("brent", "Brent", "world_bank_commodity", "CRUDE_BRENT", "USD/bbl", "mixed", "Oil proxy")
+
+    parsed, date_column = _parse_world_bank_monthly_prices(raw)
+    value_column = _resolve_world_bank_commodity_column(parsed, indicator.source_key)
+    frame = _wide_monthly_column(parsed, date_column, value_column, indicator, "world_bank_commodity")
+
+    assert value_column == "Crude oil, Brent"
+    assert frame["observed_at"].tolist() == ["2026-05-31", "2026-06-30"]
+    assert frame["value"].tolist() == [64.1, 66.2]
+    assert set(frame["source"]) == {"world_bank_commodity"}
 
 
 def test_dbnomics_oecd_cli_parser_returns_monthly_observations() -> None:

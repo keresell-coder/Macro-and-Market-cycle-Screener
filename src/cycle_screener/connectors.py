@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from io import BytesIO, StringIO
+import re
 import subprocess
 from typing import Iterable
 from urllib.parse import quote, urlencode
@@ -17,6 +18,16 @@ from .sample_data import generate_sample_observations, generate_sample_research_
 from .sources import SOURCE_DEFINITIONS, RESEARCH_KEYWORDS
 
 SOURCE_HISTORY_MONTHS = 30 * 12 + 1
+
+WORLD_BANK_COMMODITY_ALIASES = {
+    "CRUDE_PETRO": ("Crude oil, average",),
+    "CRUDE_BRENT": ("Crude oil, Brent",),
+    "CRUDE_WTI": ("Crude oil, WTI",),
+    "NGAS_US": ("Natural gas, US",),
+    "COPPER": ("Copper",),
+    "ALUMINUM": ("Aluminum",),
+    "FISH_MEAL": ("Fish meal",),
+}
 
 
 @dataclass(frozen=True)
@@ -125,7 +136,7 @@ def _fetch_world_bank_commodities(indicators: Iterable[IndicatorDefinition], set
     try:
         response = requests.get(url, timeout=(min(settings.request_timeout_seconds, 8), max(settings.request_timeout_seconds, 30)))
         response.raise_for_status()
-        raw = pd.read_excel(BytesIO(response.content), sheet_name="Monthly Prices", header=6)
+        raw, date_column = _read_world_bank_monthly_prices(response.content)
     except Exception as exc:
         return pd.DataFrame(), [_status(f"world_bank_commodity:{indicator.slug}", "failed", f"Could not fetch World Bank Pink Sheet: {exc}") for indicator in indicator_list]
 
@@ -133,9 +144,10 @@ def _fetch_world_bank_commodities(indicators: Iterable[IndicatorDefinition], set
     statuses = []
     for indicator in indicator_list:
         try:
-            frame = _wide_monthly_column(raw, "Unnamed: 0", indicator.source_key, indicator, "world_bank_commodity")
+            value_column = _resolve_world_bank_commodity_column(raw, indicator.source_key)
+            frame = _wide_monthly_column(raw, date_column, value_column, indicator, "world_bank_commodity")
             frames.append(frame)
-            statuses.append(_status(f"world_bank_commodity:{indicator.slug}", "ok", f"Fetched {indicator.name} from World Bank Pink Sheet ({len(frame)} monthly rows)."))
+            statuses.append(_status(f"world_bank_commodity:{indicator.slug}", "ok", f"Fetched {indicator.name} from World Bank Pink Sheet series {value_column} ({len(frame)} monthly rows)."))
         except Exception as exc:
             statuses.append(_status(f"world_bank_commodity:{indicator.slug}", "failed", f"Could not parse World Bank Pink Sheet series {indicator.source_key}: {exc}"))
     return (pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()), statuses
@@ -263,6 +275,60 @@ def _fetch_yahoo_chart(indicators: Iterable[IndicatorDefinition], settings: Sett
         except Exception as exc:
             statuses.append(_status(f"yahoo_chart:{indicator.slug}", "failed", f"Could not fetch Yahoo chart series {indicator.source_key}: {exc}"))
     return (pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()), statuses
+
+
+def _read_world_bank_monthly_prices(content: bytes) -> tuple[pd.DataFrame, str]:
+    raw = pd.read_excel(BytesIO(content), sheet_name="Monthly Prices", header=None)
+    return _parse_world_bank_monthly_prices(raw)
+
+
+def _parse_world_bank_monthly_prices(raw: pd.DataFrame) -> tuple[pd.DataFrame, str]:
+    first_data_row = None
+    for idx, value in raw.iloc[:, 0].items():
+        if re.fullmatch(r"\d{4}M\d{2}", str(value).strip()):
+            first_data_row = int(idx)
+            break
+    if first_data_row is None:
+        raise ValueError("Could not find first monthly data row in World Bank Pink Sheet.")
+
+    expected_labels = {source_key for source_key in WORLD_BANK_COMMODITY_ALIASES}
+    for aliases in WORLD_BANK_COMMODITY_ALIASES.values():
+        expected_labels.update(aliases)
+
+    header_candidates = range(max(0, first_data_row - 5), first_data_row)
+    header_row = max(
+        header_candidates,
+        key=lambda row_idx: sum(_normalise_label(value) in {_normalise_label(label) for label in expected_labels} for value in raw.iloc[row_idx].dropna()),
+    )
+    if not any(_normalise_label(value) in {_normalise_label(label) for label in expected_labels} for value in raw.iloc[header_row].dropna()):
+        header_row = first_data_row - 1
+
+    columns = [str(value).strip() if pd.notna(value) else f"column_{idx}" for idx, value in enumerate(raw.iloc[header_row])]
+    date_column = "__period"
+    columns[0] = date_column
+    frame = raw.iloc[first_data_row:].copy()
+    frame.columns = columns
+    return frame, date_column
+
+
+def _resolve_world_bank_commodity_column(raw: pd.DataFrame, source_key: str) -> str:
+    candidates = (source_key, *WORLD_BANK_COMMODITY_ALIASES.get(source_key, ()))
+    direct_matches = [candidate for candidate in candidates if candidate in raw.columns]
+    if direct_matches:
+        return direct_matches[0]
+
+    columns_by_normalised = {_normalise_label(column): str(column) for column in raw.columns}
+    for candidate in candidates:
+        match = columns_by_normalised.get(_normalise_label(candidate))
+        if match is not None:
+            return match
+
+    available = ", ".join(str(column) for column in raw.columns[:12])
+    raise KeyError(f"{source_key} not found in World Bank Pink Sheet columns. First columns: {available}")
+
+
+def _normalise_label(value: object) -> str:
+    return " ".join(str(value).replace("**", "").split()).casefold()
 
 
 def _wide_monthly_column(raw: pd.DataFrame, date_column: str, value_column: str, indicator: IndicatorDefinition, source: str) -> pd.DataFrame:

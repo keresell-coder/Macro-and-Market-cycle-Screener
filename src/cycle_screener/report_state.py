@@ -183,7 +183,8 @@ def _source_freshness(observations: pd.DataFrame, source_status: list[dict[str, 
     for indicator_slug, group in frame.groupby("indicator_slug"):
         group = group.sort_values("observed_at_sort")
         latest = group.iloc[-1]
-        observed_date = latest["observed_at_sort"].date()
+        raw_observed_date = latest["observed_at_sort"].date()
+        observed_date = min(raw_observed_date, today)
         source = str(latest.get("source", ""))
         sources_seen = sorted({str(value) for value in group.get("source", pd.Series(dtype=str)).dropna().unique()})
         has_sample_fallback = "sample_fallback" in sources_seen
@@ -206,6 +207,8 @@ def _source_freshness(observations: pd.DataFrame, source_status: list[dict[str, 
                 "source_category": source_category,
                 "has_sample_fallback": has_sample_fallback,
                 "freshness_status": _freshness_status(indicator.source if indicator else source, age_days),
+                "raw_latest_observed_at": raw_observed_date.isoformat() if raw_observed_date > today else "",
+                "future_dated_observation": raw_observed_date > today,
             }
         )
 
@@ -661,7 +664,7 @@ def _data_as_of(observations: pd.DataFrame, market_cycle: pd.DataFrame) -> str:
                 candidates.append(dates.max())
     if not candidates:
         return date.today().isoformat()
-    return max(candidates).date().isoformat()
+    return min(max(candidates).date(), date.today()).isoformat()
 
 
 def _rounded(value: object, digits: int) -> float:
