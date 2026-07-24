@@ -44,7 +44,7 @@ Expected phase language should be explicit and evidence-backed, for example:
 - Public-safe report-state JSON and change tracking.
 - Strict public/private boundary for credentials, manual reports, private notes, raw licensed data, local databases, local research evidence, and the public-reviewed evidence bundle.
 - Scoring version: `score-v1-public-cycle-radar`.
-- Report-state schema version: `2026-05-26-sprint14`.
+- Report-state schema version: `2026-07-24-sprint15`.
 - Live Pages URL: `https://keresell-coder.github.io/Macro-and-Market-cycle-Screener/`.
 - Repository: `https://github.com/keresell-coder/Macro-and-Market-cycle-Screener`.
 
@@ -110,10 +110,11 @@ Implemented sprint sequence:
 - Sprint 12: broad public valuation, volatility, and breadth-like market-internals reality checks.
 - Sprint 13: reviewed public research evidence bundle and ingestion path for subsector cycle interpretation.
 - Sprint 14: static run-status, deployment metadata, data-vintage summary, and archive-continuity support.
+- Sprint 15: public-safe report-history validation for phase stability, phase-rule replay, transition/contradiction continuity, and confidence-label calibration.
 
-Latest local Sprint 14 verification:
+Latest local Sprint 15 verification:
 
-- `schema_version`: `2026-05-26-sprint14`
+- `schema_version`: `2026-07-24-sprint15`
 - `numeric_mode`: `live_numeric`
 - live indicators: 29
 - numeric `sample_fallback`: 0
@@ -124,6 +125,14 @@ Latest local Sprint 14 verification:
 - cycle-state phase: `late-cycle/crowded risk`
 - global equity cycle confidence: `high`
 - overall synthesis confidence: `medium`
+- report-history validation: `coherent`
+- accumulated public snapshots: 4
+- full report-state snapshots: 2
+- phase stability: `stable`, 0 phase changes
+- phase-rule replay: aligned, 0 mismatches
+- confidence-label calibration: aligned, 0 mismatches
+- transition evidence continuity: stable
+- contradiction evidence continuity: evolving, 0.667 title overlap
 - chart layer: `sprint12-valuation-internals-chart-layer`
 - chart-layer series: 176
 - liquidity/credit signal group: connected
@@ -133,13 +142,15 @@ Latest local Sprint 14 verification:
 Latest published Pages verification:
 
 - verified: `2026-07-24`
-- `schema_version`: `2026-05-26-sprint14`
+- `schema_version`: `2026-07-24-sprint15`
 - `data_as_of`: `2026-07-24`
 - `numeric_mode`: `live_numeric`
 - live indicators: 29
 - numeric `sample_fallback`: 0
 - reviewed public research facts: 13
 - research-evidence fallback: false
+- report-history validation asset: `data/history_validation.json`
+- report-history validation: `coherent`
 - publication status: `generated`
 - exact workflow run and published commit: recorded in the live `data/report_state.json` publication-status metadata
 - checkout, static-site QA, artifact upload, and Pages deployment: successful
@@ -153,6 +164,7 @@ Static report views:
 - Liquidity And Credit.
 - Source Health.
 - Run Status.
+- Report-History Validation.
 - Contradicting Evidence.
 - Latest Radar.
 - Changes Since Last Report.
@@ -167,6 +179,7 @@ Report-state JSON includes:
 - non-scoring liquidity/credit and valuation/market-internals signal groups;
 - source freshness and source health;
 - publication/run status, deployment target, data vintage, and archive metadata;
+- bounded public report-history snapshots plus phase, evidence-continuity, contradiction, and confidence calibration diagnostics;
 - framework coverage;
 - contradiction evidence;
 - market-cycle summaries;
@@ -174,17 +187,17 @@ Report-state JSON includes:
 
 ## Current Gap
 
-Sprint 14 adds archive and deployment visibility, but important evidence remains missing or proxied. The next useful work is report-history validation and signal calibration using accumulated public snapshots, not broad indicator collection.
+Sprint 15 finds coherent behavior in the available public history, but the validation window remains shallow: four public snapshots and only two full report states. That is enough to surface rule mismatches and abrupt evidence resets, but not enough to justify retuning phase or confidence thresholds.
 
 ## Next Sprint
 
-Sprint 15 should be:
+Sprint 16 should be:
 
-**Report-History Validation And Signal Calibration**
+**History Depth And Boundary Sensitivity**
 
 Goal:
 
-Use accumulated report snapshots to review whether phase labels, transition evidence, contradictions, and confidence rules behave coherently over time. Keep it static/public-safe and do not add new indicators unless they directly improve cycle-state validation.
+Accumulate more full public report states and test whether phase labels remain stable near decision thresholds. Add explicit boundary-distance and persistence diagnostics before changing any phase or confidence rule. Keep it static/public-safe; do not add indicators unless they directly resolve a demonstrated validation weakness.
 
 ## Operating Rules
 

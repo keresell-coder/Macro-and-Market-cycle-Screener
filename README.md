@@ -14,6 +14,7 @@ This is not a stock-picking or investment-advice engine. It is a structured rese
 - Synthesizes current cycle status and transition evidence from public/proxied inputs.
 - Tracks source freshness, source failures, and numeric sample fallback.
 - Shows static run status, data vintage, deployment metadata, and archive continuity.
+- Validates phase stability, phase-rule replay, transition evidence, contradictions, and confidence labels against accumulated public report snapshots.
 - Shows historical charts for global, liquidity/credit, valuation/internals, regional, and sector/subsector views.
 - Ranks Oslo-linked subsectors using transparent proxy signals.
 - Shows contradiction evidence when signals disagree.
@@ -45,6 +46,7 @@ The project is intentionally honest about missing or proxied dimensions:
 - Subsector market-cycle histories are sample-backed proxies, not true Oslo subsector price or valuation histories.
 - Broad valuation, volatility, and equal-weight leadership proxies are now connected, but true Oslo valuation multiples, analyst revisions, earnings estimates, positioning, and true breadth are not implemented.
 - Reviewed public research facts improve subsector interpretation and caveats, but they do not override numeric scoring.
+- Report-history calibration currently has only a small number of public snapshots; coherent behavior is visible, but this is not a long-horizon backtest.
 - Missing data should be read as a blind spot, not as neutral evidence.
 
 ## Quick Start

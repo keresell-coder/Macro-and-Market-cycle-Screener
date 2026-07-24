@@ -19,6 +19,8 @@ REQUIRED_PAGE_TEXT = (
     "Financial Conditions Signal Group",
     "Cycle Status And Transition Synthesis",
     "Current Cycle Read",
+    "Report-History Validation",
+    "Signal Calibration And Coherence",
     "Latest Radar",
     "Source Health",
     "Contradicting Evidence",
@@ -44,6 +46,11 @@ def run_static_site_qa(site_dir: Path) -> dict[str, Any]:
         raise AssertionError("report_state.json is missing source_health.")
     if "source_freshness" not in report_state:
         raise AssertionError("report_state.json is missing source_freshness.")
+    if "report_history_validation" not in report_state:
+        raise AssertionError("report_state.json is missing report_history_validation.")
+    history_validation_path = site_dir / "data" / "history_validation.json"
+    if not history_validation_path.exists():
+        raise FileNotFoundError(f"Missing history validation JSON: {history_validation_path}")
 
     with _static_server(site_dir) as base_url:
         html = _fetch_text(f"{base_url}/index.html")

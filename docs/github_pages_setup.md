@@ -33,6 +33,8 @@ Current status: GitHub Pages is enabled with GitHub Actions as the deployment so
 - Runs static-site QA against `exports/site/` after generation.
 - Publishes the current cycle-state synthesis as static HTML/JSON.
 - Publishes static run-status, data-vintage, deployment, and archive-continuity metadata.
+- Carries forward a bounded public report-history validation record through the prior public report state.
+- Publishes `data/history_validation.json` with phase stability, phase-rule replay, transition/contradiction continuity, and confidence-threshold checks.
 - Publishes reviewed public research facts from the report-state JSON, while private/manual evidence remains outside `exports/site/`.
 - Packages only `exports/site/` into the Pages artifact.
 - Stores a short-lived debug artifact named `static-radar-site`.
@@ -87,6 +89,7 @@ The scheduled workflow is set to `live`. After material workflow or data-source 
 - the generated static site;
 - `exports/site/data/latest.json`;
 - `exports/site/data/archive.json`;
+- `exports/site/data/history_validation.json`;
 - source status rows for numeric fallback;
 - the Run Status section;
 - the debug artifact named `static-radar-site`.

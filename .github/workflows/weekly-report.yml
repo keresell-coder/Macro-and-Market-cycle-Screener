@@ -124,6 +124,7 @@ jobs:
           test -f exports/site/index.html
           test -f exports/site/data/latest.json
           test -f exports/site/data/report_state.json
+          test -f exports/site/data/history_validation.json
           test -f exports/site/data/archive.json
           python -m cycle_screener.static_site_qa exports/site
           if find exports/site -type f \( -name "*.duckdb" -o -name "*.sqlite" -o -name ".env" \) | grep -q .; then

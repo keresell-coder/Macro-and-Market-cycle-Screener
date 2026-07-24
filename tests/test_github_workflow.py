@@ -16,6 +16,7 @@ def test_weekly_report_workflow_deploys_only_static_site() -> None:
     assert "name: github-pages" in workflow
     assert "python -m pytest -q" in workflow
     assert "python -m cycle_screener.build_static_site" in workflow
+    assert "exports/site/data/history_validation.json" in workflow
 
 
 def test_weekly_report_workflow_defaults_to_live_data_with_sample_option() -> None:

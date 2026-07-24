@@ -10,6 +10,7 @@ from typing import Any
 
 from .change_tracking import compare_report_states
 from .config import EXPORT_DIR
+from .history_validation import build_report_history_validation
 from .publication import is_public_export_path
 from .refresh import refresh
 from .report_state import build_report_state
@@ -38,6 +39,11 @@ def build_static_site(
         assert_no_numeric_sample_fallback(current_state)
     previous_state = json.loads(previous.read_text(encoding="utf-8")) if previous and previous.exists() else None
     previous_archive_entries = _load_previous_archive(previous_archive)
+    current_state["report_history_validation"] = build_report_history_validation(
+        current_state,
+        previous_state=previous_state,
+        previous_archive_entries=previous_archive_entries,
+    )
     current_state = _with_publication_status(
         current_state,
         sample=sample,

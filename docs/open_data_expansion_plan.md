@@ -55,7 +55,7 @@ Rules remain:
 - Prioritize facts that clarify sector/subsector cycle phase, transition evidence, contradiction evidence, or missing-data caveats.
 - Do not let unreviewed research claims change numeric scoring.
 
-## Current Archive And Monitoring Layer
+## Current Archive, Monitoring, And Validation Layer
 
 Sprint 14 added static publication metadata and archive continuity:
 
@@ -65,13 +65,24 @@ Sprint 14 added static publication metadata and archive continuity:
 - Archived report-page download before rebuild, so historical report links can persist across static deployments.
 - Enhanced archive rows with cycle phase, numeric mode, fallback count, data vintage, and commit metadata.
 
+Sprint 15 added public-safe report-history validation:
+
+- bounded compact history carried forward through public report-state snapshots;
+- phase-label stability and churn checks;
+- replay of the published global phase rule against full snapshots;
+- transition- and contradiction-title continuity checks;
+- confidence label-to-score threshold checks;
+- a standalone static `data/history_validation.json` asset.
+
+The first Sprint 15 window is coherent but shallow: four public snapshots, two full report states, and no phase changes. No scoring or confidence threshold was changed.
+
 ## Near-Term Admission Priority
 
-### Report-History Validation And Signal Calibration
+### History Depth And Boundary Sensitivity
 
-- Review accumulated public snapshots for phase-label stability.
-- Check whether transition and contradiction rules behave coherently as evidence changes.
-- Use archive and change-history metadata to identify weak confidence rules.
+- Accumulate more full public snapshots before retuning rules.
+- Measure distance to active phase boundaries and require persistence before treating small threshold crossings as a cycle transition.
+- Use observed rule mismatch, excessive phase churn, or abrupt evidence resets as the admission test for any calibration change.
 - BIS, ECB, and Eurostat credit/property/monetary layers remain later candidates only after connector testing proves they improve the cycle read.
 
 ## Candidate Sources For Testing

@@ -185,6 +185,8 @@ def test_build_static_site_writes_report_json(tmp_path) -> None:
     assert "Financial Conditions Signal Group" in site_html
     assert "Cycle Status And Transition Synthesis" in site_html
     assert "Current Cycle Read" in site_html
+    assert "Report-History Validation" in site_html
+    assert "Signal Calibration And Coherence" in site_html
     assert "Oslo-Linked Sector Read-Through" in site_html
     assert "Chart window:" in site_html
     assert "Regional Drilldown" in site_html
@@ -202,12 +204,14 @@ def test_build_static_site_writes_report_json(tmp_path) -> None:
     assert "Methodology" in site_html
     assert (site_index.parent / "data" / "latest.json").exists()
     assert (site_index.parent / "data" / "changes.json").exists()
+    assert (site_index.parent / "data" / "history_validation.json").exists()
     archive = json.loads((site_index.parent / "data" / "archive.json").read_text(encoding="utf-8"))
     assert archive[0]["numeric_mode"]
     assert "numeric_sample_fallback_count" in archive[0]
     latest = json.loads((site_index.parent / "data" / "latest.json").read_text(encoding="utf-8"))
     assert latest["publication_status"]["site_target"] == "GitHub Pages static HTML/JSON/assets"
     assert latest["publication_status"]["previous_report_state_supplied"] is True
+    assert latest["report_history_validation"]["version"] == "report-history-validation-v1-sprint15"
     assert Path(result["weekly_report"]).exists()
 
 

@@ -27,9 +27,9 @@ Important constraints:
 - The GitHub Pages target must remain static HTML/JSON/assets, not hosted Streamlit.
 
 Next requested sprint:
-Sprint 15: Report-History Validation And Signal Calibration.
+Sprint 16: History Depth And Boundary Sensitivity.
 
-Use accumulated public snapshots to review whether phase labels, transition evidence, contradictions, and confidence rules behave coherently over time. Keep it static/public-safe and do not add new indicators unless they directly improve cycle-state validation.
+Accumulate more full public snapshots and test whether phase labels remain stable near decision thresholds. Add boundary-distance and persistence diagnostics before changing phase or confidence rules. Keep it static/public-safe and do not add new indicators unless they directly resolve a demonstrated validation weakness.
 
 Keep private notes, restricted content, unreviewed claims, and raw licensed material out of public exports. Do not let unreviewed research claims affect numeric scoring.
 

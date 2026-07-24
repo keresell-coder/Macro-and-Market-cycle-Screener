@@ -266,22 +266,16 @@ def _global_equity_cycle(dimensions: dict[str, dict[str, Any]], contradictions: 
     market = float(dimensions["market_pricing"]["score"])
     internals = float(dimensions.get("valuation_internals", {}).get("score", 0))
 
-    if market >= 0.25 and (rates <= -0.2 or liquidity <= -0.2 or internals <= -0.25) and growth >= -0.1:
-        phase = "late-cycle/crowded risk"
-    elif weighted_score <= -0.25 or (growth <= -0.25 and liquidity <= -0.15):
-        phase = "deterioration/downturn"
-    elif contradictions and abs(weighted_score) < 0.35:
-        phase = "transition watch"
-    elif weighted_score >= 0.28 and direction_score >= 0.12:
-        phase = "recovery confirmation"
-    elif weighted_score >= 0.18:
-        phase = "mid-cycle continuation"
-    elif weighted_score >= -0.05 and direction_score >= 0.15:
-        phase = "early recovery candidate"
-    elif abs(weighted_score) < 0.18:
-        phase = "transition watch"
-    else:
-        phase = "deterioration/downturn"
+    phase = classify_global_phase(
+        growth=growth,
+        rates=rates,
+        liquidity=liquidity,
+        market=market,
+        internals=internals,
+        weighted_score=weighted_score,
+        direction_score=direction_score,
+        has_contradictions=bool(contradictions),
+    )
 
     confidence_score = _mean([float(dimensions[key]["confidence_score"]) for key in available])
     confidence_score -= min(0.2, len(contradictions) * 0.04)
@@ -309,6 +303,34 @@ def _global_equity_cycle(dimensions: dict[str, dict[str, Any]], contradictions: 
             for key in available
         ],
     }
+
+
+def classify_global_phase(
+    *,
+    growth: float,
+    rates: float,
+    liquidity: float,
+    market: float,
+    internals: float,
+    weighted_score: float,
+    direction_score: float,
+    has_contradictions: bool,
+) -> str:
+    if market >= 0.25 and (rates <= -0.2 or liquidity <= -0.2 or internals <= -0.25) and growth >= -0.1:
+        return "late-cycle/crowded risk"
+    if weighted_score <= -0.25 or (growth <= -0.25 and liquidity <= -0.15):
+        return "deterioration/downturn"
+    if has_contradictions and abs(weighted_score) < 0.35:
+        return "transition watch"
+    if weighted_score >= 0.28 and direction_score >= 0.12:
+        return "recovery confirmation"
+    if weighted_score >= 0.18:
+        return "mid-cycle continuation"
+    if weighted_score >= -0.05 and direction_score >= 0.15:
+        return "early recovery candidate"
+    if abs(weighted_score) < 0.18:
+        return "transition watch"
+    return "deterioration/downturn"
 
 
 def _cycle_contradictions(dimensions: dict[str, dict[str, Any]], subsector_contradictions: list[dict[str, Any]]) -> list[dict[str, Any]]:

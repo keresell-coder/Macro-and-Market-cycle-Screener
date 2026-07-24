@@ -50,6 +50,8 @@ def build_site_files(
     else:
         _write_json(changes_path, changes)
 
+    history_validation_path = data_dir / "history_validation.json"
+    _write_json(history_validation_path, report_state.get("report_history_validation", {}))
     archive_entries = _archive_entries(reports_dir, report_page.name, report_state, previous_archive_entries or [])
     _write_json(data_dir / "archive.json", archive_entries)
 
@@ -86,6 +88,7 @@ def build_site_files(
         "site_latest": str(data_dir / "latest.json"),
         "site_report_state": str(data_dir / "report_state.json"),
         "site_changes": str(changes_path) if changes is not None else None,
+        "history_validation": str(history_validation_path),
         "archive": str(data_dir / "archive.json"),
     }
 
@@ -150,6 +153,7 @@ def _render_page(
     <a href="#run-status">Run Status</a>
     <a href="#liquidity-credit">Conditions/Internals</a>
     <a href="#cycle-status">Cycle Status</a>
+    <a href="#history-validation">History Validation</a>
     <a href="#source-health">Source Health</a>
     <a href="#contradicting-evidence">Contradicting Evidence</a>
     <a href="#latest-radar">Latest Radar</a>
@@ -195,6 +199,14 @@ def _render_page(
         <h2>Current Cycle Read</h2>
       </div>
       {_render_cycle_state(report_state)}
+    </section>
+
+    <section id="history-validation" class="section">
+      <div class="section-heading">
+        <p class="eyebrow">Report-History Validation</p>
+        <h2>Signal Calibration And Coherence</h2>
+      </div>
+      {_render_history_validation(report_state)}
     </section>
 
     <section id="source-health" class="section">
@@ -910,6 +922,99 @@ def _render_changes(changes: dict[str, Any] | None) -> str:
     )
 
 
+def _render_history_validation(report_state: dict[str, Any]) -> str:
+    validation = dict(report_state.get("report_history_validation", {}))
+    if not validation:
+        return '<p class="empty-state">No report-history validation is available in this snapshot.</p>'
+
+    phase = dict(validation.get("phase_stability", {}))
+    replay = dict(validation.get("rule_replay", {}))
+    confidence = dict(validation.get("confidence_calibration", {}))
+    transition = dict(validation.get("transition_continuity", {}))
+    contradiction = dict(validation.get("contradiction_continuity", {}))
+    flags = list(validation.get("review_flags", []))
+    snapshots = list(validation.get("snapshots", []))
+    calibration_detail = f"History depth {str(validation.get('history_depth', 'unknown')).replace('_', ' ')}"
+    snapshot_detail = f"{validation.get('full_state_snapshot_count', 0)} full report states"
+    phase_detail = f"{phase.get('phase_change_count', 0)} changes; streak {phase.get('current_phase_streak', 0)}"
+    replay_detail = f"{replay.get('checked_snapshot_count', 0)} full snapshots checked"
+
+    cards = (
+        '<div class="summary-grid summary-grid--compact">'
+        f"{_metric('Calibration status', str(validation.get('calibration_status', 'unknown')).replace('_', ' '), calibration_detail)}"
+        f"{_metric('Public snapshots', str(validation.get('snapshot_count', 0)), snapshot_detail)}"
+        f"{_metric('Phase stability', str(phase.get('status', 'unknown')).replace('_', ' '), phase_detail)}"
+        f"{_metric('Rule replay', str(replay.get('status', 'unknown')).replace('_', ' '), replay_detail)}"
+        "</div>"
+    )
+
+    if flags:
+        flag_block = '<div class="warning"><h3>Calibration Review Flags</h3><ul>' + "".join(
+            f"<li>{escape(str(item))}</li>" for item in flags
+        ) + "</ul></div>"
+    else:
+        flag_block = (
+            '<div class="callout"><strong>No active calibration review flag.</strong> '
+            "Published phase and confidence labels replay coherently within the available public history.</div>"
+        )
+
+    continuity_rows = []
+    for label, audit in (("Transition evidence", transition), ("Contradiction evidence", contradiction)):
+        added = ", ".join(str(item) for item in audit.get("added", [])) or "none"
+        removed = ", ".join(str(item) for item in audit.get("removed", [])) or "none"
+        similarity = audit.get("jaccard_similarity")
+        continuity_rows.append(
+            "<tr>"
+            f"<td><strong>{escape(label)}</strong></td>"
+            f"<td>{escape(str(audit.get('status', 'unknown')).replace('_', ' '))}</td>"
+            f"<td>{_fmt(similarity, 3) if similarity is not None else 'n/a'}</td>"
+            f"<td>{escape(added)}</td>"
+            f"<td>{escape(removed)}</td>"
+            "</tr>"
+        )
+    continuity_table = (
+        "<h3>Evidence Continuity</h3>"
+        '<div class="table-wrap"><table>'
+        "<thead><tr><th>Validation surface</th><th>Status</th><th>Title overlap</th><th>Added</th><th>Removed</th></tr></thead>"
+        f"<tbody>{''.join(continuity_rows)}</tbody></table></div>"
+    )
+
+    snapshot_rows = []
+    for item in reversed(snapshots[-12:]):
+        snapshot_rows.append(
+            "<tr>"
+            f"<td>{escape(str(item.get('generated_at') or item.get('data_as_of') or '')[:10])}</td>"
+            f"<td>{escape(str(item.get('cycle_phase', 'unknown')).replace('_', ' '))}</td>"
+            f"<td>{escape(str(item.get('cycle_direction', '')) or 'compact archive')}</td>"
+            f"<td>{_fmt(item.get('cycle_score'), 3) if item.get('cycle_score') is not None else 'n/a'}</td>"
+            f"<td>{escape(str(item.get('cycle_confidence', 'unknown')))}</td>"
+            f"<td>{escape('full state' if item.get('full_state') else 'compact archive')}</td>"
+            f"<td>{escape(str(item.get('numeric_mode', 'unknown')).replace('_', ' '))}"
+            f"<span>{int(_num(item.get('numeric_sample_fallback_count')))} numeric fallback</span></td>"
+            "</tr>"
+        )
+    snapshots_table = (
+        "<h3>Accumulated Public Snapshots</h3>"
+        '<div class="table-wrap"><table class="cycle-table">'
+        "<thead><tr><th>Report</th><th>Phase</th><th>Direction</th><th>Score</th><th>Confidence</th><th>Validation depth</th><th>Numeric mode</th></tr></thead>"
+        f"<tbody>{''.join(snapshot_rows) or '<tr><td colspan=\"7\">No snapshots available.</td></tr>'}</tbody></table></div>"
+    )
+
+    confidence_note = (
+        f"Confidence-label calibration is {str(confidence.get('status', 'unknown')).replace('_', ' ')} "
+        f"across {confidence.get('checked_snapshot_count', 0)} full snapshots, with "
+        f"{confidence.get('mismatch_count', 0)} threshold mismatches."
+    )
+    return (
+        cards
+        + f"<p>{escape(str(validation.get('summary', '')))}</p>"
+        + flag_block
+        + continuity_table
+        + snapshots_table
+        + f'<p class="muted">{escape(confidence_note)} {escape(str(validation.get("methodology_note", "")))}</p>'
+    )
+
+
 def _render_archive(entries: list[dict[str, str]], report_prefix: str) -> str:
     if not entries:
         return '<p class="empty-state">No archived report pages have been generated yet.</p>'
@@ -965,7 +1070,7 @@ def _render_methodology(report_state: dict[str, Any], data_prefix: str) -> str:
         f"<p>{escape(str(methodology.get('implementation_boundary', 'Scores are research triage signals, not forecasts or advice.')))}</p>"
         f"<p>{escape(str(methodology.get('research_policy', 'Only reviewed public research facts are included in public report state.')))}</p>"
         "<p>Unreviewed claims, manual reports, credentials, private notes, raw licensed data, and unpublished research are excluded from this static site.</p>"
-        f"<p>JSON assets: <a href=\"{escape(data_prefix)}/latest.json\">latest</a>, <a href=\"{escape(data_prefix)}/report_state.json\">report state</a>, <a href=\"{escape(data_prefix)}/archive.json\">archive</a>.</p>"
+        f"<p>JSON assets: <a href=\"{escape(data_prefix)}/latest.json\">latest</a>, <a href=\"{escape(data_prefix)}/report_state.json\">report state</a>, <a href=\"{escape(data_prefix)}/history_validation.json\">history validation</a>, <a href=\"{escape(data_prefix)}/archive.json\">archive</a>.</p>"
         "</div>"
         "</div>"
         f"{coverage_table}"
@@ -1071,6 +1176,7 @@ def _archive_entry_for_current_report(report_state: dict[str, Any], current_file
     numeric = dict(report_state.get("source_health", {}).get("numeric", {}))
     global_cycle = dict(report_state.get("cycle_state", {}).get("global_equity_cycle", {}))
     publication = dict(report_state.get("publication_status", {}))
+    validation = dict(report_state.get("report_history_validation", {}))
     run = dict(publication.get("run", {}))
     return {
         "date": current_file.removesuffix(".html"),
@@ -1084,6 +1190,10 @@ def _archive_entry_for_current_report(report_state: dict[str, Any], current_file
         "numeric_sample_fallback_count": int(_num(numeric.get("sample_fallback_indicator_count"))),
         "cycle_phase": str(global_cycle.get("phase", "")),
         "cycle_confidence": str(global_cycle.get("confidence", "")),
+        "overall_confidence": str(report_state.get("cycle_state", {}).get("confidence", {}).get("label", "")),
+        "contradiction_count": len(report_state.get("cycle_state", {}).get("contradictions", [])),
+        "calibration_status": str(validation.get("calibration_status", "")),
+        "history_snapshot_count": int(_num(validation.get("snapshot_count"))),
         "research_fact_count": len(report_state.get("research_facts", [])),
         "run_url": str(run.get("run_url", "")),
         "commit_sha": str(run.get("commit_sha", "")),

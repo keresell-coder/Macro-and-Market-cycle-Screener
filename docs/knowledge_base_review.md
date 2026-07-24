@@ -26,9 +26,16 @@ The objective is to classify cycle status and detect transitions:
 - Oslo-linked sector/subsector phase;
 - continuation, recovery, deterioration, exit risk, or uncertainty.
 
+## Current Validation Read
+
+- Sprint 15 now replays the top-level phase rule and confidence thresholds against accumulated public report snapshots.
+- The first validation window contains four public snapshots and two full report states.
+- The headline phase is stable, phase-rule replay and confidence labels align, transition evidence is stable, and contradiction evidence evolves without a wholesale reset.
+- This is an initial coherence check, not a long-horizon backtest.
+
 ## Main Remaining Gaps
 
-- The top-level cycle-state synthesis is rule-based and needs validation over report history.
+- The report-history window is too shallow to justify retuning phase or confidence thresholds.
 - Transition warnings still lack true breadth, positioning, earnings, and true subsector history inputs.
 - No true market breadth or positioning layer.
 - No true valuation multiples for Oslo-linked subsectors.
@@ -38,13 +45,14 @@ The objective is to classify cycle status and detect transitions:
 
 ## Recommended Next Step
 
-Implement **Sprint 15: Report-History Validation And Signal Calibration** next, using accumulated public snapshots to validate whether phase labels, transition warnings, contradiction evidence, and confidence rules behave coherently over time.
+Implement **Sprint 16: History Depth And Boundary Sensitivity** next.
 
 This should:
 
 - keep the cycle-state object as the primary report conclusion;
-- use archive and change-history metadata as the validation surface;
-- identify weak or unstable confidence rules before adding more indicators;
+- accumulate full public report states through the existing static workflow;
+- identify phase labels that sit close to active decision boundaries;
+- distinguish persistent threshold crossings from one-run noise before changing rules;
 - preserve strict numeric sample-fallback failure in live builds;
 - keep unreviewed, private, licensed, or restricted evidence local;
 - preserve missing/proxied/sample-backed labels.
