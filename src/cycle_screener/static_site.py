@@ -17,7 +17,7 @@ SIGNAL_LABELS = {
     "momentum": "Momentum",
     "macro_tailwind": "Macro",
     "narrative_divergence": "Narrative gap",
-    "confidence": "Signal-data quality",
+    "data_support": "Data support",
 }
 
 SIGNAL_ORDER = tuple(SIGNAL_LABELS)
@@ -60,7 +60,7 @@ def build_site_files(
             report_state=report_state,
             changes=changes,
             archive_entries=archive_entries,
-            title="Oslo Macro and Market-Cycle Radar",
+            title="Global Macro, Market and Sector-Cycle Screener",
             page_label="Latest static report",
             data_prefix="data",
             report_prefix="reports",
@@ -123,8 +123,8 @@ def _render_page(
   <header id="top" class="masthead">
     <div class="masthead__inner">
       <p class="eyebrow">{escape(page_label)}</p>
-      <h1>Oslo Macro and Market-Cycle Radar</h1>
-      <p class="lede">Where global equities, major cycle dimensions, and Oslo-linked subsectors appear to be now - with recovery candidates, continuation evidence, transition warnings, and late-cycle risk kept separate.</p>
+      <h1>Global Macro, Market and Sector-Cycle Screener</h1>
+      <p class="lede">A global view of growth, inflation, major central banks, financial conditions, markets and sector-cycle research priorities - with evidence gaps made explicit.</p>
       <div class="meta-row">
         <span>Generated {generated_at}</span>
         <span>Data as of {data_as_of}</span>
@@ -139,6 +139,7 @@ def _render_page(
     <a href="#cycle-map">Cycle Map</a>
     <a href="#subsectors">Subsectors</a>
     <a href="#evidence">Evidence</a>
+    <a href="#outlooks">Outlooks</a>
     <a href="#changes">Changes</a>
     <a href="#trust">Trust &amp; Methods</a>
   </nav>
@@ -148,12 +149,14 @@ def _render_page(
     </section>
 
     <section id="cycle-map" class="section">
+      <span id="cycle-status" class="anchor-alias" aria-hidden="true"></span>
       <div class="section-heading">
         <p class="eyebrow">Cycle Curve And State Map</p>
         <h2>Where Markets And Subsectors Sit Now</h2>
         <p class="section-intro">A transparent state map, not a forecast of when prices will peak or trough.</p>
       </div>
       {_render_cycle_map(report_state)}
+      {_render_cycle_clocks(report_state)}
     </section>
 
     <section id="subsectors" class="section">
@@ -202,6 +205,15 @@ def _render_page(
         <summary>Open detailed subsector contradictions</summary>
         <div class="details-body">{_render_contradicting_evidence(report_state)}</div>
       </details>
+    </section>
+
+    <section id="outlooks" class="section">
+      <div class="section-heading">
+        <p class="eyebrow">Institutional Outlooks</p>
+        <h2>Reviewed Global Views And Scenario Dispersion</h2>
+        <p class="section-intro">Official multilateral, BIS, bank and asset-manager publications provide attributed context only. They never enter the numeric score.</p>
+      </div>
+      {_render_institutional_outlooks(report_state)}
     </section>
 
     <section id="changes" class="section">
@@ -277,7 +289,7 @@ def _render_decision_overview(
         f"{_decision_item('Direction', direction, 'Momentum direction across the five global cycle dimensions.')}"
         f"{_decision_item('What changed', 'Since prior report', what_changed)}"
         f"{_decision_item('What could change the read', 'Classification boundary', boundary)}"
-        f"{_decision_item('Confidence meaning', str(global_cycle.get('confidence', 'unknown')).title() + ' data coverage', 'Coverage and signal agreement - not a probability that the phase call is correct.')}"
+        f"{_decision_item('Data support', str(global_cycle.get('data_support', global_cycle.get('confidence', 'unknown'))).title(), 'Availability, freshness and signal agreement - not a probability that the regime call is correct.')}"
         "</div>"
         f"{_render_trust_summary(report_state, compact=True)}"
     )
@@ -415,6 +427,27 @@ def _render_subsector_cards(report_state: dict[str, Any]) -> str:
     return f'<div class="subsector-list">{"".join(cards)}</div>'
 
 
+def _render_cycle_clocks(report_state: dict[str, Any]) -> str:
+    clocks = list(report_state.get("cycle_state", {}).get("cycle_clocks", []))
+    if not clocks:
+        return '<p class="empty-state">No cycle-clock synthesis is available.</p>'
+    cards = []
+    for clock in clocks:
+        cards.append(
+            '<article class="dimension-card">'
+            f'<span class="dimension-card__phase">{escape(str(clock.get("status", "unknown")).replace("_", " "))}</span>'
+            f'<h3>{escape(str(clock.get("title", "")))}</h3>'
+            f'<p>{escape(str(clock.get("interpretation", "")))}</p>'
+            '<dl class="mini-stats">'
+            f'<div><dt>Score</dt><dd>{_signed(clock.get("score"))}</dd></div>'
+            f'<div><dt>Direction</dt><dd>{escape(str(clock.get("direction", "unknown")))}</dd></div>'
+            f'<div><dt>Data support</dt><dd>{escape(str(clock.get("data_support", "unknown")))}</dd></div>'
+            '</dl>'
+            '</article>'
+        )
+    return '<h3 class="subsection-title">Separate cycle clocks</h3>' + f'<div class="dimension-grid">{"".join(cards)}</div>'
+
+
 def _render_dimension_cards(report_state: dict[str, Any]) -> str:
     dimensions = list(report_state.get("cycle_state", {}).get("dimensions", []))
     cards = []
@@ -479,17 +512,17 @@ def _render_radar_table(subsectors: list[dict[str, Any]]) -> str:
             f"<td class=\"rank\">{int(_num(item.get('rank')))}</td>"
             f"<td><strong>{escape(str(item.get('name', '')))}</strong><span>{escape(str(item.get('group_name', '')))}</span></td>"
             f"<td>{escape(str(item.get('cycle_phase', 'unknown')).replace('_', ' '))}<span>{escape(str(item.get('cycle_direction', 'unknown')).replace('_', ' '))}</span></td>"
-            f"<td>{_score_bar(item.get('opportunity_score'))}</td>"
+            f"<td>{_score_bar(item.get('research_priority_score', item.get('opportunity_score')))}</td>"
             f"<td>{_signed(signals.get('recovery_potential'))}</td>"
             f"<td>{_signed(signals.get('valuation_proxy'))}</td>"
             f"<td>{_signed(signals.get('momentum'))}</td>"
-            f"<td>{_pct(signals.get('confidence'))}</td>"
+            f"<td>{_pct(item.get('data_support', signals.get('data_support')))}</td>"
             f"<td>{escape(str(item.get('explanation', '')))}</td>"
             "</tr>"
         )
     return (
         '<div class="table-wrap"><table class="radar-table">'
-        "<thead><tr><th>Research rank</th><th>Subsector</th><th>Cycle state</th><th>Research priority</th><th>Recovery</th><th>Cycle-position discount</th><th>Momentum</th><th>Signal-data quality</th><th>Read-through</th></tr></thead>"
+        "<thead><tr><th>Research rank</th><th>Subsector</th><th>Evidence-gated state</th><th>Research priority</th><th>Recovery</th><th>Cycle-position discount</th><th>Momentum</th><th>Data support</th><th>Read-through</th></tr></thead>"
         f"<tbody>{''.join(rows)}</tbody></table></div>"
     )
 
@@ -1241,6 +1274,45 @@ def _render_archive(entries: list[dict[str, str]], report_prefix: str) -> str:
     )
 
 
+def _render_institutional_outlooks(report_state: dict[str, Any]) -> str:
+    outlooks = dict(report_state.get("institutional_outlooks", {}))
+    timeline = list(outlooks.get("timeline", []))
+    if not timeline:
+        return '<p class="empty-state">No reviewed institutional outlook records are available.</p>'
+
+    consensus = dict(outlooks.get("consensus", {}))
+    consensus_cards = "".join(
+        _metric(label, str(consensus.get(key, "not stated")).replace("_", " "), "Mode across each institution's latest reviewed publication.")
+        for key, label in (
+            ("growth_bias", "Growth view"),
+            ("inflation_bias", "Inflation implication"),
+            ("policy_bias", "Policy/rates implication"),
+            ("market_bias", "Market view"),
+        )
+    )
+    rows = []
+    for item in timeline:
+        url = str(item.get("source_url", ""))
+        title = escape(str(item.get("title", "")))
+        source = f'<a href="{escape(url)}">{title}</a>' if url.startswith("https://") else title
+        rows.append(
+            "<tr>"
+            f"<td><strong>{escape(str(item.get('institution', '')))}</strong><span>{escape(str(item.get('institution_type', '')).replace('_', ' '))}</span></td>"
+            f"<td>{escape(str(item.get('published_at', '')))}<span>{escape(str(item.get('horizon', '')).replace('_', ' '))}</span></td>"
+            f"<td>{source}<span>{escape(str(item.get('source_tier', '')).replace('_', ' '))}</span></td>"
+            f"<td>{escape(str(item.get('summary', '')))}</td>"
+            f"<td>{escape(str(item.get('risks', '')))}</td>"
+            "</tr>"
+        )
+    return (
+        f'<div class="metric-grid">{consensus_cards}</div>'
+        f'<p class="trust-boundary"><strong>Reliability boundary:</strong> {escape(str(outlooks.get("reliability_note", "")))}</p>'
+        '<div class="table-wrap"><table class="coverage-table">'
+        "<thead><tr><th>Institution</th><th>Published / horizon</th><th>Primary source</th><th>Reviewed read</th><th>Risks</th></tr></thead>"
+        f"<tbody>{''.join(rows)}</tbody></table></div>"
+    )
+
+
 def _render_methodology(report_state: dict[str, Any], data_prefix: str) -> str:
     methodology = report_state.get("methodology", {})
     signal_items = "".join(f"<li><strong>{escape(label)}:</strong> {escape(_signal_description(signal))}</li>" for signal, label in SIGNAL_LABELS.items())
@@ -1353,7 +1425,7 @@ def _signal_description(signal: str) -> str:
         "momentum": "recent trend strength in the subsector signal set.",
         "macro_tailwind": "macro or geopolitical backdrop that may support the subsector.",
         "narrative_divergence": "gap between current evidence and prevailing sentiment.",
-        "confidence": "signal-data availability and source quality, not model accuracy or a return forecast.",
+        "data_support": "availability, freshness and source coverage, not model accuracy or a return forecast.",
     }
     return descriptions[signal]
 

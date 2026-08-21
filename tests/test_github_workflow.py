@@ -35,3 +35,6 @@ def test_weekly_report_workflow_defaults_to_live_data_with_sample_option() -> No
     assert "CYCLE_RADAR_PREVIOUS_STATE_URL" in workflow
     assert "previous_archive.json" in workflow
     assert "--previous-archive" in workflow
+    assert 'cron: "15 7 * * 6"' in workflow
+    assert "push:" in workflow
+    assert "- main" in workflow

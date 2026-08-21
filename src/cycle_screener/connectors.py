@@ -8,14 +8,12 @@ import subprocess
 from typing import Iterable
 from urllib.parse import quote, urlencode
 
-from bs4 import BeautifulSoup
 import pandas as pd
 import requests
 
 from .config import Settings
 from .indicators import IndicatorDefinition, INDICATORS
 from .sample_data import generate_sample_observations, generate_sample_research_mentions
-from .sources import SOURCE_DEFINITIONS, RESEARCH_KEYWORDS
 
 SOURCE_HISTORY_MONTHS = 30 * 12 + 1
 
@@ -44,15 +42,17 @@ def fetch_indicator_observations(settings: Settings, sample: bool = False) -> tu
 
     frames: list[pd.DataFrame] = []
     statuses: list[SourceStatus] = []
-    sample_frame = generate_sample_observations()
 
     for source, fetcher in (
         ("world_bank_commodity", _fetch_world_bank_commodities),
         ("world_bank_indicator", _fetch_world_bank_indicators),
         ("dbnomics_oecd_cli", _fetch_dbnomics_oecd_cli),
+        ("dbnomics_bis_policy", _fetch_dbnomics_bis_policy),
         ("fred_public", _fetch_fred_public_csv),
         ("norges_bank_csv", _fetch_norges_bank_csv),
         ("ssb_cpi", _fetch_ssb_cpi),
+        ("eia_petroleum", _fetch_eia_petroleum),
+        ("academic_gpr", _fetch_geopolitical_risk),
         ("yahoo_chart", _fetch_yahoo_chart),
     ):
         source_indicators = [indicator for indicator in INDICATORS if indicator.source == source]
@@ -71,10 +71,12 @@ def fetch_indicator_observations(settings: Settings, sample: bool = False) -> tu
     fetched_slugs = set(pd.concat(frames)["indicator_slug"].unique()) if frames else set()
     missing = [indicator.slug for indicator in INDICATORS if indicator.slug not in fetched_slugs]
     if missing:
-        fallback_frame = sample_frame[sample_frame["indicator_slug"].isin(missing)].copy()
-        fallback_frame["source"] = "sample_fallback"
-        frames.append(fallback_frame)
-        statuses.append(_status("fallback", "degraded", f"Filled missing live indicators from sample data: {', '.join(sorted(missing))}."))
+        critical_missing = sorted(indicator.slug for indicator in INDICATORS if indicator.slug in missing and indicator.critical)
+        optional_missing = sorted(set(missing) - set(critical_missing))
+        if critical_missing:
+            statuses.append(_status("missing_critical", "failed", f"Critical live indicators are missing and were not sample-filled: {', '.join(critical_missing)}."))
+        if optional_missing:
+            statuses.append(_status("missing_optional", "degraded", f"Optional/context indicators are missing and were not sample-filled: {', '.join(optional_missing)}."))
 
     observations = pd.concat(frames, ignore_index=True) if frames else sample_frame
     observations = observations.sort_values(["indicator_slug", "observed_at"]).reset_index(drop=True)
@@ -85,47 +87,17 @@ def fetch_research_mentions(settings: Settings, sample: bool = False) -> tuple[p
     if sample:
         return generate_sample_research_mentions(), [_status("sample_research", "ok", "Loaded deterministic sample research mentions.")]
 
-    rows: list[dict[str, object]] = []
-    statuses: list[SourceStatus] = []
-    session = requests.Session()
-    session.headers.update({"User-Agent": "OsloCycleRadar/0.1 research monitor"})
-    request_timeout = min(settings.request_timeout_seconds, 6)
-
-    for source in SOURCE_DEFINITIONS:
-        if source.source_type != "research" or source.access != "public":
-            continue
-        try:
-            response = session.get(source.url, timeout=(request_timeout, request_timeout))
-            response.raise_for_status()
-            page_sample = response.content[:300_000].decode(response.encoding or "utf-8", errors="replace")
-            text = BeautifulSoup(page_sample, "html.parser").get_text(" ", strip=True)
-            lowered = text.lower()
-            found = 0
-            for theme, keywords in RESEARCH_KEYWORDS.items():
-                hits = [keyword for keyword in keywords if keyword in lowered]
-                if not hits:
-                    continue
-                found += 1
-                rows.append(
-                    {
-                        "source_slug": source.slug,
-                        "theme": theme,
-                        "summary": f"Public source mentions {theme}: {', '.join(hits[:4])}.",
-                        "sentiment": _theme_sentiment(theme, lowered),
-                        "published_at": datetime.now(timezone.utc).date().isoformat(),
-                        "url": source.url,
-                    }
-                )
-            statuses.append(_status(source.slug, "ok", f"Scanned public page; matched {found} research themes."))
-        except Exception as exc:  # network and site behavior varies
-            statuses.append(_status(source.slug, "failed", f"Could not scan public page: {exc}"))
-
-    if not rows:
-        mentions = generate_sample_research_mentions()
-        statuses.append(_status("research_fallback", "degraded", "No public research pages could be scanned; used sample mentions."))
-    else:
-        mentions = pd.DataFrame(rows)
-    return mentions, statuses
+    # Whole-page keyword sentiment is not an auditable research datum and must
+    # never enter a numeric score.  Reviewed institutional outlooks and research
+    # facts are ingested through structured files with real publication dates.
+    columns = ["source_slug", "theme", "summary", "sentiment", "published_at", "url"]
+    return pd.DataFrame(columns=columns), [
+        _status(
+            "unreviewed_web_sentiment",
+            "disabled",
+            "Unreviewed whole-page sentiment scanning is disabled; structured reviewed evidence is non-scoring.",
+        )
+    ]
 
 
 def _fetch_world_bank_commodities(indicators: Iterable[IndicatorDefinition], settings: Settings) -> tuple[pd.DataFrame, list[SourceStatus]]:
@@ -184,7 +156,7 @@ def _fetch_dbnomics_oecd_cli(indicators: Iterable[IndicatorDefinition], settings
     frames = []
     statuses = []
     session = requests.Session()
-    session.headers.update({"User-Agent": "OsloCycleRadar/0.1 public data refresh"})
+    session.headers.update({"User-Agent": "GlobalCycleScreener/0.3 public data refresh"})
     for indicator in indicators:
         url = f"https://api.db.nomics.world/v22/series/OECD/DSD_STES%40DF_CLI/{indicator.source_key}"
         try:
@@ -195,6 +167,24 @@ def _fetch_dbnomics_oecd_cli(indicators: Iterable[IndicatorDefinition], settings
             statuses.append(_status(f"dbnomics_oecd_cli:{indicator.slug}", "ok", f"Fetched {indicator.name} from DB.nomics mirror of OECD CLI ({len(frame)} monthly rows)."))
         except Exception as exc:
             statuses.append(_status(f"dbnomics_oecd_cli:{indicator.slug}", "failed", f"Could not fetch DB.nomics/OECD CLI series {indicator.source_key}: {exc}"))
+    return (pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()), statuses
+
+
+def _fetch_dbnomics_bis_policy(indicators: Iterable[IndicatorDefinition], settings: Settings) -> tuple[pd.DataFrame, list[SourceStatus]]:
+    frames = []
+    statuses = []
+    session = requests.Session()
+    session.headers.update({"User-Agent": "GlobalCycleRadar/0.2 public data refresh"})
+    for indicator in indicators:
+        url = f"https://api.db.nomics.world/v22/series/BIS/WS_CBPOL/{indicator.source_key}"
+        try:
+            response = session.get(url, params={"observations": "1"}, timeout=(5, settings.request_timeout_seconds))
+            response.raise_for_status()
+            frame = _dbnomics_series_to_monthly_frame(response.json(), indicator)
+            frames.append(frame)
+            statuses.append(_status(f"dbnomics_bis_policy:{indicator.slug}", "ok", f"Fetched {indicator.name} from the BIS central-bank policy-rate dataset via DB.nomics ({len(frame)} monthly rows)."))
+        except Exception as exc:
+            statuses.append(_status(f"dbnomics_bis_policy:{indicator.slug}", "failed", f"Could not fetch BIS policy-rate series {indicator.source_key}: {exc}"))
     return (pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()), statuses
 
 
@@ -227,25 +217,93 @@ def _fetch_ssb_cpi(indicators: Iterable[IndicatorDefinition], settings: Settings
         try:
             query = {
                 "query": [
-                    {"code": "Konsumgrp", "selection": {"filter": "item", "values": ["TOTAL"]}},
-                    {"code": "ContentsCode", "selection": {"filter": "item", "values": ["KpiIndMnd"]}},
+                    {"code": "VareTjenesteGrp", "selection": {"filter": "item", "values": ["00"]}},
+                    {"code": "ContentsCode", "selection": {"filter": "item", "values": ["Tolvmanedersendring"]}},
                     {"code": "Tid", "selection": {"filter": "top", "values": [str(SOURCE_HISTORY_MONTHS)]}},
                 ],
                 "response": {"format": "CSV"},
             }
-            response = requests.post("https://data.ssb.no/api/v0/en/table/03013", json=query, timeout=(5, settings.request_timeout_seconds))
+            response = requests.post("https://data.ssb.no/api/v0/en/table/14700", json=query, timeout=(5, settings.request_timeout_seconds))
             response.raise_for_status()
             raw = pd.read_csv(StringIO(response.text))
             values = raw.iloc[0, 1:]
             rows = []
             for label, value in values.items():
+                numeric_value = pd.to_numeric(value, errors="coerce")
+                if pd.isna(numeric_value):
+                    continue
                 period = str(label).rsplit(" ", 1)[-1].replace("M", "-")
-                rows.append({"observed_at": pd.Period(period, freq="M").to_timestamp("M").date().isoformat(), "value": float(value)})
+                rows.append({"observed_at": pd.Period(period, freq="M").to_timestamp("M").date().isoformat(), "value": float(numeric_value)})
             frame = _finalize_indicator_frame(pd.DataFrame(rows), indicator, "ssb")
             frames.append(frame)
-            statuses.append(_status(f"ssb:{indicator.slug}", "ok", f"Fetched {indicator.name} from Statistics Norway table 03013 ({len(frame)} monthly rows)."))
+            statuses.append(_status(f"ssb:{indicator.slug}", "ok", f"Fetched {indicator.name} from Statistics Norway table 14700 twelve-month change ({len(frame)} monthly rows)."))
         except Exception as exc:
             statuses.append(_status(f"ssb:{indicator.slug}", "failed", f"Could not fetch Statistics Norway CPI: {exc}"))
+    return (pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()), statuses
+
+
+def _fetch_eia_petroleum(indicators: Iterable[IndicatorDefinition], settings: Settings) -> tuple[pd.DataFrame, list[SourceStatus]]:
+    indicator_list = list(indicators)
+    if not indicator_list:
+        return pd.DataFrame(), []
+    if not settings.eia_api_key:
+        return pd.DataFrame(), [
+            _status(f"eia_petroleum:{indicator.slug}", "missing_key", "EIA_API_KEY is not configured; direct inventory evidence remains missing and is not sample-filled.")
+            for indicator in indicator_list
+        ]
+
+    frames: list[pd.DataFrame] = []
+    statuses: list[SourceStatus] = []
+    for indicator in indicator_list:
+        try:
+            response = requests.get(
+                "https://api.eia.gov/v2/petroleum/stoc/wstk/data/",
+                params={
+                    "api_key": settings.eia_api_key,
+                    "frequency": "weekly",
+                    "data[0]": "value",
+                    "facets[series][]": indicator.source_key,
+                    "sort[0][column]": "period",
+                    "sort[0][direction]": "asc",
+                    "length": "5000",
+                },
+                timeout=(5, settings.request_timeout_seconds),
+            )
+            response.raise_for_status()
+            data = response.json().get("response", {}).get("data", [])
+            rows = [{"observed_at": item.get("period"), "value": item.get("value")} for item in data]
+            frame = _monthly_last(pd.DataFrame(rows), indicator, "eia")
+            frames.append(frame)
+            statuses.append(_status(f"eia_petroleum:{indicator.slug}", "ok", f"Fetched {indicator.name} from the US EIA weekly petroleum inventory API ({len(frame)} monthly rows)."))
+        except Exception as exc:
+            statuses.append(_status(f"eia_petroleum:{indicator.slug}", "failed", f"Could not fetch EIA inventory series {indicator.source_key}: {exc}"))
+    return (pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()), statuses
+
+
+def _fetch_geopolitical_risk(indicators: Iterable[IndicatorDefinition], settings: Settings) -> tuple[pd.DataFrame, list[SourceStatus]]:
+    indicator_list = list(indicators)
+    if not indicator_list:
+        return pd.DataFrame(), []
+    frames: list[pd.DataFrame] = []
+    statuses: list[SourceStatus] = []
+    for indicator in indicator_list:
+        try:
+            response = requests.get(
+                "https://www.matteoiacoviello.com/gpr_files/data_gpr_export.xls",
+                timeout=(5, max(settings.request_timeout_seconds, 30)),
+            )
+            response.raise_for_status()
+            workbook = pd.ExcelFile(BytesIO(response.content))
+            sheet = "GPR" if "GPR" in workbook.sheet_names else workbook.sheet_names[0]
+            raw = pd.read_excel(workbook, sheet_name=sheet)
+            date_column = next(column for column in raw.columns if str(column).strip().lower() in {"date", "month", "monthyear"})
+            value_column = next(column for column in raw.columns if str(column).strip().upper() == indicator.source_key.upper())
+            frame = raw[[date_column, value_column]].rename(columns={date_column: "observed_at", value_column: "value"})
+            frame = _monthly_last(frame, indicator, "caldara_iacoviello_gpr")
+            frames.append(frame)
+            statuses.append(_status(f"academic_gpr:{indicator.slug}", "ok", f"Fetched {indicator.name} from the Caldara-Iacoviello public research dataset ({len(frame)} monthly rows)."))
+        except Exception as exc:
+            statuses.append(_status(f"academic_gpr:{indicator.slug}", "failed", f"Could not fetch the public Geopolitical Risk Index: {exc}"))
     return (pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()), statuses
 
 
@@ -261,15 +319,15 @@ def _fetch_yahoo_chart(indicators: Iterable[IndicatorDefinition], settings: Sett
             response.raise_for_status()
             result = response.json()["chart"]["result"][0]
             timestamps = result["timestamp"]
-            closes = result["indicators"]["quote"][0]["close"]
+            closes = result.get("indicators", {}).get("adjclose", [{}])[0].get("adjclose")
+            if not closes:
+                closes = result["indicators"]["quote"][0]["close"]
             rows = [
                 {"observed_at": pd.to_datetime(ts, unit="s").to_period("M").to_timestamp("M").date().isoformat(), "value": close}
                 for ts, close in zip(timestamps, closes)
                 if close is not None
             ]
             frame = _finalize_indicator_frame(pd.DataFrame(rows), indicator, "yahoo_chart")
-            if indicator.slug == "rates_pressure":
-                frame["value"] = frame["value"] / 10.0
             frames.append(frame)
             statuses.append(_status(f"yahoo_chart:{indicator.slug}", "ok", f"Fetched {indicator.name} from Yahoo chart data ({len(frame)} monthly rows)."))
         except Exception as exc:

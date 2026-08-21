@@ -19,13 +19,14 @@ def test_calculate_scores_returns_every_subsector() -> None:
 def test_scores_are_explainable() -> None:
     scores = calculate_scores(generate_sample_observations(), generate_sample_research_mentions())
 
-    assert scores["explanation"].str.contains("Evidence:").all()
+    assert scores["explanation"].str.contains("Proxy evidence:").all()
+    assert scores["explanation"].str.contains("Reviewed outlooks are non-scoring").all()
     assert scores["name"].iloc[0]
 
 
 def test_signal_metrics_use_frequency_aware_horizons() -> None:
     rows = []
-    for date_index, observed_at in enumerate(pd.date_range("2025-01-01", periods=365, freq="D")):
+    for date_index, observed_at in enumerate(pd.date_range("2022-01-01", periods=1460, freq="D")):
         rows.append(
             {
                 "indicator_slug": "nasdaq_proxy",
@@ -47,7 +48,7 @@ def test_signal_metrics_use_frequency_aware_horizons() -> None:
     metrics = build_indicator_metrics(pd.DataFrame(rows))
 
     assert metrics["nasdaq_proxy"]["frequency_bucket"] == "daily_or_weekly"
-    assert metrics["nasdaq_proxy"]["observation_count_used"] <= 13
+    assert 36 <= metrics["nasdaq_proxy"]["observation_count_used"] <= 49
     assert metrics["nasdaq_proxy"]["momentum_horizon"].startswith("three-month")
     assert metrics["global_pmi"]["frequency_bucket"] == "annual"
-    assert "damped structural context" in metrics["global_pmi"]["momentum_horizon"]
+    assert "damped context" in metrics["global_pmi"]["momentum_horizon"]

@@ -11,20 +11,25 @@ from .charts import build_chart_layer
 from .config import EXPORT_DIR, get_settings
 from .cycle_state import build_cycle_state, classify_subsector_phase
 from .indicators import indicator_by_slug, public_indicator_slug
+from .outlooks import outlook_summary
 from .publication import is_public_export_path
 from .signal_metrics import build_indicator_metrics
 from .sources import SOURCE_DEFINITIONS
 from .storage import RadarStore
+from .taxonomy import subsector_by_slug
 
 
 SIGNAL_COLUMNS = (
     "cycle_pressure",
     "recovery_potential",
+    "reversal_watch",
     "valuation_proxy",
+    "cycle_position_score",
     "momentum",
     "macro_tailwind",
     "narrative_divergence",
     "confidence",
+    "data_support",
 )
 
 MARKET_COLUMNS = (
@@ -35,10 +40,10 @@ MARKET_COLUMNS = (
     "driver_pressure",
 )
 
-REPORT_STATE_VERSION = "2026-07-24-sprint16"
-SCORING_METHODOLOGY_VERSION = "score-v2-frequency-aware-cycle-radar"
-CREDIT_LIQUIDITY_INDICATORS = ("chicago_fed_nfci", "st_louis_financial_stress")
-MACRO_CONFIRMATION_INDICATORS = ("g20_cli", "us_cli", "europe_cli", "nasdaq_proxy")
+REPORT_STATE_VERSION = "2026-08-21-global-v3"
+SCORING_METHODOLOGY_VERSION = "research-priority-v3-family-weighted-evidence-gated"
+CREDIT_LIQUIDITY_INDICATORS = ("chicago_fed_nfci", "st_louis_financial_stress", "us_high_yield_spread", "us_investment_grade_spread", "broad_us_dollar")
+MACRO_CONFIRMATION_INDICATORS = ("g20_cli", "us_cli", "europe_cli", "global_equity_proxy", "em_equity_proxy")
 VALUATION_INTERNALS_INDICATORS = ("us_equity_market_cap_gdp_proxy", "vix_proxy", "sp500_equal_weight_leadership_proxy")
 
 
@@ -52,6 +57,7 @@ def build_report_state(store: RadarStore | None = None) -> dict[str, Any]:
     source_status = store.table("source_status")
     research_facts = store.table("research_facts")
     market_cycle = store.table("subsector_market_cycle")
+    institutional_outlooks = store.table("institutional_outlooks")
 
     if owns_store:
         store.close()
@@ -83,10 +89,10 @@ def build_report_state(store: RadarStore | None = None) -> dict[str, Any]:
             "scoring_version": SCORING_METHODOLOGY_VERSION,
             "report_state_version": REPORT_STATE_VERSION,
             "framework_reference": "docs/knowledge_base/global_macro_market_cycle_knowledge_base.md",
-            "framework_coverage": "Partial implementation of a broader macro and market-cycle framework. Current scoring covers public macro, rates, FX, commodity, OECD CLI growth proxies, market proxies, source health, and reviewed public research evidence. Sprint 16 makes signal windows frequency-aware, separates data quality from model support and historical validation, and presents a decision-first cycle map without adding indicators. Annual World Bank GDP growth is damped slow-moving context; daily and weekly observations are reduced to month-end before time-aware momentum and percentile calculations. Monthly OECD CLI data is accessed through the public DB.nomics mirror because the direct OECD SDMX endpoint is not reliably reachable from this environment. The model still lacks earnings revisions, true Oslo valuation multiples, positioning, BIS credit/property-cycle data, and licensed subsector market data.",
+            "framework_coverage": "Global evidence-gated framework spanning OECD leading indicators, inflation, major central-bank policy rates, nominal and real yields, financial conditions, credit spreads, dollar liquidity, commodities, geopolitical risk and regional equity markets. Annual GDP is slow background only. Correlated country series collapse to economic-family signals, transformations are explicit, and stale observations are excluded from scores.",
             "implementation_boundary": "Research-priority scores are triage signals, not expected returns. Cycle-state labels are rule-based synthesis outputs from public/proxied evidence, not forecasts, timing signals, or investment advice. Missing dimensions are explicit blind spots rather than neutral evidence.",
-            "scoring": "Transparent frequency-aware subsector scoring from public/free indicators, explicitly labeled proxies, and visible sample fallbacks when present. It combines contrarian recovery potential with momentum confirmation and macro context.",
-            "research_policy": "Only reviewed public research facts are included in public report state. Unreviewed claims, private notes, and restricted/manual evidence remain local and do not affect numeric scoring.",
+            "scoring": "Transparent frequency-aware research-priority heuristic from public indicators. It is capped at low data support until direct sector evidence is connected and is never an expected-return estimate.",
+            "research_policy": "Only manually reviewed facts and official institutional outlook records are published. Outlooks are attributed, reliability-tiered and non-scoring; unreviewed webpage sentiment is disabled.",
             "not_investment_advice": True,
         },
         "chart_layer": chart_layer,
@@ -99,6 +105,7 @@ def build_report_state(store: RadarStore | None = None) -> dict[str, Any]:
         "source_health": _source_health_summary(source_freshness, source_status_records),
         "framework_coverage": framework_coverage,
         "research_facts": _public_research_facts(research_facts),
+        "institutional_outlooks": outlook_summary(institutional_outlooks),
     }
 
 
@@ -117,14 +124,17 @@ def export_report_state(output_path: Path | None = None, store: RadarStore | Non
 
 def _subsector_record(rank: int, row: pd.Series, market_cycle: pd.DataFrame, research_facts: pd.DataFrame) -> dict[str, Any]:
     slug = str(row["slug"])
+    taxonomy = subsector_by_slug().get(slug)
     signals = {column: _rounded(row[column], 3) for column in SIGNAL_COLUMNS if column in row}
     latest_market_cycle = _latest_market_cycle(slug, market_cycle)
+    direct_evidence = bool(latest_market_cycle) and str(latest_market_cycle.get("source", "")).lower() not in {"", "sample_market_proxy"}
     cycle_phase = classify_subsector_phase(
         recovery=float(signals.get("recovery_potential", 0) or 0),
         momentum=float(signals.get("momentum", 0) or 0),
         macro=float(signals.get("macro_tailwind", 0) or 0),
         score=float(row["opportunity_score"]),
         confidence=float(signals.get("confidence", 0) or 0),
+        direct_evidence=direct_evidence,
     )
     return {
         "slug": slug,
@@ -132,10 +142,15 @@ def _subsector_record(rank: int, row: pd.Series, market_cycle: pd.DataFrame, res
         "group_name": str(row["group_name"]),
         "rank": rank,
         "opportunity_score": _rounded(row["opportunity_score"], 1),
+        "research_priority_score": _rounded(row.get("research_priority_score", row["opportunity_score"]), 1),
+        "score_type": "research_priority_not_expected_return",
         "cycle_phase": cycle_phase,
         "cycle_direction": _direction_label(float(signals.get("momentum", 0) or 0)),
         "signals": signals,
         "data_confidence": str(row.get("data_confidence", "")),
+        "data_support": _rounded(row.get("data_support", row.get("confidence", 0)), 3),
+        "evidence_gate": "direct_sector_evidence" if direct_evidence else "insufficient_direct_sector_evidence",
+        "direct_evidence_required": list(taxonomy.direct_evidence_required) if taxonomy else [],
         "explanation": str(row.get("explanation", "")),
         "market_cycle": latest_market_cycle,
         "contradicting_evidence": _subsector_contradictions(str(row["name"]), signals, latest_market_cycle),
@@ -216,7 +231,10 @@ def _source_freshness(observations: pd.DataFrame, source_status: list[dict[str, 
                 "sources_seen": sources_seen,
                 "source_category": source_category,
                 "has_sample_fallback": has_sample_fallback,
-                "freshness_status": _freshness_status(indicator.source if indicator else source, age_days),
+                "freshness_status": _freshness_status(
+                    age_days,
+                    expected_release_days=indicator.expected_release_days if indicator else 75,
+                ),
                 "raw_latest_observed_at": raw_observed_date.isoformat() if raw_observed_date > today else "",
                 "future_dated_observation": raw_observed_date > today,
             }
@@ -429,26 +447,26 @@ def _framework_coverage() -> list[dict[str, str]]:
         {
             "dimension": "Growth",
             "status": "partial",
-            "current_coverage": "Monthly OECD CLI proxies for G20, G7, United States, China, and major Europe via DB.nomics mirror, plus World Bank annual real GDP growth proxies for global and China growth. Histories are shown in the new static chart layer.",
+            "current_coverage": "Monthly OECD CLI proxies for the G20, G7, United States, China and major Europe, plus World Bank annual real-GDP background.",
             "main_gap": "No direct PMI, industrial-production, or new-orders feed yet; direct OECD SDMX API access is documented but currently blocked from this environment, so CLI data is mirrored through DB.nomics.",
         },
         {
             "dimension": "Inflation",
             "status": "partial",
-            "current_coverage": "Norway CPI plus commodity and input-cost proxies.",
-            "main_gap": "No broad core inflation, wage, inflation-expectations, or supplier-delivery layer.",
+            "current_coverage": "Twelve-month CPI inflation for Norway, the United States, euro area, United Kingdom, Japan and China, plus commodity inputs.",
+            "main_gap": "No harmonised core inflation, wage growth or market inflation-expectations layer across all economies.",
         },
         {
             "dimension": "Policy and rates",
             "status": "partial",
-            "current_coverage": "Norges Bank policy rate and US 10-year yield proxy.",
-            "main_gap": "No full yield curve, real yields, policy-path, or central-bank balance-sheet layer.",
+            "current_coverage": "BIS policy-rate series for the Fed, ECB, BoE, BoJ, PBoC, BoC, RBA, SNB and Riksbank; official Norges Bank rate; US nominal/real 10-year yields and 10y-2y curve.",
+            "main_gap": "No market-implied policy paths, cross-country yield curves or central-bank balance-sheet layer.",
         },
         {
             "dimension": "Liquidity and credit",
             "status": "partial",
-            "current_coverage": "Sprint 10 adds Chicago Fed NFCI and the St. Louis Fed Financial Stress Index through public FRED CSV. They are shown in the historical chart layer and in a dedicated non-scoring liquidity/credit signal group.",
-            "main_gap": "No BIS credit/property-cycle data, bank lending standards, default series, or broader credit-spread catalog yet; these should be added only after connector testing.",
+            "current_coverage": "Chicago Fed NFCI, St. Louis Fed Financial Stress, US high-yield and investment-grade spreads, and the broad trade-weighted dollar.",
+            "main_gap": "No BIS credit/property-cycle data, lending surveys, default series or non-US credit-spread catalogue.",
         },
         {
             "dimension": "Earnings and margins",
@@ -459,32 +477,32 @@ def _framework_coverage() -> list[dict[str, str]]:
         {
             "dimension": "Valuation and risk premium",
             "status": "partial",
-            "current_coverage": "Sprint 12 adds a broad public US equity market-cap-to-GDP valuation-pressure proxy derived from FRED/Fed Z.1 and BEA GDP series, alongside existing public-data scoring proxies and sample-backed market-cycle valuation history.",
-            "main_gap": "No true Oslo subsector valuation multiples, constituent-level valuation data, earnings-yield layer, or equity-risk-premium feed.",
+            "current_coverage": "Broad US market-cap-to-GDP context derived from official FRED/Fed Z.1 and BEA inputs.",
+            "main_gap": "No validated sector or constituent valuation multiples, earnings yields or equity-risk-premium surface.",
         },
         {
             "dimension": "Market internals and positioning",
             "status": "partial",
-            "current_coverage": "Sprint 12 adds broad public volatility and breadth-like leadership checks using VIX and S&P 500 equal-weight versus cap-weight market-chart proxies. These are broad reality checks, not true breadth or positioning data.",
-            "main_gap": "No true advance/decline breadth, fund-flow, short-interest, CFTC, institutional positioning, or Oslo subsector internals layer.",
+            "current_coverage": "VIX and adjusted-close S&P 500 equal-weight versus cap-weight leadership, plus ACWI, Europe, Japan, emerging-market and Nasdaq proxies.",
+            "main_gap": "No true breadth, fund flows, short interest, CFTC or institutional positioning.",
         },
         {
             "dimension": "Subsector market cycle",
-            "status": "sample_backed",
-            "current_coverage": "Deterministic price, relative-price, valuation-proxy, and driver-pressure histories are visible in static sector/subsector drilldown charts.",
-            "main_gap": "Needs reviewed public or licensed Oslo subsector market data before being treated as real market history.",
+            "status": "missing_live_direct_evidence",
+            "current_coverage": "Macro and industry-driver proxies only; deterministic sector histories are restricted to explicit sample builds.",
+            "main_gap": "Requires validated global sector indices, relative returns, earnings revisions, valuation and operating evidence before a sector phase may be asserted.",
         },
         {
             "dimension": "Historical chart layer",
             "status": "partial",
-            "current_coverage": "Static global, liquidity/credit, regional, and sector/subsector historical chart views using existing live public indicators, Sprint 10 FRED financial-conditions proxies, and clearly labeled sample-backed subsector histories.",
-            "main_gap": "No true subsector market histories or true valuation multiples until reviewed public or licensed data is connected.",
+            "current_coverage": "Static macro, central-bank, liquidity/credit, geopolitical and regional-market histories. Live sector charts remain empty when direct evidence is absent.",
+            "main_gap": "No validated long-run sector-relative history or point-in-time backtest dataset yet.",
         },
         {
             "dimension": "Research evidence",
             "status": "limited",
-            "current_coverage": "Committed reviewed public facts and reviewed subsector profiles, with one current fact per Oslo-linked subsector. Facts remain non-scoring.",
-            "main_gap": "Needs multiple independent, claim-linked sources per subsector, including confirming and contradicting evidence with explicit review dates.",
+            "current_coverage": "Committed reviewed public facts plus official, source-tiered institutional outlooks with publication dates, horizons, themes, risks and view dispersion. All remain non-scoring.",
+            "main_gap": "Needs multiple independent claim-linked sector sources and a longer archived outlook revision history.",
         },
     ]
 
@@ -582,13 +600,9 @@ def _source_category(source: str, has_sample_fallback: bool, deterministic_sampl
     return "live_numeric"
 
 
-def _freshness_status(indicator_source: str, age_days: int) -> str:
-    if indicator_source == "world_bank_indicator":
-        stale_after, very_stale_after = (550, 800)
-    elif indicator_source == "derived_public":
-        stale_after, very_stale_after = (250, 450)
-    else:
-        stale_after, very_stale_after = (75, 125)
+def _freshness_status(age_days: int, expected_release_days: int = 75) -> str:
+    stale_after = max(int(expected_release_days), 1)
+    very_stale_after = max(int(round(stale_after * 1.6)), stale_after + 15)
     if age_days > very_stale_after:
         return "very_stale"
     if age_days > stale_after:

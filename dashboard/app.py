@@ -22,10 +22,10 @@ from cycle_screener.storage import RadarStore
 from cycle_screener.taxonomy import subsector_by_slug
 
 
-st.set_page_config(page_title="Oslo Macro and Market-cycle Radar", layout="wide")
+st.set_page_config(page_title="Global Macro, Market and Sector-Cycle Screener", layout="wide")
 
 
-def load_tables() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def load_tables() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     settings = get_settings()
     store = RadarStore(settings.database_path)
     scores = store.table("subsector_scores")
@@ -34,11 +34,9 @@ def load_tables() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFram
     research_profiles = store.table("subsector_research_profiles")
     research_facts = store.table("research_facts")
     market_cycle = store.table("subsector_market_cycle")
+    institutional_outlooks = store.table("institutional_outlooks")
     store.close()
-    if scores.empty:
-        refresh(sample=True)
-        return load_tables()
-    return scores, observations, statuses, research_profiles, research_facts, market_cycle
+    return scores, observations, statuses, research_profiles, research_facts, market_cycle, institutional_outlooks
 
 
 def score_color(value: float) -> str:
@@ -92,7 +90,7 @@ def highlight_signal_table(frame: pd.DataFrame) -> pd.io.formats.style.Styler:
                 "Momentum": "{:+.3f}",
                 "Macro": "{:+.3f}",
                 "Narrative gap": "{:+.3f}",
-                "Confidence": "{:.0%}",
+                "Data support": "{:.0%}",
             }
         )
     )
@@ -200,7 +198,13 @@ def source_evidence_table(facts: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-scores, observations, statuses, research_profiles, research_facts, market_cycle = load_tables()
+scores, observations, statuses, research_profiles, research_facts, market_cycle, institutional_outlooks = load_tables()
+if scores.empty:
+    st.error("No screener state is available. Run a live refresh or choose the explicit sample-data action below.")
+    if st.button("Load explicit sample data"):
+        refresh(sample=True)
+        st.rerun()
+    st.stop()
 taxonomy = subsector_by_slug()
 indicator_lookup = indicator_by_slug()
 settings = get_settings()
@@ -208,14 +212,30 @@ status_store = RadarStore(settings.database_path)
 backend = status_store.backend
 status_store.close()
 
-st.title("Oslo-Linked Macro and Market-cycle Opportunity Radar")
-st.caption("Research leads for subsector recovery potential. Not investment advice.")
+st.title("Global Macro, Market and Sector-Cycle Screener")
+st.caption("Global macro context and evidence-gated sector research priorities. Not expected return, market timing, or investment advice.")
 
 top_cols = st.columns([1, 1, 1, 1])
 top_cols[0].metric("Subsectors", f"{len(scores)}")
-top_cols[1].metric("Top score", f"{scores['opportunity_score'].max():.1f}")
-top_cols[2].metric("Median confidence", f"{scores['confidence'].median():.0%}")
+top_cols[1].metric("Top research priority", f"{scores['research_priority_score'].max():.1f}")
+top_cols[2].metric("Median data support", f"{scores['data_support'].median():.0%}")
 top_cols[3].metric("Data backend", backend)
+
+with st.expander("Reviewed institutional global outlooks — non-scoring"):
+    st.caption("Official multilateral, BIS, bank and asset-manager publications are attributed context. Agreement is not independent validation.")
+    if institutional_outlooks.empty:
+        st.info("No reviewed institutional outlook records are loaded.")
+    else:
+        outlook_display = institutional_outlooks[
+            ["institution", "published_at", "horizon", "growth_bias", "inflation_bias", "policy_bias", "market_bias", "summary", "source_url"]
+        ].rename(
+            columns={
+                "institution": "Institution", "published_at": "Published", "horizon": "Horizon",
+                "growth_bias": "Growth", "inflation_bias": "Inflation", "policy_bias": "Policy/rates",
+                "market_bias": "Markets", "summary": "Reviewed read", "source_url": "Official source",
+            }
+        )
+        st.dataframe(outlook_display, width="stretch", hide_index=True)
 
 actions = st.columns([1, 1, 5])
 if actions[0].button("Refresh sample data", width="stretch"):
@@ -266,14 +286,14 @@ with right:
             f"""
             <div style="border-left: 5px solid {color}; padding: 8px 12px; margin-bottom: 10px; background: #f8faf7;">
               <strong>{row['name']}</strong><br>
-              Score {row['opportunity_score']:.1f} | confidence {row['confidence']:.0%}<br>
+              Research priority {row['research_priority_score']:.1f} | data support {row['data_support']:.0%}<br>
               <span style="color:#56615a;">{row['explanation']}</span>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-st.subheader("Opportunity Radar")
+st.subheader("Research-Priority Screener")
 st.caption(
     "Highlighted values stand out among the currently filtered subsectors: green is high-positive, red is low-negative, and amber is a large absolute signal."
 )
@@ -281,26 +301,26 @@ display = filtered[
     [
         "name",
         "group_name",
-        "opportunity_score",
+        "research_priority_score",
         "recovery_potential",
         "valuation_proxy",
         "momentum",
         "macro_tailwind",
         "narrative_divergence",
-        "confidence",
+        "data_support",
         "data_confidence",
     ]
 ].rename(
     columns={
         "name": "Subsector",
         "group_name": "Group",
-        "opportunity_score": "Score",
+        "research_priority_score": "Score",
         "recovery_potential": "Recovery",
         "valuation_proxy": "Valuation proxy",
         "momentum": "Momentum",
         "macro_tailwind": "Macro",
         "narrative_divergence": "Narrative gap",
-        "confidence": "Confidence",
+        "data_support": "Data support",
         "data_confidence": "Data quality",
     }
 )
@@ -316,10 +336,10 @@ selected = filtered[filtered["name"] == selected_name].iloc[0]
 subsector = taxonomy[selected["slug"]]
 
 detail_cols = st.columns([1, 1, 1, 1])
-detail_cols[0].metric("Opportunity score", f"{selected['opportunity_score']:.1f}")
+detail_cols[0].metric("Research priority", f"{selected['research_priority_score']:.1f}")
 detail_cols[1].metric("Recovery", f"{selected['recovery_potential']:+.2f}")
 detail_cols[2].metric("Macro", f"{selected['macro_tailwind']:+.2f}")
-detail_cols[3].metric("Confidence", f"{selected['confidence']:.0%}")
+detail_cols[3].metric("Data support", f"{selected['data_support']:.0%}")
 
 st.write(selected["explanation"])
 st.write("Drivers: " + ", ".join(subsector.drivers))
@@ -331,7 +351,7 @@ selected_market = market_cycle[market_cycle["subsector_slug"] == selected["slug"
 market_summary = latest_market_cycle_summary(selected_market)
 
 st.subheader("Research Evidence")
-st.caption("Source-backed research context is shown separately from numeric scoring. Unreviewed claims do not affect the opportunity score.")
+st.caption("Source-backed research context is separate from numeric scoring. Unreviewed claims and institutional outlooks do not affect research priority.")
 
 if profile.empty:
     st.info("No research profile has been recorded for this subsector yet.")

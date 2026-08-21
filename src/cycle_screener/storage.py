@@ -106,6 +106,27 @@ class RadarStore:
             )
             """,
             """
+            CREATE TABLE IF NOT EXISTS institutional_outlooks (
+                outlook_id TEXT,
+                institution TEXT,
+                institution_type TEXT,
+                title TEXT,
+                published_at TEXT,
+                horizon TEXT,
+                growth_bias TEXT,
+                inflation_bias TEXT,
+                policy_bias TEXT,
+                market_bias TEXT,
+                key_themes TEXT,
+                risks TEXT,
+                summary TEXT,
+                source_url TEXT,
+                source_tier TEXT,
+                review_status TEXT,
+                captured_at TEXT
+            )
+            """,
+            """
             CREATE TABLE IF NOT EXISTS subsector_market_cycle (
                 subsector_slug TEXT,
                 observed_at TEXT,

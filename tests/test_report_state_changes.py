@@ -36,13 +36,14 @@ def test_report_state_contains_public_safe_snapshot() -> None:
     assert state["source_freshness"]
     assert state["source_health"]
     assert state["cycle_state"]
-    assert state["cycle_state"]["version"] == "cycle-state-v2-sprint16"
+    assert state["cycle_state"]["version"] == "cycle-state-v3-global-evidence-gated"
+    assert state["cycle_state"]["cycle_clocks"]
     assert state["cycle_state"]["global_equity_cycle"]["phase"]
     assert state["cycle_state"]["dimensions"]
     assert state["cycle_state"]["oslo_sector_read_through"]
     assert state["cycle_state"]["missing_data_caveats"]
     assert state["chart_layer"]
-    assert state["chart_layer"]["version"] == "sprint12-valuation-internals-chart-layer"
+    assert state["chart_layer"]["version"] == "global-v3-macro-market-cycle-chart-layer"
     assert state["chart_layer"]["chart_window_policy"]["minimum_years"] == 10
     assert state["chart_layer"]["chart_window_policy"]["maximum_years"] == 30
     assert state["chart_layer"]["views"][0]["view_id"] == "global"
@@ -53,6 +54,8 @@ def test_report_state_contains_public_safe_snapshot() -> None:
     assert any(view["view_id"] == "norway_oslo" for view in state["chart_layer"]["views"])
     assert any(view["view_id"] == "liquidity_credit" for view in state["chart_layer"]["views"])
     assert any(view["view_id"] == "valuation_internals" for view in state["chart_layer"]["views"])
+    assert any(view["view_id"] == "major_central_banks" for view in state["chart_layer"]["views"])
+    assert any(view["view_id"] == "global_markets" for view in state["chart_layer"]["views"])
     assert any(sector["subsectors"] for sector in state["chart_layer"]["sector_views"])
     assert "contradicting_evidence" in state
     assert state["signal_groups"]
@@ -60,6 +63,8 @@ def test_report_state_contains_public_safe_snapshot() -> None:
     assert state["signal_groups"][0]["scoring_inclusion"] is False
     assert any(group["group_id"] == "valuation_market_internals" for group in state["signal_groups"])
     assert state["research_facts"]
+    assert state["institutional_outlooks"]["record_count"] >= 8
+    assert state["institutional_outlooks"]["policy"].endswith("non_scoring_context")
     assert state["methodology"]["scoring_version"]
     assert state["methodology"]["framework_reference"].endswith("global_macro_market_cycle_knowledge_base.md")
     assert "credit" in state["methodology"]["framework_coverage"].lower()
@@ -67,7 +72,7 @@ def test_report_state_contains_public_safe_snapshot() -> None:
     assert any(item["dimension"] == "Liquidity and credit" and item["status"] == "partial" for item in state["framework_coverage"])
     assert any(
         item["indicator_slug"] == "global_pmi"
-        and item["display_slug"] == "global_growth_proxy"
+        and item["display_slug"] == "global_gdp_growth_background"
         and "GDP growth" in item["indicator_name"]
         for item in state["source_freshness"]
     )
@@ -186,7 +191,7 @@ def test_build_static_site_writes_report_json(tmp_path) -> None:
 
     site_index = Path(result["site_index"])
     site_html = site_index.read_text(encoding="utf-8")
-    assert "Oslo Macro and Market-Cycle Radar" in site_html
+    assert "Global Macro, Market and Sector-Cycle Screener" in site_html
     assert "Current Global Equity State" in site_html
     assert "Cycle Curve And State Map" in site_html
     assert "Where Markets And Subsectors Sit Now" in site_html

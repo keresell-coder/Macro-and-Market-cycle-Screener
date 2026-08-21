@@ -10,7 +10,7 @@ from .indicators import IndicatorDefinition, indicator_by_slug, public_indicator
 from .taxonomy import SUBSECTORS, Subsector
 
 
-CHART_LAYER_VERSION = "sprint12-valuation-internals-chart-layer"
+CHART_LAYER_VERSION = "global-v3-macro-market-cycle-chart-layer"
 CHART_MIN_YEARS = 10
 CHART_MAX_YEARS = 30
 CHART_MAX_MONTHS = CHART_MAX_YEARS * 12 + 1
@@ -20,7 +20,7 @@ CHART_VIEW_DEFINITIONS: tuple[dict[str, Any], ...] = (
         "view_id": "global",
         "title": "Global macro and market proxy history",
         "scope": "global",
-        "description": "Top-level historical view using monthly OECD CLI mirror data, annual World Bank growth background, commodity pressure, rates, FX, and broad public market-chart proxies.",
+        "description": "Top-level global history using OECD leading indicators, slow annual GDP background, financial conditions, commodities, geopolitical risk and regional equity proxies.",
         "indicator_slugs": (
             "g20_cli",
             "g7_cli",
@@ -29,6 +29,11 @@ CHART_VIEW_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "st_louis_financial_stress",
             "us_equity_market_cap_gdp_proxy",
             "vix_proxy",
+            "global_equity_proxy",
+            "europe_equity_proxy",
+            "japan_equity_proxy",
+            "em_equity_proxy",
+            "geopolitical_risk",
             "sp500_equal_weight_leadership_proxy",
             "brent",
             "us_natural_gas",
@@ -36,6 +41,26 @@ CHART_VIEW_DEFINITIONS: tuple[dict[str, Any], ...] = (
             "rates_pressure",
             "nasdaq_proxy",
             "oil_curve_pressure",
+        ),
+    },
+    {
+        "view_id": "major_central_banks",
+        "title": "Major central-bank policy-rate history",
+        "scope": "Global monetary policy",
+        "description": "BIS monthly policy-rate histories for nine major central banks plus the official Norges Bank policy rate.",
+        "indicator_slugs": (
+            "fed_policy_rate", "ecb_policy_rate", "boe_policy_rate", "boj_policy_rate", "pboc_policy_rate",
+            "boc_policy_rate", "rba_policy_rate", "snb_policy_rate", "riksbank_policy_rate", "norges_bank_policy_rate",
+        ),
+    },
+    {
+        "view_id": "global_markets",
+        "title": "International equity-market cycle proxies",
+        "scope": "Global markets",
+        "description": "Adjusted-close proxies for global, European, Japanese, emerging-market and technology-heavy US equities, plus volatility and equal-weight leadership.",
+        "indicator_slugs": (
+            "global_equity_proxy", "europe_equity_proxy", "japan_equity_proxy", "em_equity_proxy",
+            "nasdaq_proxy", "vix_proxy", "sp500_equal_weight_leadership_proxy",
         ),
     },
     {

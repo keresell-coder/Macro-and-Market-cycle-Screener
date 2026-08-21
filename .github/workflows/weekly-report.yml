@@ -1,6 +1,9 @@
 name: Weekly static radar report
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       data_mode:

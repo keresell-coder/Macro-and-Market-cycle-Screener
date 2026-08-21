@@ -11,13 +11,15 @@ from urllib.request import urlopen
 
 
 REQUIRED_PAGE_TEXT = (
-    "Oslo Macro and Market-Cycle Radar",
+    "Global Macro, Market and Sector-Cycle Screener",
     "Current Global Equity State",
     "Cycle Curve And State Map",
     "Where Markets And Subsectors Sit Now",
+    "Separate cycle clocks",
     "Oslo-Linked Subsector Signals",
     "Research Triggers, Continuation And Risk Alerts",
     "What Supports Or Contradicts The Read",
+    "Reviewed Global Views And Scenario Dispersion",
     "Trust And Methods",
     "Data Quality, Model Support And Historical Evidence",
     "One-page weekly PDF",
@@ -65,6 +67,8 @@ def run_static_site_qa(site_dir: Path) -> dict[str, Any]:
             raise AssertionError(f"Static index is missing required text: {', '.join(missing)}")
         if 'href="weekly/weekly-cycle-brief.pdf"' not in html:
             raise AssertionError("Static index is missing the fixed weekly PDF link.")
+        if 'id="cycle-status"' not in html or 'id="cycle-map"' not in html:
+            raise AssertionError("Static index must preserve both the legacy #cycle-status and current #cycle-map anchors.")
         screenshot_result = _optional_playwright_screenshot(f"{base_url}/index.html", site_dir)
 
     return {

@@ -159,13 +159,13 @@ def _render_pdf(report_state: dict[str, Any], output: Path) -> None:
         topMargin=10 * mm,
         bottomMargin=9 * mm,
         title="Weekly Macro and Market-Cycle Brief",
-        author="Oslo Macro and Market-Cycle Radar",
+        author="Global Macro, Market and Sector-Cycle Screener",
         subject="Public-safe weekly cycle-state summary",
     )
 
     story: list[Any] = [
         Paragraph("WEEKLY MACRO AND MARKET-CYCLE BRIEF", kicker_style),
-        Paragraph("Oslo-Linked Cycle Radar", title_style),
+        Paragraph("Global Macro, Market and Sector-Cycle Screener", title_style),
         Paragraph(
             _clean(
                 f"Data as of {report_state.get('data_as_of', 'unknown')} | "
