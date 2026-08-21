@@ -1,6 +1,6 @@
-# Oslo-Linked Macro and Market-Cycle Radar
+# Global Macro, Market and Sector-Cycle Screener
 
-Private-first research radar for macro and market-cycle work.
+Private-first global research screener for macro, market and sector-cycle work. Oslo-listed subsectors remain one implementation lens, not the geographic boundary of the model.
 
 The core objective is to identify where global equities, major sectors, and Oslo-linked subsectors appear to be in the cycle now, and whether evidence points to continuation, transition, recovery, deterioration, or exit risk.
 
@@ -13,7 +13,7 @@ This is not a stock-picking or investment-advice engine. It is a structured rese
 - Builds a static GitHub Pages report from public-safe HTML/JSON/PDF assets.
 - Synthesizes current cycle status and transition evidence from public/proxied inputs.
 - Opens with a decision-first view: current state, direction, change, invalidation evidence, and separate trust measures.
-- Shows a cycle curve and phase map for the global market, Oslo-linked sectors, and all 13 subsectors. The curve is a state map, not a timing forecast.
+- Shows separate economic, inflation/rates, liquidity/credit, market-pricing and sector-operating clocks, plus 18 properly split subsector research screens. The map is not a timing forecast.
 - Gives every subsector an expandable investor-use summary, confirmation requirement, evidence boundary, and primary missing-data gap.
 - Separates data quality, model support, and historical validation instead of presenting one ambiguous confidence label.
 - Tracks source freshness, source failures, and numeric sample fallback.
@@ -22,7 +22,7 @@ This is not a stock-picking or investment-advice engine. It is a structured rese
 - Shows historical charts for global, liquidity/credit, valuation/internals, regional, and sector/subsector views.
 - Uses a transparent research-priority index for triage. It is not expected return, valuation, or an entry/exit signal.
 - Shows contradiction evidence when signals disagree.
-- Includes reviewed public research facts for Oslo-linked subsector cycle interpretation without changing numeric scoring.
+- Includes reviewed public research facts and a dated, source-tiered timeline of major institutional global outlooks without changing numeric scoring.
 - Keeps private notes, credentials, manual reports, local databases, and unreviewed evidence out of public exports.
 - Generates a public-safe, one-page A4 weekly PDF with a fixed mobile-friendly URL.
 
@@ -33,9 +33,11 @@ Keyless/default live refresh includes:
 - World Bank Pink Sheet commodity data.
 - World Bank annual GDP growth proxies.
 - DB.nomics mirror of OECD CLI data for G20, G7, US, China, and major Europe.
-- FRED public CSV for Chicago Fed NFCI, St. Louis Fed Financial Stress Index, and valuation-proxy dependencies.
+- BIS central-bank policy rates via DB.nomics for the Fed, ECB, BoE, BoJ, PBoC, BoC, RBA, SNB and Riksbank.
+- FRED public CSV for inflation, nominal/real yields, the yield curve, NFCI, financial stress, credit spreads and the broad dollar.
 - Norges Bank FX and policy-rate data.
 - Statistics Norway CPI.
+- US EIA petroleum inventories and the Caldara-Iacoviello Geopolitical Risk Index.
 - Selected public market-chart proxies.
 - Derived public valuation and leadership proxies.
 - Committed reviewed public research-evidence CSVs under `data/public_research_evidence/`.
@@ -48,11 +50,11 @@ The project is intentionally honest about missing or proxied dimensions:
 
 - The public `global_growth_proxy` is annual World Bank GDP growth, not PMI.
 - OECD direct SDMX access is blocked from this environment; DB.nomics is used as a public mirror.
-- Subsector market-cycle histories are sample-backed proxies, not true Oslo subsector price or valuation histories.
-- Broad valuation, volatility, and equal-weight leadership proxies are now connected, but true Oslo valuation multiples, analyst revisions, earnings estimates, positioning, and true breadth are not implemented.
+- Live builds exclude deterministic subsector histories. A sector phase remains evidence-gated until validated sector returns, valuation, earnings/revisions and operating data are connected.
+- Broad valuation, volatility and equal-weight leadership proxies are connected, but true global sector valuation multiples, analyst revisions, positioning and breadth are not implemented.
 - Reviewed public research facts improve subsector interpretation and caveats, but they do not override numeric scoring.
 - Report history currently has too few independent, time-separated full states for empirical calibration or a long-horizon backtest.
-- Subsector phase labels remain macro-proxy research classifications until true subsector price, valuation, earnings, positioning, and primary-driver histories are connected.
+- Subsector outputs are explicitly labeled proxy research screens until direct evidence is connected.
 - Missing data should be read as a blind spot, not as neutral evidence.
 
 ## Quick Start
@@ -115,6 +117,7 @@ Workflow:
 - `docs/github_pages_setup.md`: GitHub Pages workflow setup and deployment mechanics.
 - `docs/knowledge_base_review.md`: short review of the durable macro-cycle knowledge base.
 - `docs/knowledge_base/global_macro_market_cycle_knowledge_base.md`: durable framework reference.
+- `docs/model_governance_and_evidence.md`: audited construct map, scoring controls, scientific references, and evidence boundaries.
 - `src/cycle_screener/connectors.py`: public data refresh.
 - `src/cycle_screener/report_state.py`: public-safe report-state builder.
 - `src/cycle_screener/decision_support.py`: investor-use framing, cycle-map records, trust separation, and subsector evidence boundaries.

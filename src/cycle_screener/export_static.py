@@ -14,13 +14,7 @@ def export_static() -> str:
     store.close()
 
     if scores.empty:
-        from .refresh import refresh
-
-        refresh(sample=True)
-        store = RadarStore(settings.database_path)
-        scores = store.table("subsector_scores")
-        statuses = store.table("source_status")
-        store.close()
+        raise RuntimeError("No screener state is available. Run an explicit live or sample refresh before exporting.")
 
     EXPORT_DIR.mkdir(parents=True, exist_ok=True)
     output = EXPORT_DIR / "opportunity_radar.html"
@@ -35,7 +29,7 @@ def export_static() -> str:
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Oslo Macro and Market-Cycle Radar</title>
+  <title>Global Macro, Market and Sector-Cycle Screener</title>
   <style>
     body {{ margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f6f7f4; color: #18201b; }}
     header {{ padding: 28px 32px 18px; background: #12332d; color: #fff; }}
@@ -54,14 +48,14 @@ def export_static() -> str:
 </head>
 <body>
   <header>
-    <h1>Oslo Macro and Market-Cycle Radar</h1>
+    <h1>Global Macro, Market and Sector-Cycle Screener</h1>
     <p>Explainable cycle states and subsector research priorities. Not investment advice. Refreshed: {refreshed}</p>
   </header>
   <main>
     <section>
       <table>
         <thead>
-          <tr><th>Research rank</th><th>Subsector</th><th>Group</th><th>Priority index</th><th>Recovery</th><th>Momentum</th><th>Signal-data quality</th><th>Evidence</th></tr>
+          <tr><th>Research rank</th><th>Subsector</th><th>Group</th><th>Research priority</th><th>Recovery</th><th>Momentum</th><th>Data support</th><th>Evidence</th></tr>
         </thead>
         <tbody>{rows}</tbody>
       </table>
@@ -80,7 +74,7 @@ def export_static() -> str:
 
 
 def _score_row(row) -> str:
-    score = float(row["opportunity_score"])
+    score = float(row.get("research_priority_score", row["opportunity_score"]))
     rank = int(row.name) + 1
     return (
         "<tr>"
@@ -90,7 +84,7 @@ def _score_row(row) -> str:
         f"<td class='score'>{score:.1f}<div class='bar'><div class='fill' style='width:{score:.0f}%'></div></div></td>"
         f"<td>{float(row['recovery_potential']):+.2f}</td>"
         f"<td>{float(row['momentum']):+.2f}</td>"
-        f"<td>{float(row['confidence']):.0%}</td>"
+        f"<td>{float(row.get('data_support', row['confidence'])):.0%}</td>"
         f"<td>{escape(str(row['explanation']))}</td>"
         "</tr>"
     )

@@ -8,7 +8,7 @@ import pandas as pd
 
 from .config import Settings
 from .sample_data import generate_sample_research_facts, generate_sample_research_profiles
-from .taxonomy import subsector_by_slug
+from .taxonomy import LEGACY_SUBSECTOR_MAP, subsector_by_slug
 
 
 PROFILE_COLUMNS = [
@@ -129,7 +129,7 @@ def _clean_profiles(profiles: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame(columns=PROFILE_COLUMNS)
 
     valid_slugs = set(subsector_by_slug())
-    frame = profiles.copy()
+    frame = _expand_legacy_subsectors(profiles.copy(), id_column=None)
     frame["subsector_slug"] = frame["subsector_slug"].astype(str).str.strip()
     frame = frame[frame["subsector_slug"].isin(valid_slugs)]
     for column in PROFILE_COLUMNS:
@@ -144,7 +144,7 @@ def _clean_facts(facts: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame(columns=FACT_COLUMNS)
 
     valid_slugs = set(subsector_by_slug())
-    frame = facts.copy()
+    frame = _expand_legacy_subsectors(facts.copy(), id_column="fact_id")
     frame["subsector_slug"] = frame["subsector_slug"].astype(str).str.strip()
     frame = frame[frame["subsector_slug"].isin(valid_slugs)]
     frame = frame[frame["claim"].fillna("").astype(str).str.strip().ne("")]
@@ -163,6 +163,25 @@ def _clean_facts(facts: pd.DataFrame) -> pd.DataFrame:
         frame["subsector_slug"] + "-" + frame.index.astype(str),
     )
     return frame[FACT_COLUMNS].drop_duplicates(subset=["fact_id"], keep="last").reset_index(drop=True)
+
+
+def _expand_legacy_subsectors(frame: pd.DataFrame, id_column: str | None) -> pd.DataFrame:
+    if frame.empty or "subsector_slug" not in frame:
+        return frame
+    rows: list[pd.Series] = []
+    for _, row in frame.iterrows():
+        slug = str(row.get("subsector_slug", "")).strip()
+        replacements = LEGACY_SUBSECTOR_MAP.get(slug)
+        if not replacements:
+            rows.append(row.copy())
+            continue
+        for replacement in replacements:
+            expanded = row.copy()
+            expanded["subsector_slug"] = replacement
+            if id_column and id_column in expanded and str(expanded.get(id_column, "")):
+                expanded[id_column] = f"{expanded[id_column]}-{replacement}"
+            rows.append(expanded)
+    return pd.DataFrame(rows, columns=frame.columns)
 
 
 def _status(source_slug: str, status: str, message: str) -> ResearchIngestionStatus:

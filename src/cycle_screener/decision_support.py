@@ -103,9 +103,9 @@ def build_decision_support(
         phase = str(item.get("cycle_phase", "transition watch"))
         definition = taxonomy.get(slug)
         contradiction_count = len(item.get("contradicting_evidence", []))
-        signal_confidence = float(signals.get("confidence", 0) or 0)
+        data_support = float(item.get("data_support", signals.get("data_support", signals.get("confidence", 0))) or 0)
         market_source = str(item.get("market_cycle", {}).get("source", ""))
-        proxy_only = not market_source or "sample" in market_source
+        proxy_only = str(item.get("evidence_gate", "")).startswith("insufficient") or not market_source or "sample" in market_source
         subsector_map.append(
             {
                 "slug": slug,
@@ -114,17 +114,19 @@ def build_decision_support(
                 "phase": phase,
                 "direction": str(item.get("cycle_direction", "stable/mixed")),
                 "research_priority_band": _priority_band(
-                    float(item.get("opportunity_score", 0) or 0),
+                    float(item.get("research_priority_score", item.get("opportunity_score", 0)) or 0),
                     phase,
                 ),
-                "research_priority_score": float(item.get("opportunity_score", 0) or 0),
+                "research_priority_score": float(item.get("research_priority_score", item.get("opportunity_score", 0)) or 0),
                 "investor_stance": _investor_stance(phase),
                 "synthesis": _subsector_synthesis(item),
                 "confirmation_needed": _confirmation_needed(phase, definition.drivers if definition else ()),
                 "primary_data_gap": PRIMARY_DATA_GAPS.get(slug, "Primary subsector data remains incomplete."),
-                "signal_data_quality": _label(signal_confidence),
+                "signal_data_quality": _label(data_support),
+                "data_support": data_support,
+                "evidence_gate": str(item.get("evidence_gate", "insufficient_direct_sector_evidence")),
                 "evidence_boundary": (
-                    "Macro-proxy screen plus sample-backed subsector history"
+                    "Macro-proxy screen; direct sector evidence is insufficient"
                     if proxy_only
                     else "Macro-proxy screen with reviewed market-history input"
                 ),

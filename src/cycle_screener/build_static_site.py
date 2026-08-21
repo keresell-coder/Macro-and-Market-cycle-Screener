@@ -86,6 +86,9 @@ def build_static_site(
 
 def assert_no_numeric_sample_fallback(report_state: dict) -> None:
     numeric_health = report_state.get("source_health", {}).get("numeric", {})
+    numeric_mode = str(numeric_health.get("mode", "unknown"))
+    if numeric_mode == "deterministic_sample":
+        raise RuntimeError("Strict live build cannot publish a deterministic sample database. Run a live refresh first.")
     fallback_count = int(numeric_health.get("sample_fallback_indicator_count") or 0)
     if fallback_count <= 0:
         return
@@ -119,11 +122,14 @@ def _with_publication_status(
     run_id = os.getenv("GITHUB_RUN_ID", "")
     server_url = os.getenv("GITHUB_SERVER_URL", "https://github.com")
     run_url = f"{server_url}/{repository}/actions/runs/{run_id}" if repository and run_id else ""
+    numeric_mode = str(state.get("source_health", {}).get("numeric", {}).get("mode", "unknown"))
+    actual_sample = numeric_mode == "deterministic_sample"
     state["publication_status"] = {
         "status": "generated",
         "status_summary": "Static report generated successfully. GitHub Pages deployment completes after the workflow deploy job publishes exports/site/.",
         "site_target": "GitHub Pages static HTML/JSON/PDF/assets",
-        "build_mode": "sample" if sample else "live",
+        "build_mode": "sample" if sample or actual_sample else "live",
+        "requested_build_mode": "sample" if sample else "live",
         "strict_numeric_sample_fallback_guard": strict_numeric_sample_fallback_guard,
         "previous_report_state_supplied": previous_state_supplied,
         "previous_archive_supplied": previous_archive_supplied,

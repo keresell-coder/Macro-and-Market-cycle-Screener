@@ -105,17 +105,16 @@ def test_cycle_state_surfaces_cycle_contradictions() -> None:
     )
 
     titles = {item["title"] for item in state["contradictions"]}
-    assert "Risk appetite conflicts with liquidity/credit" in titles
-    assert "Risk appetite conflicts with valuation/internals" in titles
-    assert state["global_equity_cycle"]["phase"] in {"transition watch", "late-cycle/crowded risk"}
+    assert "Growth support conflicts with liquidity/credit" in titles
+    assert state["global_equity_cycle"]["phase"] in {"transition watch", "deterioration/downturn"}
 
 
 def _observations(slug_direction: dict[str, str]) -> pd.DataFrame:
-    dates = pd.date_range("2025-01-31", periods=12, freq="ME")
+    dates = pd.date_range("2020-01-31", periods=72, freq="ME")
     rows = []
     for slug, direction in slug_direction.items():
         for index, observed_at in enumerate(dates):
-            value = 100 + index * 2 if direction == "up" else 124 - index * 2
+            value = 100 + index * 0.3 if direction == "up" else 124 - index * 0.3
             rows.append(
                 {
                     "indicator_slug": slug,
