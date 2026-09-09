@@ -8,6 +8,7 @@ from typing import Any
 
 from .config import EXPORT_DIR
 from .publication import is_public_export_path
+from .source_health import public_health
 
 
 SIGNAL_LABELS = {
@@ -41,6 +42,7 @@ def build_site_files(
     report_date = _report_date(report_state)
     report_page = reports_dir / f"{report_date}.html"
 
+    _write_json(output_dir / "health.json", public_health(report_state))
     _write_json(data_dir / "report_state.json", report_state)
     _write_json(data_dir / "latest.json", report_state)
     changes_path = data_dir / "changes.json"
@@ -144,6 +146,7 @@ def _render_page(
     <a href="#trust">Trust &amp; Methods</a>
   </nav>
   <main>
+    {_health_notice(public_health(report_state))}
     <section id="now" class="decision-section">
       {_render_decision_overview(report_state, changes)}
     </section>
@@ -474,9 +477,9 @@ def _render_trust_summary(report_state: dict[str, Any], compact: bool = False) -
     research_pages = dict(report_state.get("source_health", {}).get("research_pages", {}))
     cards = []
     for key, title in (
-        ("data_quality", "Data quality"),
+        ("data_quality", "Usable source coverage"),
         ("model_support", "Model support"),
-        ("historical_validation", "Historical validation"),
+        ("historical_validation", "Predictive validation"),
     ):
         item = dict(trust.get(key, {}))
         cards.append(
@@ -495,9 +498,8 @@ def _render_trust_summary(report_state: dict[str, Any], compact: bool = False) -
         "</div>"
     )
     boundary = (
-        '<p class="trust-boundary"><strong>Interpretation boundary:</strong> High data quality does not imply '
-        "high empirical confidence. Model support describes signal agreement; historical validation describes "
-        "how much independent time-separated evidence exists.</p>"
+        '<p class="trust-boundary"><strong>Interpretation boundary:</strong> Source coverage does not imply '
+        "high empirical confidence. Model support describes signal agreement; archive coverage describes stored snapshots, not independent outcome evidence.</p>"
     )
     css_class = "trust-summary trust-summary--compact" if compact else "trust-summary"
     return f'<div class="{css_class}"><div class="trust-grid">{"".join(cards)}</div>{impact}{boundary}</div>'
@@ -509,7 +511,7 @@ def _render_radar_table(subsectors: list[dict[str, Any]]) -> str:
         signals = item.get("signals", {})
         rows.append(
             "<tr>"
-            f"<td class=\"rank\">{int(_num(item.get('rank')))}</td>"
+            f"<td class=\"rank\">{_fmt(item.get('rank'), 0)}</td>"
             f"<td><strong>{escape(str(item.get('name', '')))}</strong><span>{escape(str(item.get('group_name', '')))}</span></td>"
             f"<td>{escape(str(item.get('cycle_phase', 'unknown')).replace('_', ' '))}<span>{escape(str(item.get('cycle_direction', 'unknown')).replace('_', ' '))}</span></td>"
             f"<td>{_score_bar(item.get('research_priority_score', item.get('opportunity_score')))}</td>"
@@ -807,7 +809,7 @@ def _render_source_health(report_state: dict[str, Any]) -> str:
 
     status_cards = (
         '<div class="summary-grid summary-grid--compact">'
-        f"{_metric('Live numeric data', str(numeric.get('live_indicator_count', 0)), f'Mode: {numeric_mode}')}"
+        f"{_metric('Usable numeric coverage', str(numeric.get('usable_indicator_count', 0)) + '/' + str(numeric.get('configured_indicator_count', 0)), 'Source status: ' + str(numeric.get('status', 'unknown')))}"
         f"{_metric('Numeric sample fallback', str(numeric.get('sample_fallback_indicator_count', 0)), _join_or_none(fallback_indicators))}"
         f"{_metric('Non-scoring research page failures', str(pages.get('failed_count', 0)), _join_or_none([item.get('source_slug', '') for item in failed_sources]))}"
         f"{_metric('Research evidence fallback', 'Yes' if evidence.get('fallback_used') else 'No', str(evidence.get('message', '') or evidence.get('mode', 'unknown')))}"
@@ -836,10 +838,10 @@ def _render_source_health(report_state: dict[str, Any]) -> str:
         rows.append(
             "<tr>"
             f"<td><strong>{escape(str(item.get('indicator_name', item.get('indicator_slug', ''))))}</strong><span>{escape(slug_label)}</span></td>"
-            f"<td>{escape(str(item.get('latest_observed_at', '')))}</td>"
-            f"<td>{int(_num(item.get('age_days')))}</td>"
+            f"<td>{escape(str(item.get('latest_observed_at') or 'missing'))}<span>Reference period: {escape(str(item.get('observation_period_start') or 'unknown'))} to {escape(str(item.get('observation_period_end') or 'unknown'))}</span></td>"
+            f"<td>{_fmt(item.get('age_days'), 0)}</td>"
             f"<td>{escape(str(item.get('source_category', '')).replace('_', ' '))}</td>"
-            f"<td>{escape(str(item.get('freshness_status', '')).replace('_', ' '))}</td>"
+            f"<td>{escape(str(item.get('exclusion_reason', '')).replace('_', ' '))}<span>Release allowance: {item.get('expected_release_days', '?')} days after reference period</span></td>"
             "</tr>"
         )
 
@@ -1374,11 +1376,29 @@ def _source_link(fact: dict[str, Any]) -> str:
 
 
 def _score_bar(value: object) -> str:
+    if value is None:
+        return '<div class="score-cell">unavailable</div>'
     score = max(0.0, min(100.0, _num(value)))
     return f'<div class="score-cell"><strong>{score:.1f}</strong><span class="bar"><span style="width: {score:.0f}%"></span></span></div>'
 
 
+def _health_notice(health: dict[str, Any]) -> str:
+    payload = _json_script(health)
+    status = escape(health["status"])
+    return f'''<aside id="source-health-status" role="status" class="section-intro" style="padding:1rem;border:1px solid currentColor">Source health at publication: {status}. Observation dates and usable coverage are separate from report generation. Research validation is not established.</aside>
+<script>(() => {{
+  const h = {payload};
+  const el = document.getElementById('source-health-status');
+  const expired = !Number.isFinite(Date.parse(h.expires_at)) || Date.now() > Date.parse(h.expires_at);
+  el.dataset.status = expired ? 'blocked' : h.status;
+  const c = h.coverage;
+  el.textContent = (expired ? 'RETAINED EDITION: its source-health/update deadline has passed. ' : '') + 'Source health at ' + h.generated_at + ': ' + h.status + '. ' + c.usable_indicator_count + '/' + c.configured_indicator_count + ' configured indicators usable. Observation range: ' + (h.source_observation_start || 'unavailable') + ' to ' + (h.source_observation_end || 'unavailable') + '. Source quality and predictive validation are separate.';
+}})();</script>'''
+
+
 def _signal_cell(signal: str, value: object) -> str:
+    if value is None:
+        return '<td>n/a</td>'
     number = _num(value)
     if signal == "confidence":
         intensity = max(0.08, min(0.45, number * 0.42))
@@ -1392,6 +1412,8 @@ def _signal_cell(signal: str, value: object) -> str:
 
 
 def _rank_delta(value: object) -> str:
+    if value is None:
+        return "unavailable"
     number = int(_num(value))
     if number > 0:
         return f"up {number}"
@@ -1479,7 +1501,7 @@ def _archive_entry_for_current_report(report_state: dict[str, Any], current_file
 
 
 def _write_json(path: Path, payload: Any) -> None:
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8")
 
 
 def _ensure_public_output(path: Path) -> None:
@@ -1509,7 +1531,7 @@ def _display_datetime(value: object) -> str:
 
 
 def _json_script(payload: Any) -> str:
-    return json.dumps(payload, sort_keys=True).replace("</", "<\\/")
+    return json.dumps(payload, sort_keys=True, allow_nan=False).replace("</", "<\\/")
 
 
 def _fmt(value: object, digits: int) -> str:

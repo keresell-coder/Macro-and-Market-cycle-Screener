@@ -15,7 +15,7 @@ This is not a stock-picking or investment-advice engine. It is a structured rese
 - Opens with a decision-first view: current state, direction, change, invalidation evidence, and separate trust measures.
 - Shows separate economic, inflation/rates, liquidity/credit, market-pricing and sector-operating clocks, plus 18 properly split subsector research screens. The map is not a timing forecast.
 - Gives every subsector an expandable investor-use summary, confirmation requirement, evidence boundary, and primary missing-data gap.
-- Separates data quality, model support, and historical validation instead of presenting one ambiguous confidence label.
+- Separates usable source coverage, rule agreement, archive depth and predictive validation. Predictive validation remains unestablished.
 - Tracks source freshness, source failures, and numeric sample fallback.
 - Shows static run status, data vintage, deployment metadata, and archive continuity.
 - Checks phase stability, phase-rule replay, transition evidence, contradictions, and confidence-label consistency against accumulated public report snapshots. This is implementation replay, not independent calibration.
@@ -56,6 +56,41 @@ The project is intentionally honest about missing or proxied dimensions:
 - Report history currently has too few independent, time-separated full states for empirical calibration or a long-horizon backtest.
 - Subsector outputs are explicitly labeled proxy research screens until direct evidence is connected.
 - Missing data should be read as a blind spot, not as neutral evidence.
+
+## Source Health And Publication Gates
+
+Scoring and reporting use the same observation-health gate. Every configured
+indicator is counted, including missing series. Stale, future/incomplete-period,
+sample-fallback and insufficient-history inputs cannot influence subsector
+scores or raise their data support. A subsector with no usable input has a null
+score and unavailable direction; a global regime requires all five dimensions.
+Direct sector evidence remains a separate gate.
+
+Native observation dates are preserved. Monthly reference periods have explicit
+start/end dates, and release allowances run from period end; a FRED July 1 CPI
+label remains July 1 and identifies the July reference period. Fetch time never
+substitutes for an observation. Yahoo market inputs require adjusted daily data
+and use only dates strictly before the current exchange-local date. This
+conservative rule may delay today's completed close by one day.
+
+Public `health.json` includes `status` (`current`, `degraded`, `blocked`),
+`generated_at`, source observation dates and reference periods, configured/live/
+usable/missing/stale/future counts, exclusions, and `expires_at`. Consumers must
+honor expiry; a retained report cannot stay current indefinitely. Coverage and
+successful artifact generation do not establish research or predictive quality.
+
+Strict builds block a new report if critical inputs are unusable, all inputs are
+unusable, or any future/sample-fallback data are present. The scheduled build
+adds `--publish-blocked-status`: a failed gate then publishes only a blocked
+landing page, dated health and links to preserved archives. Its `generated_at`
+is the prior edition's original timestamp (or null); `latest_attempt_at` is the
+failed attempt. Current attempt coverage is labeled separately from the retained
+edition. No new cycle verdict or PDF is issued. The workflow deploys this notice
+and then records failure, so first deployment also repairs the visible status.
+
+Tests (`python -m pytest -q`) run on PR/main and before publication. They cover
+all-stale, partial, missing, future and ordinary inputs, completed sessions,
+reference-period cadence, null score presentation and blocked first publication.
 
 ## Quick Start
 

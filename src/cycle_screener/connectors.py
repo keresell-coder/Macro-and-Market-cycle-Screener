@@ -7,6 +7,7 @@ import re
 import subprocess
 from typing import Iterable
 from urllib.parse import quote, urlencode
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests
@@ -78,7 +79,7 @@ def fetch_indicator_observations(settings: Settings, sample: bool = False) -> tu
         if optional_missing:
             statuses.append(_status("missing_optional", "degraded", f"Optional/context indicators are missing and were not sample-filled: {', '.join(optional_missing)}."))
 
-    observations = pd.concat(frames, ignore_index=True) if frames else sample_frame
+    observations = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=["indicator_slug", "observed_at", "value", "source", "unit"])
     observations = observations.sort_values(["indicator_slug", "observed_at"]).reset_index(drop=True)
     return observations, statuses
 
@@ -315,25 +316,37 @@ def _fetch_yahoo_chart(indicators: Iterable[IndicatorDefinition], settings: Sett
     for indicator in indicators:
         try:
             symbol = quote(indicator.source_key, safe="")
-            response = session.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}", params={"range": "30y", "interval": "1mo"}, timeout=(5, settings.request_timeout_seconds))
+            response = session.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}", params={"range": "30y", "interval": "1d"}, timeout=(5, settings.request_timeout_seconds))
             response.raise_for_status()
             result = response.json()["chart"]["result"][0]
-            timestamps = result["timestamp"]
-            closes = result.get("indicators", {}).get("adjclose", [{}])[0].get("adjclose")
-            if not closes:
-                closes = result["indicators"]["quote"][0]["close"]
-            rows = [
-                {"observed_at": pd.to_datetime(ts, unit="s").to_period("M").to_timestamp("M").date().isoformat(), "value": close}
-                for ts, close in zip(timestamps, closes)
-                if close is not None
-            ]
-            frame = _finalize_indicator_frame(pd.DataFrame(rows), indicator, "yahoo_chart")
+            frame = _yahoo_completed_daily_frame(result, indicator)
             frames.append(frame)
             statuses.append(_status(f"yahoo_chart:{indicator.slug}", "ok", f"Fetched {indicator.name} from Yahoo chart data ({len(frame)} monthly rows)."))
         except Exception as exc:
             statuses.append(_status(f"yahoo_chart:{indicator.slug}", "failed", f"Could not fetch Yahoo chart series {indicator.source_key}: {exc}"))
     return (pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()), statuses
 
+
+
+def _yahoo_completed_daily_frame(result: dict, indicator: IndicatorDefinition, as_of=None) -> pd.DataFrame:
+    # Daily candles retain actual session dates. Do not infer a closing price
+    # from a still-forming monthly candle or from the time the feed was fetched.
+    zone = ZoneInfo(result["meta"]["exchangeTimezoneName"])
+    now = pd.Timestamp(as_of if as_of is not None else datetime.now(timezone.utc))
+    now = now.tz_localize("UTC") if now.tzinfo is None else now
+    local_today = now.tz_convert(zone).date()
+    closes = result.get("indicators", {}).get("adjclose", [{}])[0].get("adjclose")
+    if not closes:
+        raise ValueError("Adjusted daily closes are unavailable; do not silently substitute unadjusted prices.")
+    rows = []
+    for stamp, close in zip(result["timestamp"], closes):
+        session_date = pd.Timestamp(stamp, unit="s", tz="UTC").tz_convert(zone).date()
+        # Conservative: today's exchange session is omitted even after close.
+        if close is not None and session_date < local_today:
+            rows.append({"observed_at": session_date.isoformat(), "value": close})
+    if not rows:
+        raise ValueError("No completed prior exchange sessions were supplied.")
+    return _monthly_last(pd.DataFrame(rows), indicator, "yahoo_chart")
 
 def _read_world_bank_monthly_prices(content: bytes) -> tuple[pd.DataFrame, str]:
     raw = pd.read_excel(BytesIO(content), sheet_name="Monthly Prices", header=None)
@@ -396,11 +409,17 @@ def _wide_monthly_column(raw: pd.DataFrame, date_column: str, value_column: str,
     return _finalize_indicator_frame(frame, indicator, source)
 
 
+
+def _monthly_last_rows(frame: pd.DataFrame) -> pd.DataFrame:
+    clean = frame.dropna(subset=["observed_at", "value"]).sort_values("observed_at")
+    # Retain the date of the value, not the end of its calendar bucket.
+    return clean.groupby(clean["observed_at"].dt.to_period("M"), sort=True).tail(1).copy()
+
 def _monthly_last(frame: pd.DataFrame, indicator: IndicatorDefinition, source: str) -> pd.DataFrame:
     frame = frame.copy()
     frame["observed_at"] = pd.to_datetime(frame["observed_at"], errors="coerce")
     frame["value"] = pd.to_numeric(frame["value"].replace("..", pd.NA), errors="coerce")
-    frame = frame.dropna(subset=["observed_at", "value"]).set_index("observed_at")["value"].resample("ME").last().dropna().tail(SOURCE_HISTORY_MONTHS).reset_index()
+    frame = _monthly_last_rows(frame).tail(SOURCE_HISTORY_MONTHS)
     frame["observed_at"] = frame["observed_at"].dt.date.astype(str)
     return _finalize_indicator_frame(frame, indicator, source)
 
@@ -491,7 +510,7 @@ def _fred_csv_to_monthly_frame(csv_data: str | pd.DataFrame, indicator: Indicato
     frame = frame.dropna(subset=["observed_at", "value"]).sort_values("observed_at")
     if frame.empty:
         raise ValueError("FRED CSV contained no numeric observations.")
-    monthly = frame.set_index("observed_at")["value"].resample("ME").last().dropna().tail(max_months).reset_index()
+    monthly = _monthly_last_rows(frame).tail(max_months).copy()
     monthly["indicator_slug"] = indicator.slug
     monthly["observed_at"] = monthly["observed_at"].dt.date.astype(str)
     monthly["source"] = "fred_public"
@@ -517,7 +536,7 @@ def _dbnomics_series_to_monthly_frame(payload: dict, indicator: IndicatorDefinit
         raise ValueError("DB.nomics series contained no numeric observations.")
     frame = pd.DataFrame(rows).tail(max_months)
     frame["indicator_slug"] = indicator.slug
-    frame["source"] = "dbnomics_oecd_cli"
+    frame["source"] = indicator.source
     frame["unit"] = indicator.unit
     return frame[["indicator_slug", "observed_at", "value", "source", "unit"]]
 
@@ -590,7 +609,7 @@ def _public_series_from_fred_frame(frame: pd.DataFrame, value_column: str) -> pd
     frame = frame.copy()
     frame["observed_at"] = pd.to_datetime(frame["observation_date"], errors="coerce")
     frame["value"] = pd.to_numeric(frame[value_column].replace(".", pd.NA), errors="coerce")
-    frame = frame.dropna(subset=["observed_at", "value"]).set_index("observed_at")["value"].resample("ME").last().dropna()
+    frame = _monthly_last_rows(frame).set_index("observed_at")["value"]
     if frame.empty:
         raise ValueError(f"FRED CSV series {value_column} contained no numeric observations.")
     return frame

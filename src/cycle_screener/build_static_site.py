@@ -17,6 +17,7 @@ from .refresh import refresh
 from .report_state import build_report_state
 from .static_site import build_site_files
 from .weekly_pdf import build_weekly_pdf
+from .source_health import assert_publication_health
 
 
 def build_static_site(
@@ -26,6 +27,7 @@ def build_static_site(
     output_dir: Path | None = None,
     site_dir: Path | None = None,
     fail_on_numeric_sample_fallback: bool = False,
+    publish_blocked_status: bool = False,
 ) -> dict[str, str | None]:
     if sample:
         refresh(sample=True)
@@ -37,10 +39,18 @@ def build_static_site(
 
     target_dir.mkdir(parents=True, exist_ok=True)
     current_state = build_report_state()
-    if fail_on_numeric_sample_fallback:
-        assert_no_numeric_sample_fallback(current_state)
     previous_state = json.loads(previous.read_text(encoding="utf-8")) if previous and previous.exists() else None
     previous_archive_entries = _load_previous_archive(previous_archive)
+    if fail_on_numeric_sample_fallback:
+        try:
+            assert_no_numeric_sample_fallback(current_state)
+            assert_publication_health(current_state)
+        except RuntimeError as exc:
+            if not publish_blocked_status:
+                raise
+            from .blocked_publication import build_blocked_site
+            return build_blocked_site(current_state, previous_state, previous_archive_entries,
+                                      site_dir or EXPORT_DIR / "site", str(exc))
     current_state["report_history_validation"] = build_report_history_validation(
         current_state,
         previous_state=previous_state,
@@ -126,7 +136,8 @@ def _with_publication_status(
     actual_sample = numeric_mode == "deterministic_sample"
     state["publication_status"] = {
         "status": "generated",
-        "status_summary": "Static report generated successfully. GitHub Pages deployment completes after the workflow deploy job publishes exports/site/.",
+        "source_health_status": state.get("source_health", {}).get("numeric", {}).get("status", "blocked"),
+        "status_summary": "Artifact generation succeeded. Source quality is reported separately; predictive validity is not established. GitHub Pages deployment completes after the deploy job.",
         "site_target": "GitHub Pages static HTML/JSON/PDF/assets",
         "build_mode": "sample" if sample or actual_sample else "live",
         "requested_build_mode": "sample" if sample else "live",
@@ -156,6 +167,7 @@ def main() -> None:
     parser.add_argument("--previous-archive", type=Path, help="Previous public archive.json to preserve report navigation.")
     parser.add_argument("--output-dir", type=Path, default=EXPORT_DIR / "public" / "data", help="Backward-compatible public JSON output directory.")
     parser.add_argument("--site-dir", type=Path, default=EXPORT_DIR / "site", help="Public-safe static HTML site directory.")
+    parser.add_argument("--publish-blocked-status", action="store_true", help="If the strict source gate blocks a new report, publish only a blocked status landing page and retain verified previous report data/archives.")
     parser.add_argument(
         "--fail-on-numeric-sample-fallback",
         action="store_true",
@@ -170,7 +182,11 @@ def main() -> None:
         output_dir=args.output_dir,
         site_dir=args.site_dir,
         fail_on_numeric_sample_fallback=args.fail_on_numeric_sample_fallback,
+        publish_blocked_status=args.publish_blocked_status,
     )
+    if result.get("publication_status") == "blocked":
+        print(f"No new research edition: source gate blocked. Status landing page written to {result['site_index']}")
+        return
     print(f"Report state written to {result['report_state']}")
     print(f"Latest state written to {result['latest']}")
     if result["changes"]:

@@ -9,7 +9,7 @@ from .indicators import indicator_by_slug, public_indicator_slug
 from .signal_metrics import build_indicator_metrics
 
 
-CYCLE_STATE_VERSION = "cycle-state-v3-global-evidence-gated"
+CYCLE_STATE_VERSION = "cycle-state-v4-observation-health-gated"
 
 GROWTH_INDICATORS = ("g20_cli", "g7_cli", "us_cli", "china_cli", "europe_cli", "global_pmi", "china_growth_proxy")
 INFLATION_RATES_INDICATORS = (
@@ -113,7 +113,7 @@ def build_cycle_state(
         "data_support": _overall_confidence(global_equity, dimensions, missing_caveats),
         "missing_data_caveats": missing_caveats,
         "methodology_note": (
-            "Version 3 separates economic, inflation/rates, financial/liquidity, market-pricing and sector-operating clocks; "
+            "Version 4 applies one observation-health gate across economic, inflation/rates, financial/liquidity, market-pricing and sector-operating clocks; "
             "uses explicit source/transform contracts; averages correlated indicators at family level; and excludes stale inputs from scores. "
             "Data support describes availability and freshness, never empirical accuracy. The global output is a heuristic risk regime, "
             "not a dated business-cycle fact, probability, return forecast, timing signal, or investment advice."
@@ -158,7 +158,7 @@ def _dimension(
             stale_count += 1
         definition = definitions.get(slug)
         family = str(metric.get("family") or (definition.family if definition else "other"))
-        scoring_status = "excluded_stale" if freshness_status in {"stale", "very_stale"} else "included"
+        scoring_status = "included" if freshness.get("scoring_eligible", freshness_status == "current") or (source_category == "deterministic_sample" and not freshness.get("future_dated_observation")) else "excluded_" + str(freshness.get("exclusion_reason", freshness_status))
         if scoring_status == "included":
             family_scores[family].append(score)
             family_momentum[family].append(float(metric.get("economic_momentum", 0.0)))
@@ -193,7 +193,7 @@ def _dimension(
     direction_score = _mean(available_family_momentum)
     direction = _direction_label(direction_score)
     status = _status_label(score, positive_label, negative_label)
-    confidence_score = _confidence_score(coverage_ratio, live_count, len(evidence), fallback_count, stale_count)
+    confidence_score = _confidence_score(coverage_ratio, sum(len(values) for values in family_scores.values()), len(evidence), 0, 0)
     phase = _phase_label(score, direction_score, coverage_ratio, confidence_score)
 
     return {
@@ -201,16 +201,17 @@ def _dimension(
         "title": title,
         "description": description,
         "phase": phase,
-        "status": status,
-        "direction": direction,
-        "score": _rounded(score, 3),
-        "direction_score": _rounded(direction_score, 3),
+        "status": status if family_scores else "insufficient evidence",
+        "direction": direction if family_scores else "unavailable",
+        "score": _rounded(score, 3) if family_scores else None,
+        "direction_score": _rounded(direction_score, 3) if family_scores else None,
         "confidence": _confidence_label(confidence_score),
         "data_support": _confidence_label(confidence_score),
         "confidence_score": _rounded(confidence_score, 3),
         "confidence_type": "data_coverage_and_freshness",
         "coverage": {
-            "available_count": len(evidence),
+            "available_count": sum(item["scoring_status"] == "included" for item in evidence),
+            "observed_count": len(evidence),
             "expected_count": len(slugs),
             "coverage_ratio": _rounded(coverage_ratio, 3),
             "available_family_count": len(family_scores),
@@ -221,6 +222,7 @@ def _dimension(
         },
         "evidence": sorted(evidence, key=lambda item: abs(float(item["score"])), reverse=True)[:6],
         "missing_indicators": [slug for slug in slugs if slug not in metrics],
+        "excluded_indicators": [item["indicator_slug"] for item in evidence if item["scoring_status"] != "included"],
     }
 
 
@@ -241,19 +243,19 @@ def _global_equity_cycle(dimensions: dict[str, dict[str, Any]], contradictions: 
         "valuation_internals": 0.1,
     }
     available = [key for key in weights if dimensions.get(key, {}).get("phase") != "insufficient evidence"]
-    if len(available) < 3:
+    if len(available) < len(weights):
         return {
             "phase": "insufficient evidence",
             "regime": "insufficient evidence",
             "regime_type": "heuristic_global_market_risk_regime",
             "status": "insufficient evidence",
             "direction": "unclear",
-            "score": 0.0,
+            "score": None,
             "confidence": "low",
             "data_support": "low",
             "confidence_score": 0.0,
             "confidence_type": "data_coverage_and_signal_agreement",
-            "summary": "Not enough public indicator coverage is available to classify the global equity cycle.",
+            "summary": "One or more cycle dimensions are unavailable; missing evidence is not treated as neutral. No global regime is published.",
             "primary_evidence": [],
         }
 
@@ -263,7 +265,7 @@ def _global_equity_cycle(dimensions: dict[str, dict[str, Any]], contradictions: 
     rates = float(dimensions["inflation_rates"]["score"])
     liquidity = float(dimensions["liquidity_credit"]["score"])
     market = float(dimensions["market_pricing"]["score"])
-    internals = float(dimensions.get("valuation_internals", {}).get("score", 0))
+    internals = float(dimensions.get("valuation_internals", {}).get("score") if dimensions.get("valuation_internals", {}).get("score") is not None else float("nan"))
 
     phase = classify_global_phase(
         growth=growth,
@@ -362,11 +364,11 @@ def classify_global_phase(
 
 def _cycle_contradictions(dimensions: dict[str, dict[str, Any]], subsector_contradictions: list[dict[str, Any]]) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
-    growth = float(dimensions.get("growth", {}).get("score", 0))
-    rates = float(dimensions.get("inflation_rates", {}).get("score", 0))
-    liquidity = float(dimensions.get("liquidity_credit", {}).get("score", 0))
-    market = float(dimensions.get("market_pricing", {}).get("score", 0))
-    internals = float(dimensions.get("valuation_internals", {}).get("score", 0))
+    growth = float(dimensions.get("growth", {}).get("score") if dimensions.get("growth", {}).get("score") is not None else float("nan"))
+    rates = float(dimensions.get("inflation_rates", {}).get("score") if dimensions.get("inflation_rates", {}).get("score") is not None else float("nan"))
+    liquidity = float(dimensions.get("liquidity_credit", {}).get("score") if dimensions.get("liquidity_credit", {}).get("score") is not None else float("nan"))
+    market = float(dimensions.get("market_pricing", {}).get("score") if dimensions.get("market_pricing", {}).get("score") is not None else float("nan"))
+    internals = float(dimensions.get("valuation_internals", {}).get("score") if dimensions.get("valuation_internals", {}).get("score") is not None else float("nan"))
 
     if market >= 0.25 and liquidity <= -0.2:
         records.append(_contradiction("Risk appetite conflicts with liquidity/credit", "Market-pricing proxies are firm while liquidity/credit proxies are tight or stressed.", {"market_pricing": market, "liquidity_credit": liquidity}))
@@ -399,13 +401,17 @@ def _oslo_read_through(subsectors: list[dict[str, Any]]) -> list[dict[str, Any]]
 
     records = []
     for group_name, items in sorted(groups.items()):
+        items = [item for item in items if item.get("opportunity_score") is not None]
+        if not items:
+            records.append({"group_name": group_name, "phase": "insufficient evidence", "average_score": None, "momentum": None, "confidence": "very low", "confidence_score": 0, "read_through": "No usable proxy evidence; sector signals are unavailable.", "top_subsectors": []})
+            continue
         recovery = _mean([float(item.get("signals", {}).get("recovery_potential", 0) or 0) for item in items])
         momentum = _mean([float(item.get("signals", {}).get("momentum", 0) or 0) for item in items])
         macro = _mean([float(item.get("signals", {}).get("macro_tailwind", 0) or 0) for item in items])
         confidence = _mean([float(item.get("signals", {}).get("confidence", 0) or 0) for item in items])
         score = _mean([float(item.get("opportunity_score", 0) or 0) for item in items])
         phase = "proxy screen — insufficient direct evidence"
-        top_items = sorted(items, key=lambda item: int(item.get("rank", 999)))[:3]
+        top_items = sorted(items, key=lambda item: int(item.get("rank") or 999))[:3]
         records.append(
             {
                 "group_name": group_name,
@@ -428,7 +434,7 @@ def _oslo_read_through(subsectors: list[dict[str, Any]]) -> list[dict[str, Any]]
                 ],
             }
         )
-    return sorted(records, key=lambda item: float(item["average_score"]), reverse=True)
+    return sorted(records, key=lambda item: float(item["average_score"]) if item["average_score"] is not None else -1, reverse=True)
 
 
 def _cycle_clocks(dimensions: dict[str, dict[str, Any]], subsectors: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -441,7 +447,7 @@ def _cycle_clocks(dimensions: dict[str, dict[str, Any]], subsectors: list[dict[s
             "title": title,
             "status": _status_label(score, "supportive", "adverse") if available else "insufficient evidence",
             "direction": _direction_label(direction_score) if available else "unclear",
-            "score": _rounded(score, 3),
+            "score": _rounded(score, 3) if available else None,
             "data_support": _confidence_label(_mean([float(item.get("confidence_score", 0.0)) for item in available])),
             "interpretation": interpretation,
             "source_dimensions": list(dimension_ids),
@@ -460,7 +466,7 @@ def _cycle_clocks(dimensions: dict[str, dict[str, Any]], subsectors: list[dict[s
             "title": "Sector operating-cycle clock",
             "status": "insufficient direct evidence" if operating_supported == 0 else "partial",
             "direction": "unclear",
-            "score": 0.0,
+            "score": None,
             "data_support": "very low" if operating_supported == 0 else "low",
             "interpretation": "Sector phases require direct utilisation, orders, prices/margins, earnings and balance-sheet evidence. Proxy rankings are research queues only.",
             "directly_supported_subsector_count": operating_supported,
@@ -572,10 +578,8 @@ def _direction_label(direction_score: float) -> str:
 def _confidence_score(coverage_ratio: float, live_count: int, evidence_count: int, fallback_count: int, stale_count: int) -> float:
     if evidence_count <= 0:
         return 0.0
-    live_ratio = live_count / evidence_count
-    fallback_penalty = min(0.3, fallback_count * 0.12)
-    stale_penalty = min(0.25, stale_count * 0.08)
-    return _clip01(coverage_ratio * 0.55 + live_ratio * 0.45 - fallback_penalty - stale_penalty)
+    usable_ratio = max(0, live_count - fallback_count - stale_count) / evidence_count
+    return _clip01(coverage_ratio * usable_ratio)
 
 
 def _confidence_label(score: float) -> str:

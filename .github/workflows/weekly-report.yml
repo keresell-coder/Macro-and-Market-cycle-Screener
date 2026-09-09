@@ -32,6 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       pages_artifact_id: ${{ steps.upload-pages-artifact.outputs.artifact-id }}
+      source_health_status: ${{ steps.source-health.outputs.status }}
     env:
       DATA_MODE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.data_mode || 'live' }}
       FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
@@ -58,6 +59,13 @@ jobs:
 
       - name: Run tests
         run: python -m pytest -q
+
+      - name: Remove test-generated public artifacts before preparing publication
+        run: |
+          python - <<'PY'
+          import shutil
+          shutil.rmtree("exports/site", ignore_errors=True)
+          PY
 
       - name: Download previous public report state
         run: |
@@ -111,7 +119,7 @@ jobs:
             args+=(--sample)
           else
             python -m cycle_screener.refresh
-            args+=(--fail-on-numeric-sample-fallback)
+            args+=(--fail-on-numeric-sample-fallback --publish-blocked-status)
           fi
           if [ -s previous_report_state.json ]; then
             args+=(--previous previous_report_state.json)
@@ -121,15 +129,27 @@ jobs:
           fi
           python -m cycle_screener.build_static_site "${args[@]}"
 
+      - name: Record source health status separately from build success
+        id: source-health
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          print("status=" + json.loads(Path("exports/site/health.json").read_text())["status"])
+          PY
+
       - name: Check public site artifact contents
         run: |
           set -euo pipefail
           test -f exports/site/index.html
-          test -f exports/site/data/latest.json
-          test -f exports/site/data/report_state.json
-          test -f exports/site/data/history_validation.json
+          test -f exports/site/health.json
           test -f exports/site/data/archive.json
-          test -f exports/site/weekly/weekly-cycle-brief.pdf
+          if [ "${{ steps.source-health.outputs.status }}" != "blocked" ]; then
+            test -f exports/site/data/latest.json
+            test -f exports/site/data/report_state.json
+            test -f exports/site/data/history_validation.json
+            test -f exports/site/weekly/weekly-cycle-brief.pdf
+          fi
           python -m cycle_screener.static_site_qa exports/site
           if find exports/site -type f \( -name "*.duckdb" -o -name "*.sqlite" -o -name ".env" \) | grep -q .; then
             echo "Blocked private or database artifact inside exports/site"
@@ -253,3 +273,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           PAGES_ARTIFACT_ID: ${{ needs.build.outputs.pages_artifact_id }}
+
+      - name: Mark blocked research publication as a failed run after deploying its notice
+        if: needs.build.outputs.source_health_status == 'blocked'
+        run: |
+          echo 'Source health blocked a new research edition. The blocked notice and retained archive links were deployed successfully.'
+          exit 1

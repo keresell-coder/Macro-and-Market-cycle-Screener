@@ -36,7 +36,7 @@ def test_report_state_contains_public_safe_snapshot() -> None:
     assert state["source_freshness"]
     assert state["source_health"]
     assert state["cycle_state"]
-    assert state["cycle_state"]["version"] == "cycle-state-v3-global-evidence-gated"
+    assert state["cycle_state"]["version"] == "cycle-state-v4-observation-health-gated"
     assert state["cycle_state"]["cycle_clocks"]
     assert state["cycle_state"]["global_equity_cycle"]["phase"]
     assert state["cycle_state"]["dimensions"]
@@ -101,7 +101,7 @@ def test_report_state_contains_public_safe_snapshot() -> None:
     assert state["source_health"]["numeric"]["sample_build_indicator_count"] == len(state["source_freshness"])
 
 
-def test_report_state_caps_future_month_end_dates() -> None:
+def test_report_state_exposes_and_excludes_future_month_end_dates() -> None:
     future_month_end = (pd.Timestamp(date.today()) + pd.offsets.MonthEnd(1)).date().isoformat()
     observations = pd.DataFrame(
         [
@@ -117,11 +117,14 @@ def test_report_state_caps_future_month_end_dates() -> None:
 
     freshness = _source_freshness(observations, [])
 
-    assert _data_as_of(observations, market_cycle) == date.today().isoformat()
-    assert freshness[0]["latest_observed_at"] == date.today().isoformat()
-    assert freshness[0]["raw_latest_observed_at"] == future_month_end
-    assert freshness[0]["future_dated_observation"] is True
-    assert freshness[0]["age_days"] == 0
+    assert _data_as_of(observations, market_cycle) == future_month_end
+    brent = next(r for r in freshness if r["indicator_slug"] == "brent")
+    assert brent["latest_observed_at"] == future_month_end
+    assert brent["raw_latest_observed_at"].startswith(future_month_end)
+    assert brent["future_dated_observation"] is True
+    assert brent["freshness_status"] == "future_dated"
+    assert brent["scoring_eligible"] is False
+    assert brent["age_days"] < 0
 
 
 def test_compare_report_states_tracks_core_deltas() -> None:
@@ -223,7 +226,8 @@ def test_build_static_site_writes_report_json(tmp_path) -> None:
     assert latest["publication_status"]["site_target"] == "GitHub Pages static HTML/JSON/PDF/assets"
     assert latest["publication_status"]["previous_report_state_supplied"] is True
     assert latest["report_history_validation"]["version"] == "report-history-consistency-v2-sprint16"
-    assert latest["decision_support"]["trust"]["historical_validation"]["label"] in {"insufficient", "developing", "established"}
+    assert latest["decision_support"]["trust"]["historical_validation"]["label"] == "not established"
+    assert latest["decision_support"]["trust"]["historical_validation"]["score"] is None
     assert Path(result["weekly_report"]).exists()
     assert Path(result["weekly_pdf_latest"]).exists()
     assert Path(result["weekly_pdf_local"]).exists()

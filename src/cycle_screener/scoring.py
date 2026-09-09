@@ -7,9 +7,10 @@ import pandas as pd
 from .indicators import indicator_by_slug
 from .signal_metrics import build_indicator_metrics
 from .taxonomy import SUBSECTORS
+from .source_health import observation_health
 
 
-def calculate_scores(observations: pd.DataFrame, research_mentions: pd.DataFrame | None = None) -> pd.DataFrame:
+def calculate_scores(observations: pd.DataFrame, research_mentions: pd.DataFrame | None = None, *, as_of=None, sample: bool = False) -> pd.DataFrame:
     """Build a research-priority heuristic, never an expected-return score.
 
     Unreviewed narrative is deliberately ignored.  Correlated indicators first
@@ -17,7 +18,10 @@ def calculate_scores(observations: pd.DataFrame, research_mentions: pd.DataFrame
     aliases cannot silently increase a family's weight.
     """
 
-    metrics = build_indicator_metrics(observations)
+    raw_metrics = build_indicator_metrics(observations)
+    health = observation_health(observations, as_of=as_of, sample=sample, supported_slugs=set(raw_metrics))
+    eligible = {r["indicator_slug"] for r in health if r["scoring_eligible"] or (sample and r["source_category"] == "deterministic_sample" and r["history_supported"] and not r["future_dated_observation"])}
+    metrics = {slug: value for slug, value in raw_metrics.items() if slug in eligible}
     rows: list[dict[str, object]] = []
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
@@ -52,25 +56,32 @@ def calculate_scores(observations: pd.DataFrame, research_mentions: pd.DataFrame
             - max(macro_tailwind, 0.0) * 4.0
         )
 
+        if not family_metrics:
+            research_priority = cycle_pressure = reversal_watch = cycle_position = momentum = macro_tailwind = None
+
         rows.append(
             {
                 "slug": subsector.slug,
                 "name": subsector.name,
                 "group_name": subsector.group,
                 # Backward-compatible aliases remain until consumers migrate.
-                "opportunity_score": round(research_priority, 1),
-                "research_priority_score": round(research_priority, 1),
-                "cycle_pressure": round(cycle_pressure, 3),
-                "recovery_potential": round(reversal_watch, 3),
-                "reversal_watch": round(reversal_watch, 3),
-                "valuation_proxy": round(cycle_position, 3),
-                "cycle_position_score": round(cycle_position, 3),
-                "momentum": round(momentum, 3),
-                "macro_tailwind": round(macro_tailwind, 3),
+                "opportunity_score": round(research_priority, 1) if research_priority is not None else None,
+                "research_priority_score": round(research_priority, 1) if research_priority is not None else None,
+                "cycle_pressure": round(cycle_pressure, 3) if cycle_pressure is not None else None,
+                "recovery_potential": round(reversal_watch, 3) if reversal_watch is not None else None,
+                "reversal_watch": round(reversal_watch, 3) if reversal_watch is not None else None,
+                "valuation_proxy": round(cycle_position, 3) if cycle_position is not None else None,
+                "cycle_position_score": round(cycle_position, 3) if cycle_position is not None else None,
+                "momentum": round(momentum, 3) if momentum is not None else None,
+                "macro_tailwind": round(macro_tailwind, 3) if macro_tailwind is not None else None,
                 "narrative_divergence": 0.0,
                 "confidence": round(data_support, 3),
                 "data_support": round(data_support, 3),
                 "data_confidence": "proxy_only",
+                "score_status": "usable" if family_metrics else "unavailable",
+                "included_indicator_count": len(available),
+                "expected_indicator_count": len(subsector.proxy_indicators),
+                "excluded_indicators": ", ".join(slug for slug in subsector.proxy_indicators if slug not in metrics),
                 "evidence_gate": "insufficient_direct_sector_evidence",
                 "explanation": _explain(subsector.proxy_indicators, metrics, subsector.thesis_prompt),
                 "refreshed_at": now,

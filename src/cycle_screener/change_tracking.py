@@ -24,7 +24,7 @@ def compare_report_states(previous: dict[str, Any], current: dict[str, Any]) -> 
         "summary": {
             "subsector_changes": len(subsector_changes),
             "major_score_moves": sum(change.get("score_move") == "major" for change in subsector_changes),
-            "major_rank_moves": sum(abs(change.get("rank_delta", 0)) >= MAJOR_RANK_MOVE for change in subsector_changes),
+            "major_rank_moves": sum(abs(change.get("rank_delta") or 0) >= MAJOR_RANK_MOVE for change in subsector_changes),
             "source_status_changes": len(source_changes),
             "new_research_facts": len(research_changes["new"]),
             "removed_research_facts": len(research_changes["removed"]),
@@ -53,12 +53,12 @@ def _subsector_changes(previous_items: list[dict[str, Any]], current_items: list
             changes.append({"slug": slug, "change_type": "removed_subsector", "previous_rank": previous.get("rank")})
             continue
 
-        rank_delta = int(previous["rank"]) - int(current["rank"])
+        rank_delta = int(previous["rank"]) - int(current["rank"]) if previous.get("rank") is not None and current.get("rank") is not None else None
         score_delta = _delta(previous.get("opportunity_score"), current.get("opportunity_score"))
         signal_delta = _signal_delta(previous.get("signals", {}), current.get("signals", {}))
         market_delta = _market_delta(previous.get("market_cycle", {}), current.get("market_cycle", {}))
 
-        if rank_delta or abs(score_delta) >= MODERATE_SCORE_MOVE or signal_delta or market_delta:
+        if previous.get("score_status") != current.get("score_status") or (previous.get("opportunity_score") is None) != (current.get("opportunity_score") is None) or rank_delta or abs(score_delta or 0) >= MODERATE_SCORE_MOVE or signal_delta or market_delta:
             changes.append(
                 {
                     "slug": slug,
@@ -76,14 +76,14 @@ def _subsector_changes(previous_items: list[dict[str, Any]], current_items: list
                 }
             )
 
-    return sorted(changes, key=lambda item: (abs(item.get("score_delta", 0)), abs(item.get("rank_delta", 0))), reverse=True)
+    return sorted(changes, key=lambda item: (abs(item.get("score_delta") or 0), abs(item.get("rank_delta") or 0)), reverse=True)
 
 
 def _signal_delta(previous: dict[str, Any], current: dict[str, Any]) -> dict[str, float]:
     result = {}
     for signal in sorted(set(previous) | set(current)):
         delta = _delta(previous.get(signal, 0), current.get(signal, 0))
-        if abs(delta) >= SIGNAL_MOVE_THRESHOLD:
+        if abs(delta or 0) >= SIGNAL_MOVE_THRESHOLD:
             result[signal] = delta
     return result
 
@@ -93,7 +93,7 @@ def _market_delta(previous: dict[str, Any], current: dict[str, Any]) -> dict[str
     for field in ("relative_price_index", "valuation_proxy", "driver_pressure"):
         delta = _delta(previous.get(field, 0), current.get(field, 0))
         threshold = SIGNAL_MOVE_THRESHOLD if field == "driver_pressure" else MARKET_MOVE_THRESHOLD
-        if abs(delta) >= threshold:
+        if abs(delta or 0) >= threshold:
             result[field] = delta
     return result
 
@@ -158,7 +158,7 @@ def _cycle_state_changes(previous: dict[str, Any], current: dict[str, Any]) -> l
         if previous_global.get(field) != current_global.get(field)
     }
     score_delta = _delta(previous_global.get("score", 0), current_global.get("score", 0))
-    if changed_fields or abs(score_delta) >= SIGNAL_MOVE_THRESHOLD:
+    if changed_fields or abs(score_delta or 0) >= SIGNAL_MOVE_THRESHOLD:
         changes.append(
             {
                 "scope": "global_equity_cycle",
@@ -188,7 +188,7 @@ def _cycle_state_changes(previous: dict[str, Any], current: dict[str, Any]) -> l
         }
         score_delta = _delta(previous_dimension.get("score", 0), current_dimension.get("score", 0))
         confidence_delta = _delta(previous_dimension.get("confidence_score", 0), current_dimension.get("confidence_score", 0))
-        if changed_fields or abs(score_delta) >= SIGNAL_MOVE_THRESHOLD or abs(confidence_delta) >= SIGNAL_MOVE_THRESHOLD:
+        if changed_fields or abs(score_delta or 0) >= SIGNAL_MOVE_THRESHOLD or abs(confidence_delta or 0) >= SIGNAL_MOVE_THRESHOLD:
             changes.append(
                 {
                     "scope": "dimension",
@@ -214,12 +214,16 @@ def _cycle_state_changes(previous: dict[str, Any], current: dict[str, Any]) -> l
 
 
 def _score_move(score_delta: float) -> str:
-    if abs(score_delta) >= MAJOR_SCORE_MOVE:
+    if score_delta is None:
+        return "unavailable"
+    if abs(score_delta or 0) >= MAJOR_SCORE_MOVE:
         return "major"
-    if abs(score_delta) >= MODERATE_SCORE_MOVE:
+    if abs(score_delta or 0) >= MODERATE_SCORE_MOVE:
         return "moderate"
     return "minor"
 
 
-def _delta(previous: Any, current: Any) -> float:
+def _delta(previous: Any, current: Any) -> float | None:
+    if previous is None or current is None:
+        return None
     return round(float(current) - float(previous), 3)

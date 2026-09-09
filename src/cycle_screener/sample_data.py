@@ -10,7 +10,7 @@ from .taxonomy import SUBSECTORS
 
 
 def generate_sample_observations(months: int = 72) -> pd.DataFrame:
-    end = pd.Timestamp(date.today()).to_period("M").to_timestamp("M")
+    end = (pd.Timestamp(date.today()).to_period("M") - 1).to_timestamp("M")
     dates = pd.date_range(end=end, periods=months, freq="ME")
     rows: list[dict[str, object]] = []
 
@@ -29,7 +29,7 @@ def generate_sample_observations(months: int = 72) -> pd.DataFrame:
                     "indicator_slug": indicator.slug,
                     "observed_at": observed_at.date().isoformat(),
                     "value": round(max(value, value_floor), 4),
-                    "source": indicator.source,
+                    "source": "sample",
                     "unit": indicator.unit,
                 }
             )
@@ -258,7 +258,7 @@ _PROFILE_OVERRIDES: dict[str, dict[str, str]] = {
 
 
 def generate_sample_market_cycle(months: int = 72) -> pd.DataFrame:
-    end = pd.Timestamp(date.today()).to_period("M").to_timestamp("M")
+    end = (pd.Timestamp(date.today()).to_period("M") - 1).to_timestamp("M")
     dates = pd.date_range(end=end, periods=months, freq="ME")
     rows: list[dict[str, object]] = []
 

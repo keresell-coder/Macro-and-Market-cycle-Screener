@@ -14,6 +14,8 @@ from .indicators import indicator_by_slug, public_indicator_slug
 from .outlooks import outlook_summary
 from .publication import is_public_export_path
 from .signal_metrics import build_indicator_metrics
+from .scoring import calculate_scores
+from .source_health import observation_health, numeric_health, freshness_status, public_health
 from .sources import SOURCE_DEFINITIONS
 from .storage import RadarStore
 from .taxonomy import subsector_by_slug
@@ -40,8 +42,8 @@ MARKET_COLUMNS = (
     "driver_pressure",
 )
 
-REPORT_STATE_VERSION = "2026-08-21-global-v3"
-SCORING_METHODOLOGY_VERSION = "research-priority-v3-family-weighted-evidence-gated"
+REPORT_STATE_VERSION = "2026-09-09-source-health-v4"
+SCORING_METHODOLOGY_VERSION = "research-priority-v4-observation-health-gated"
 CREDIT_LIQUIDITY_INDICATORS = ("chicago_fed_nfci", "st_louis_financial_stress", "us_high_yield_spread", "us_investment_grade_spread", "broad_us_dollar")
 MACRO_CONFIRMATION_INDICATORS = ("g20_cli", "us_cli", "europe_cli", "global_equity_proxy", "em_equity_proxy")
 VALUATION_INTERNALS_INDICATORS = ("us_equity_market_cap_gdp_proxy", "vix_proxy", "sp500_equal_weight_leadership_proxy")
@@ -62,6 +64,10 @@ def build_report_state(store: RadarStore | None = None) -> dict[str, Any]:
     if owns_store:
         store.close()
 
+    source_status_records = _latest_source_status(source_status)
+    sample = any(item.get("source_slug") == "sample" for item in source_status_records)
+    # Re-evaluate dates at publication time, including databases refreshed earlier.
+    scores = calculate_scores(observations, sample=sample)
     ranked_scores = scores.sort_values("opportunity_score", ascending=False).reset_index(drop=True)
     subsectors = [_subsector_record(rank, row, market_cycle, research_facts) for rank, (_, row) in enumerate(ranked_scores.iterrows(), start=1)]
 
@@ -118,7 +124,7 @@ def export_report_state(output_path: Path | None = None, store: RadarStore | Non
 
     state = build_report_state(store=store)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    output.write_text(json.dumps(state, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8")
     return output
 
 
@@ -140,12 +146,16 @@ def _subsector_record(rank: int, row: pd.Series, market_cycle: pd.DataFrame, res
         "slug": slug,
         "name": str(row["name"]),
         "group_name": str(row["group_name"]),
-        "rank": rank,
+        "rank": rank if pd.notna(row["opportunity_score"]) else None,
+        "score_status": row.get("score_status", "unknown"),
+        "included_indicator_count": int(row.get("included_indicator_count", 0)),
+        "expected_indicator_count": int(row.get("expected_indicator_count", 0)),
+        "excluded_indicators": str(row.get("excluded_indicators", "")),
         "opportunity_score": _rounded(row["opportunity_score"], 1),
         "research_priority_score": _rounded(row.get("research_priority_score", row["opportunity_score"]), 1),
         "score_type": "research_priority_not_expected_return",
         "cycle_phase": cycle_phase,
-        "cycle_direction": _direction_label(float(signals.get("momentum", 0) or 0)),
+        "cycle_direction": _direction_label(float(signals.get("momentum", 0) or 0)) if pd.notna(row["opportunity_score"]) else "unavailable",
         "signals": signals,
         "data_confidence": str(row.get("data_confidence", "")),
         "data_support": _rounded(row.get("data_support", row.get("confidence", 0)), 3),
@@ -194,53 +204,11 @@ def _latest_source_status(source_status: pd.DataFrame) -> list[dict[str, Any]]:
 
 
 def _source_freshness(observations: pd.DataFrame, source_status: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    if observations.empty or "indicator_slug" not in observations or "observed_at" not in observations:
-        return []
-
-    indicator_lookup = indicator_by_slug()
-    deterministic_sample_build = any(item.get("source_slug") == "sample" for item in source_status)
-    today = datetime.now(timezone.utc).date()
-    frame = observations.copy()
-    frame["observed_at_sort"] = pd.to_datetime(frame["observed_at"], errors="coerce")
-    frame = frame.dropna(subset=["observed_at_sort"])
-    records = []
-
-    for indicator_slug, group in frame.groupby("indicator_slug"):
-        group = group.sort_values("observed_at_sort")
-        latest = group.iloc[-1]
-        raw_observed_date = latest["observed_at_sort"].date()
-        observed_date = min(raw_observed_date, today)
-        source = str(latest.get("source", ""))
-        sources_seen = sorted({str(value) for value in group.get("source", pd.Series(dtype=str)).dropna().unique()})
-        has_sample_fallback = "sample_fallback" in sources_seen
-        source_category = _source_category(source, has_sample_fallback, deterministic_sample_build)
-        age_days = max(0, (today - observed_date).days)
-        indicator = indicator_lookup.get(str(indicator_slug))
-        display_slug = public_indicator_slug(str(indicator_slug))
-        records.append(
-            {
-                "indicator_slug": str(indicator_slug),
-                "display_slug": display_slug,
-                "legacy_slug": str(indicator_slug) if display_slug != str(indicator_slug) else "",
-                "indicator_name": indicator.name if indicator else str(indicator_slug),
-                "indicator_description": indicator.description if indicator else "",
-                "latest_observed_at": observed_date.isoformat(),
-                "age_days": age_days,
-                "observation_count": int(len(group)),
-                "source": source,
-                "sources_seen": sources_seen,
-                "source_category": source_category,
-                "has_sample_fallback": has_sample_fallback,
-                "freshness_status": _freshness_status(
-                    age_days,
-                    expected_release_days=indicator.expected_release_days if indicator else 75,
-                ),
-                "raw_latest_observed_at": raw_observed_date.isoformat() if raw_observed_date > today else "",
-                "future_dated_observation": raw_observed_date > today,
-            }
-        )
-
-    return sorted(records, key=lambda item: item["indicator_slug"])
+    return observation_health(
+        observations,
+        sample=any(item.get("source_slug") == "sample" for item in source_status),
+        supported_slugs=set(build_indicator_metrics(observations)),
+    )
 
 
 def _source_health_summary(source_freshness: list[dict[str, Any]], source_status: list[dict[str, Any]]) -> dict[str, Any]:
@@ -292,16 +260,7 @@ def _source_health_summary(source_freshness: list[dict[str, Any]], source_status
     evidence_mode = "sample_fallback" if evidence_fallback else "structured_files" if evidence_files else "unknown"
 
     return {
-        "numeric": {
-            "mode": numeric_mode,
-            "indicator_count": len(source_freshness),
-            "live_indicator_count": len(live_indicators),
-            "sample_build_indicator_count": len(sample_indicators),
-            "sample_fallback_indicator_count": len(fallback_indicators),
-            "sample_fallback_indicators": fallback_indicators,
-            "stale_indicator_count": len(stale_indicators),
-            "stale_indicators": stale_indicators,
-        },
+        "numeric": numeric_health(source_freshness),
         "research_pages": {
             "checked_count": len(research_page_statuses),
             "failed_count": len(research_failures),
@@ -322,6 +281,11 @@ def _signal_groups(observations: pd.DataFrame, source_freshness: list[dict[str, 
     credit_metrics = _indicator_signal_metrics(observations, CREDIT_LIQUIDITY_INDICATORS)
     macro_metrics = _indicator_signal_metrics(observations, MACRO_CONFIRMATION_INDICATORS)
     internals_metrics = _indicator_signal_metrics(observations, VALUATION_INTERNALS_INDICATORS)
+
+    eligible = {r["indicator_slug"] for r in source_freshness if r.get("scoring_eligible")}
+    credit_metrics = {k: v for k, v in credit_metrics.items() if k in eligible}
+    macro_metrics = {k: v for k, v in macro_metrics.items() if k in eligible}
+    internals_metrics = {k: v for k, v in internals_metrics.items() if k in eligible}
 
     credit_tailwind = _mean_float([item.get("tailwind_score") for item in credit_metrics.values()])
     macro_tailwind = _mean_float([item.get("tailwind_score") for item in macro_metrics.values()])
@@ -391,7 +355,7 @@ def _group_connection_status(slugs: tuple[str, ...], freshness_lookup: dict[str,
         or freshness_lookup.get(slug, {}).get("source_category") == "numeric_sample_fallback"
         for slug in slugs
     )
-    live_count = sum(1 for slug in slugs if freshness_lookup.get(slug, {}).get("source_category") == "live_numeric")
+    live_count = sum(1 for slug in slugs if freshness_lookup.get(slug, {}).get("scoring_eligible"))
     if fallback_used:
         return "sample_fallback"
     if live_count == len(slugs):
@@ -415,10 +379,12 @@ def _direction_label(momentum: float) -> str:
 
 def _mean_float(values: list[object]) -> float:
     numeric = [float(value) for value in values if value is not None]
-    return sum(numeric) / len(numeric) if numeric else 0.0
+    return sum(numeric) / len(numeric) if numeric else None
 
 
 def _liquidity_label(score: float) -> str:
+    if score is None:
+        return "unavailable"
     if score >= 0.25:
         return "easier/liquidity tailwind"
     if score <= -0.25:
@@ -427,6 +393,8 @@ def _liquidity_label(score: float) -> str:
 
 
 def _valuation_internals_label(score: float) -> str:
+    if score is None:
+        return "unavailable"
     if score >= 0.25:
         return "valuation/internals supportive"
     if score <= -0.25:
@@ -435,6 +403,8 @@ def _valuation_internals_label(score: float) -> str:
 
 
 def _confirmation_label(credit_tailwind: float, macro_tailwind: float) -> str:
+    if credit_tailwind is None or macro_tailwind is None:
+        return "unavailable"
     if abs(credit_tailwind) < 0.15 or abs(macro_tailwind) < 0.15:
         return "mixed or not decisive"
     if credit_tailwind * macro_tailwind > 0:
@@ -519,7 +489,7 @@ def _contradicting_evidence_summary(subsectors: list[dict[str, Any]]) -> list[di
                     **contradiction,
                 }
             )
-    return sorted(records, key=lambda item: (-float(item.get("severity", 0)), int(item.get("rank", 999))))[:8]
+    return sorted(records, key=lambda item: (-float(item.get("severity", 0)), int(item.get("rank") or 999)))[:8]
 
 
 def _subsector_contradictions(name: str, signals: dict[str, Any], market_cycle: dict[str, Any]) -> list[dict[str, Any]]:
@@ -601,13 +571,7 @@ def _source_category(source: str, has_sample_fallback: bool, deterministic_sampl
 
 
 def _freshness_status(age_days: int, expected_release_days: int = 75) -> str:
-    stale_after = max(int(expected_release_days), 1)
-    very_stale_after = max(int(round(stale_after * 1.6)), stale_after + 15)
-    if age_days > very_stale_after:
-        return "very_stale"
-    if age_days > stale_after:
-        return "stale"
-    return "current"
+    return freshness_status(age_days, expected_release_days)
 
 
 def _first_status(source_status: list[dict[str, Any]], source_slug: str) -> dict[str, Any] | None:
@@ -660,12 +624,12 @@ def _data_as_of(observations: pd.DataFrame, market_cycle: pd.DataFrame) -> str:
             if not dates.empty:
                 candidates.append(dates.max())
     if not candidates:
-        return date.today().isoformat()
-    return min(max(candidates).date(), date.today()).isoformat()
+        return None
+    return max(candidates).date().isoformat()
 
 
-def _rounded(value: object, digits: int) -> float:
-    return round(float(value), digits)
+def _rounded(value: object, digits: int) -> float | None:
+    return round(float(value), digits) if value is not None and pd.notna(value) else None
 
 
 def _rounded_or_zero(value: object, digits: int) -> float:
