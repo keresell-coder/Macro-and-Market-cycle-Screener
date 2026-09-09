@@ -112,12 +112,13 @@ def build_decision_support(
                 "name": str(item.get("name", "")),
                 "group_name": str(item.get("group_name", "")),
                 "phase": phase,
+                "score_status": item.get("score_status", "unknown"),
                 "direction": str(item.get("cycle_direction", "stable/mixed")),
-                "research_priority_band": _priority_band(
+                "research_priority_band": "unavailable" if item.get("score_status") == "unavailable" else _priority_band(
                     float(item.get("research_priority_score", item.get("opportunity_score", 0)) or 0),
                     phase,
                 ),
-                "research_priority_score": float(item.get("research_priority_score", item.get("opportunity_score", 0)) or 0),
+                "research_priority_score": item.get("research_priority_score", item.get("opportunity_score")),
                 "investor_stance": _investor_stance(phase),
                 "synthesis": _subsector_synthesis(item),
                 "confirmation_needed": _confirmation_needed(phase, definition.drivers if definition else ()),
@@ -134,10 +135,10 @@ def build_decision_support(
                 "reviewed_public_facts": facts_by_slug.get(slug, [])[:3],
                 "contradiction_count": contradiction_count,
                 "signals": {
-                    "recovery": float(signals.get("recovery_potential", 0) or 0),
-                    "momentum": float(signals.get("momentum", 0) or 0),
-                    "macro": float(signals.get("macro_tailwind", 0) or 0),
-                    "cycle_position_discount": float(signals.get("valuation_proxy", 0) or 0),
+                    "recovery": signals.get("recovery_potential"),
+                    "momentum": signals.get("momentum"),
+                    "macro": signals.get("macro_tailwind"),
+                    "cycle_position_discount": signals.get("valuation_proxy"),
                 },
             }
         )
@@ -148,7 +149,7 @@ def build_decision_support(
             {
                 "name": str(item.get("group_name", "")),
                 "phase": str(item.get("phase", "transition watch")),
-                "direction": _direction(float(item.get("momentum", 0) or 0)),
+                "direction": "unavailable" if item.get("momentum") is None else _direction(float(item["momentum"])),
                 "model_support": str(item.get("confidence", "unknown")),
                 "read_through": str(item.get("read_through", "")),
             }
@@ -201,20 +202,11 @@ def build_decision_support(
 
 def _trust_summary(report_state: dict[str, Any]) -> dict[str, Any]:
     numeric = dict(report_state.get("source_health", {}).get("numeric", {}))
-    indicator_count = max(1, int(numeric.get("indicator_count", 0) or 0))
-    live_count = int(numeric.get("live_indicator_count", 0) or 0)
-    fallback_count = int(numeric.get("sample_fallback_indicator_count", 0) or 0)
+    indicator_count = int(numeric.get("configured_indicator_count", numeric.get("indicator_count", 0)) or 0)
+    usable_count = int(numeric.get("usable_indicator_count", 0) or 0)
     stale_count = int(numeric.get("stale_indicator_count", 0) or 0)
-    data_score = max(
-        0.0,
-        min(
-            1.0,
-            live_count / indicator_count
-            - min(0.45, fallback_count * 0.15)
-            - min(0.2, stale_count / indicator_count * 0.6),
-        ),
-    )
-
+    missing_count = int(numeric.get("missing_indicator_count", 0) or 0)
+    data_score = usable_count / indicator_count if indicator_count else 0.0
     cycle_confidence = dict(report_state.get("cycle_state", {}).get("confidence", {}))
     model_score = float(cycle_confidence.get("score", 0) or 0)
     contradictions = len(report_state.get("cycle_state", {}).get("contradictions", []))
@@ -225,7 +217,6 @@ def _trust_summary(report_state: dict[str, Any]) -> dict[str, Any]:
     start = _date(validation.get("coverage_start"))
     end = _date(validation.get("coverage_end"))
     span_days = max(0, (end - start).days) if start and end else 0
-    history_score = min(1.0, full_count / 12) * 0.7 + min(1.0, span_days / 180) * 0.3
     history_label = (
         "insufficient"
         if full_count < 6 or span_days < 28
@@ -236,11 +227,12 @@ def _trust_summary(report_state: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "data_quality": {
-            "label": _label(data_score),
+            "label": str(numeric.get("status", "blocked")),
+            "score_type": "usable_source_coverage_not_research_quality",
             "score": round(data_score, 3),
             "detail": (
-                f"{live_count} of {indicator_count} indicators are live; {fallback_count} numeric fallback; "
-                f"{stale_count} stale."
+                f"{usable_count} of {indicator_count} configured indicators are usable for scoring; "
+                f"{stale_count} stale and {missing_count} missing. Source access is not validation."
             ),
         },
         "model_support": {
@@ -252,8 +244,11 @@ def _trust_summary(report_state: dict[str, Any]) -> dict[str, Any]:
             ),
         },
         "historical_validation": {
-            "label": history_label,
-            "score": round(history_score, 3),
+            "label": "not established",
+            "score": None,
+            "archive_depth": history_label,
+            "full_state_count": full_count,
+            "archive_span_days": span_days,
             "detail": (
                 f"{full_count} full report states across {span_days} calendar days. "
                 "Current replay checks implementation consistency, not predictive accuracy."
@@ -265,6 +260,8 @@ def _trust_summary(report_state: dict[str, Any]) -> dict[str, Any]:
 def _subsector_synthesis(item: dict[str, Any]) -> str:
     phase = str(item.get("cycle_phase", "transition watch"))
     signals = dict(item.get("signals", {}))
+    if item.get("score_status") == "unavailable":
+        return "No usable proxy evidence; research score and direction are unavailable."
     recovery = float(signals.get("recovery_potential", 0) or 0)
     momentum = float(signals.get("momentum", 0) or 0)
     macro = float(signals.get("macro_tailwind", 0) or 0)

@@ -169,7 +169,7 @@ def _render_pdf(report_state: dict[str, Any], output: Path) -> None:
         Paragraph(
             _clean(
                 f"Data as of {report_state.get('data_as_of', 'unknown')} | "
-                f"{numeric.get('live_indicator_count', 0)} live indicators | "
+                f"{numeric.get('usable_indicator_count', 0)}/{numeric.get('configured_indicator_count', 0)} usable indicators | "
                 f"{numeric.get('sample_fallback_indicator_count', 0)} numeric fallback"
             ),
             small_style,
@@ -190,9 +190,9 @@ def _render_pdf(report_state: dict[str, Any], output: Path) -> None:
 
     trust_cells = []
     for key, label in (
-        ("data_quality", "Data quality"),
+        ("data_quality", "Usable source coverage"),
         ("model_support", "Model support"),
-        ("historical_validation", "Historical validation"),
+        ("historical_validation", "Predictive validation"),
     ):
         item = dict(trust.get(key, {}))
         trust_cells.append(
@@ -237,7 +237,7 @@ def _render_pdf(report_state: dict[str, Any], output: Path) -> None:
                     ),
                     cell_style,
                 ),
-                Paragraph(f"{float(item.get('score', 0) or 0):+.2f}", cell_style),
+                Paragraph("n/a" if item.get("score") is None else f"{float(item['score']):+.2f}", cell_style),
             ]
         )
     dimension_table = Table(dimension_rows, colWidths=[67 * mm, 91 * mm, 22 * mm], repeatRows=1)

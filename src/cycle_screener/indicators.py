@@ -17,6 +17,7 @@ class IndicatorDefinition:
     expected_release_days: int = 75
     scoring_role: str = "scoring"
     critical: bool = False
+    reference_period: str = "date"
 
 
 # Source and transformation contracts are intentionally explicit. A label is not
@@ -52,11 +53,11 @@ INDICATORS: tuple[IndicatorDefinition, ...] = (
     IndicatorDefinition("snb_policy_rate", "Swiss National Bank policy rate", "dbnomics_bis_policy", "M.CH", "%", "lower_tailwind", "BIS monthly central-bank policy-rate series for Switzerland.", "level", "policy_rates", 45),
     IndicatorDefinition("riksbank_policy_rate", "Riksbank policy rate", "dbnomics_bis_policy", "M.SE", "%", "lower_tailwind", "BIS monthly central-bank policy-rate series for Sweden.", "level", "policy_rates", 45),
     IndicatorDefinition("norway_cpi", "Norway CPI inflation (12-month)", "ssb_cpi", "14700/TOTAL/Tolvmanedersendring", "% y/y", "lower_tailwind", "Statistics Norway CPI twelve-month change from the current CPI table.", "level", "inflation", 50, "scoring", True),
-    IndicatorDefinition("us_cpi", "US CPI inflation", "fred_public", "CPIAUCSL", "% y/y", "lower_tailwind", "US CPI index transformed by the screener to twelve-month inflation.", "yoy_pct", "inflation", 50),
-    IndicatorDefinition("euro_cpi", "Euro-area HICP inflation", "fred_public", "CP0000EZ19M086NEST", "% y/y", "lower_tailwind", "Euro-area HICP index transformed to twelve-month inflation.", "yoy_pct", "inflation", 60),
-    IndicatorDefinition("uk_cpi", "UK CPI inflation", "fred_public", "GBRCPIALLMINMEI", "% y/y", "lower_tailwind", "UK CPI index transformed to twelve-month inflation.", "yoy_pct", "inflation", 60),
-    IndicatorDefinition("japan_cpi", "Japan CPI inflation", "fred_public", "JPNCPIALLMINMEI", "% y/y", "lower_tailwind", "Japan CPI index transformed to twelve-month inflation.", "yoy_pct", "inflation", 60),
-    IndicatorDefinition("china_cpi", "China CPI inflation", "fred_public", "CHNCPIALLMINMEI", "% y/y", "lower_tailwind", "China CPI index transformed to twelve-month inflation.", "yoy_pct", "inflation", 60),
+    IndicatorDefinition("us_cpi", "US CPI inflation", "fred_public", "CPIAUCSL", "% y/y", "lower_tailwind", "US CPI index transformed by the screener to twelve-month inflation.", "yoy_pct", "inflation", 50, reference_period="month"),
+    IndicatorDefinition("euro_cpi", "Euro-area HICP inflation", "fred_public", "CP0000EZ19M086NEST", "% y/y", "lower_tailwind", "Euro-area HICP index transformed to twelve-month inflation.", "yoy_pct", "inflation", 60, reference_period="month"),
+    IndicatorDefinition("uk_cpi", "UK CPI inflation", "fred_public", "GBRCPIALLMINMEI", "% y/y", "lower_tailwind", "UK CPI index transformed to twelve-month inflation.", "yoy_pct", "inflation", 60, reference_period="month"),
+    IndicatorDefinition("japan_cpi", "Japan CPI inflation", "fred_public", "JPNCPIALLMINMEI", "% y/y", "lower_tailwind", "Japan CPI index transformed to twelve-month inflation.", "yoy_pct", "inflation", 60, reference_period="month"),
+    IndicatorDefinition("china_cpi", "China CPI inflation", "fred_public", "CHNCPIALLMINMEI", "% y/y", "lower_tailwind", "China CPI index transformed to twelve-month inflation.", "yoy_pct", "inflation", 60, reference_period="month"),
     IndicatorDefinition("chicago_fed_nfci", "Chicago Fed NFCI", "fred_public", "NFCI", "standard deviations", "lower_tailwind", "Broad weekly US financial conditions; positive values are tighter than average.", "standardized_index", "financial_conditions", 21, "scoring", True),
     IndicatorDefinition("st_louis_financial_stress", "St. Louis Fed Financial Stress Index", "fred_public", "STLFSI4", "standard deviations", "lower_tailwind", "Broad weekly US financial-stress measure; positive values indicate above-average stress.", "standardized_index", "financial_conditions", 21),
     IndicatorDefinition("us_high_yield_spread", "US high-yield option-adjusted spread", "fred_public", "BAMLH0A0HYM2", "percentage points", "lower_tailwind", "ICE BofA US high-yield option-adjusted spread via FRED.", "level", "credit_spreads", 21),

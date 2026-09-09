@@ -36,10 +36,21 @@ def run_static_site_qa(site_dir: Path) -> dict[str, Any]:
     report_state_path = site_dir / "data" / "report_state.json"
     if not index_path.exists():
         raise FileNotFoundError(f"Missing static site index: {index_path}")
+    health_path = site_dir / "health.json"
+    if health_path.exists():
+        health = json.loads(health_path.read_text(encoding="utf-8"))
+        if health.get("publication_mode") == "blocked_status_page":
+            return _check_blocked_status_page(site_dir, health)
     if not report_state_path.exists():
         raise FileNotFoundError(f"Missing static report state: {report_state_path}")
 
     report_state = json.loads(report_state_path.read_text(encoding="utf-8"))
+    from .source_health import assert_publication_health, public_health
+    if report_state.get("publication_status", {}).get("build_mode") != "sample":
+        assert_publication_health(report_state)
+    health_path = site_dir / "health.json"
+    if not health_path.exists() or json.loads(health_path.read_text()) != public_health(report_state):
+        raise AssertionError("health.json must match the published report evidence.")
     if "source_health" not in report_state:
         raise AssertionError("report_state.json is missing source_health.")
     if "source_freshness" not in report_state:
@@ -77,6 +88,32 @@ def run_static_site_qa(site_dir: Path) -> dict[str, Any]:
         "required_text_count": len(REQUIRED_PAGE_TEXT),
         "browser_screenshot": screenshot_result,
     }
+
+
+def _check_blocked_status_page(site_dir: Path, health: dict[str, Any]) -> dict[str, Any]:
+    from .source_health import numeric_health
+    if health.get("status") != "blocked" or health.get("attempt_status") != "failed" or not health.get("latest_attempt_at"):
+        raise AssertionError("Blocked status page must expose its failed attempt.")
+    if health.get("coverage") != numeric_health(health.get("sources", [])):
+        raise AssertionError("Blocked attempt coverage differs from its source evidence.")
+    state_path = site_dir / "data" / "report_state.json"
+    retained_state = json.loads(state_path.read_text()) if state_path.exists() else None
+    if health.get("generated_at") != (retained_state or {}).get("generated_at"):
+        raise AssertionError("A blocked attempt must retain the original edition timestamp or null.")
+    html = (site_dir / "index.html").read_text(encoding="utf-8")
+    if "No new macro or sector verdict was published." not in html or 'data-status="blocked"' not in html:
+        raise AssertionError("Blocked landing page must visibly suppress a new research verdict.")
+    if "Current Global Equity State" in html:
+        raise AssertionError("Blocked landing page must not emit a new current verdict.")
+    archives = json.loads((site_dir / "data" / "archive.json").read_text())
+    for entry in archives:
+        if not (site_dir / "reports" / entry["file"]).is_file():
+            raise AssertionError("Retained archive link does not exist.")
+    if {path.name for path in (site_dir / "reports").glob("*.html")} != {entry["file"] for entry in archives}:
+        raise AssertionError("Unverified/sample report HTML leaked into blocked publication.")
+    if (site_dir / "weekly").exists():
+        raise AssertionError("A blocked attempt must not publish a newly generated or test PDF.")
+    return {"site_dir": str(site_dir), "publication_status": "blocked", "retained_archive_count": len(archives)}
 
 
 @contextmanager

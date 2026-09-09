@@ -9,7 +9,7 @@ from cycle_screener.taxonomy import SUBSECTORS
 
 
 def test_calculate_scores_returns_every_subsector() -> None:
-    scores = calculate_scores(generate_sample_observations(), generate_sample_research_mentions())
+    scores = calculate_scores(generate_sample_observations(), generate_sample_research_mentions(), sample=True)
 
     assert len(scores) == len(SUBSECTORS)
     assert scores["opportunity_score"].between(0, 100).all()
@@ -17,7 +17,7 @@ def test_calculate_scores_returns_every_subsector() -> None:
 
 
 def test_scores_are_explainable() -> None:
-    scores = calculate_scores(generate_sample_observations(), generate_sample_research_mentions())
+    scores = calculate_scores(generate_sample_observations(), generate_sample_research_mentions(), sample=True)
 
     assert scores["explanation"].str.contains("Proxy evidence:").all()
     assert scores["explanation"].str.contains("Reviewed outlooks are non-scoring").all()

@@ -39,7 +39,7 @@ def refresh(sample: bool = False) -> dict[str, int | str]:
                 checked_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
             )
         )
-    scores = calculate_scores(observations, research_mentions)
+    scores = calculate_scores(observations, research_mentions, sample=sample)
 
     statuses = [dataclasses.asdict(status) for status in [*indicator_status, *research_status, *evidence_status, *outlook_status]]
     store.replace_table("observations", observations)

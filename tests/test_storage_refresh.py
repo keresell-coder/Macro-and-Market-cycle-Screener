@@ -35,7 +35,7 @@ def test_fred_public_csv_parser_returns_monthly_observations() -> None:
     )
 
     assert frame["indicator_slug"].tolist() == ["brent", "brent"]
-    assert frame["observed_at"].tolist() == ["2026-01-31", "2026-02-28"]
+    assert frame["observed_at"].tolist() == ["2026-01-31", "2026-02-27"]
     assert frame["value"].tolist() == [77.4, 79.2]
     assert set(frame["source"]) == {"fred_public"}
 
@@ -135,7 +135,7 @@ def test_extra_fred_inputs_use_resilient_batch_fetch(monkeypatch) -> None:
     assert calls == [("BOGZ1LM883164105Q", 37), ("GDP", 37)]
     assert series["BOGZ1LM883164105Q"].iloc[-1] == 91_857_203.0
     assert series["GDP"].iloc[-1] == 31_865.721
-    assert series["GDP"].index[-1].date().isoformat() == "2026-01-31"
+    assert series["GDP"].index[-1].date().isoformat() == "2026-01-01"
 
 
 def test_sample_refresh_persists_research_evidence() -> None:
