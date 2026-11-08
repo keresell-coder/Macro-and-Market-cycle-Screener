@@ -1,6 +1,6 @@
 # Project State: Global Macro, Market and Sector-Cycle Screener
 
-Last updated: 2026-08-21
+Last updated: 2026-11-08
 
 ## Aim and boundary
 
@@ -11,7 +11,7 @@ The screener organizes global macro-financial evidence into separate economic, i
 - Report-state schema: `2026-08-21-global-v3`.
 - Cycle-state rules: `cycle-state-v3-global-evidence-gated`.
 - Scoring: `research-priority-v3-family-weighted-evidence-gated`.
-- 51 public indicators, 18 split subsectors, five cycle dimensions and five cycle clocks.
+- 53 public indicators, 18 split subsectors, five cycle dimensions and five cycle clocks.
 - Strict live builds contain no deterministic numeric or sector-history fallback.
 - Public static HTML/JSON plus a one-page PDF, generated locally and by GitHub Actions.
 - Scheduled workflow remains active every Saturday at 07:15 UTC; scheduled runs default to live data.
@@ -59,3 +59,38 @@ PYTHONPATH=src .venv/bin/python -m cycle_screener.refresh
 PYTHONPATH=src .venv/bin/python -m cycle_screener.build_static_site --fail-on-numeric-sample-fallback
 PYTHONPATH=src .venv/bin/python -m cycle_screener.static_site_qa exports/site
 ```
+
+
+## November 2026 source repair
+
+The November 7 scheduled run correctly blocked publication: 17/53 inputs were
+stale and the critical G20 CLI was unusable. The retained research edition was
+September 5. This was a source-health failure, not a Pages deployment failure.
+
+- OECD CLI now uses the official SDMX API with exact dimension validation. The
+  DB.nomics mirror is a failure fallback only, preserving its actual provenance
+  and dates. A stale mirror is still excluded and can still block publication.
+- Nine policy rates now use the official BIS WS_CBPOL API, with unchanged
+  monthly end-period definitions, transformations and freshness limits.
+- UK/Japan/China CPI now uses national-source BIS WS_LONG_CPI all-items indices
+  (2010=100). Existing twelve-month inflation transforms and release limits are
+  unchanged. Frozen FRED OECD replica series are no longer selected.
+- Refresh replaces the complete observations table, so new CPI reference-month
+  ends are not appended alongside historical FRED month-start records.
+- No source-health gates, critical flags, scoring weights, numeric fallback
+  rules or direct-sector evidence requirements were relaxed.
+- Saturday 07:15 UTC remains the schedule. GitHub's inactivity warning must be
+  checked independently from whether source-health publication succeeds.
+
+Live connector checks on November 8 found five OECD CLIs and three CPI indices
+through September 2026; eight policy rates through October and Australia through
+September. All were inside the existing freshness limits. Local full refresh
+had 49/53 usable and zero stale/future/sample inputs: two optional EIA inputs
+were unavailable without the CI-held key and two annual World Bank calls timed
+out. This is not a claim that the deployed site is already repaired.
+
+Primary data and methodology:
+- https://sdmx.oecd.org/public/rest/v1/data/OECD.SDD.STES,DSD_STES@DF_CLI,4.1/
+- https://stats.bis.org/api/v1/data/WS_CBPOL/
+- https://stats.bis.org/api/v1/data/WS_LONG_CPI/
+- https://www.bis.org/statistics/cp/cp_long_documentation.pdf

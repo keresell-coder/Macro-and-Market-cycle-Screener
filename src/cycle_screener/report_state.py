@@ -418,7 +418,7 @@ def _framework_coverage() -> list[dict[str, str]]:
             "dimension": "Growth",
             "status": "partial",
             "current_coverage": "Monthly OECD CLI proxies for the G20, G7, United States, China and major Europe, plus World Bank annual real-GDP background.",
-            "main_gap": "No direct PMI, industrial-production, or new-orders feed yet; direct OECD SDMX API access is documented but currently blocked from this environment, so CLI data is mirrored through DB.nomics.",
+            "main_gap": "No direct PMI, industrial-production, or new-orders feed yet. OECD CLI uses the official SDMX feed, with a dated DB.nomics fallback subject to unchanged freshness checks.",
         },
         {
             "dimension": "Inflation",
@@ -636,3 +636,4 @@ def _rounded_or_zero(value: object, digits: int) -> float:
     if value is None:
         return 0.0
     return round(float(value), digits)
+

@@ -41,14 +41,17 @@ def fetch_indicator_observations(settings: Settings, sample: bool = False) -> tu
     if sample:
         return generate_sample_observations(), [_status("sample", "ok", "Loaded deterministic sample dataset.")]
 
+    from .bis_sources import fetch_bis_policy, fetch_bis_cpi
+
     frames: list[pd.DataFrame] = []
     statuses: list[SourceStatus] = []
 
     for source, fetcher in (
         ("world_bank_commodity", _fetch_world_bank_commodities),
         ("world_bank_indicator", _fetch_world_bank_indicators),
-        ("dbnomics_oecd_cli", _fetch_dbnomics_oecd_cli),
-        ("dbnomics_bis_policy", _fetch_dbnomics_bis_policy),
+        ("oecd_sdmx_cli", _fetch_oecd_cli),
+        ("bis_policy", fetch_bis_policy),
+        ("bis_cpi", fetch_bis_cpi),
         ("fred_public", _fetch_fred_public_csv),
         ("norges_bank_csv", _fetch_norges_bank_csv),
         ("ssb_cpi", _fetch_ssb_cpi),
@@ -153,7 +156,32 @@ def _fetch_world_bank_indicators(indicators: Iterable[IndicatorDefinition], sett
     return (pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()), statuses
 
 
-def _fetch_dbnomics_oecd_cli(indicators: Iterable[IndicatorDefinition], settings: Settings) -> tuple[pd.DataFrame, list[SourceStatus]]:
+def _fetch_oecd_cli(indicators: Iterable[IndicatorDefinition], settings: Settings) -> tuple[pd.DataFrame, list[SourceStatus]]:
+    # Prefer the original publisher over its potentially frozen mirror.
+    # A mirror fallback retains its own provenance and still faces the same
+    # observation-health gate. A successful HTTP fetch is not freshness.
+    from .oecd_cli import fetch_oecd_cli
+
+    indicator_list = list(indicators)
+    if not indicator_list:
+        return pd.DataFrame(), []
+    try:
+        frames, errors = fetch_oecd_cli(indicator_list, settings.request_timeout_seconds)
+    except Exception as exc:
+        frames, errors = {}, {item.slug: str(exc) for item in indicator_list}
+    statuses = [_status(f"oecd_sdmx_cli:{item.slug}", "ok", f"Fetched {item.name} directly from OECD ({len(frames[item.slug])} monthly reference periods).") for item in indicator_list if item.slug in frames]
+    missing = [item for item in indicator_list if item.slug not in frames]
+    for item in missing:
+        statuses.append(_status(f"oecd_sdmx_cli:{item.slug}", "degraded", f"Direct OECD CLI unavailable; trying the dated DB.nomics mirror without relaxing freshness checks: {errors[item.slug]}"))
+    if missing:
+        mirror_frame, mirror_status = _fetch_oecd_cli_mirror(missing, settings)
+        statuses.extend(mirror_status)
+        if not mirror_frame.empty:
+            frames["mirror"] = mirror_frame
+    return (pd.concat(frames.values(), ignore_index=True) if frames else pd.DataFrame()), statuses
+
+
+def _fetch_oecd_cli_mirror(indicators: Iterable[IndicatorDefinition], settings: Settings) -> tuple[pd.DataFrame, list[SourceStatus]]:
     frames = []
     statuses = []
     session = requests.Session()
@@ -164,28 +192,11 @@ def _fetch_dbnomics_oecd_cli(indicators: Iterable[IndicatorDefinition], settings
             response = session.get(url, params={"observations": "1"}, timeout=(5, settings.request_timeout_seconds))
             response.raise_for_status()
             frame = _dbnomics_series_to_monthly_frame(response.json(), indicator)
+            frame["source"] = "dbnomics_oecd_cli"
             frames.append(frame)
             statuses.append(_status(f"dbnomics_oecd_cli:{indicator.slug}", "ok", f"Fetched {indicator.name} from DB.nomics mirror of OECD CLI ({len(frame)} monthly rows)."))
         except Exception as exc:
             statuses.append(_status(f"dbnomics_oecd_cli:{indicator.slug}", "failed", f"Could not fetch DB.nomics/OECD CLI series {indicator.source_key}: {exc}"))
-    return (pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()), statuses
-
-
-def _fetch_dbnomics_bis_policy(indicators: Iterable[IndicatorDefinition], settings: Settings) -> tuple[pd.DataFrame, list[SourceStatus]]:
-    frames = []
-    statuses = []
-    session = requests.Session()
-    session.headers.update({"User-Agent": "GlobalCycleRadar/0.2 public data refresh"})
-    for indicator in indicators:
-        url = f"https://api.db.nomics.world/v22/series/BIS/WS_CBPOL/{indicator.source_key}"
-        try:
-            response = session.get(url, params={"observations": "1"}, timeout=(5, settings.request_timeout_seconds))
-            response.raise_for_status()
-            frame = _dbnomics_series_to_monthly_frame(response.json(), indicator)
-            frames.append(frame)
-            statuses.append(_status(f"dbnomics_bis_policy:{indicator.slug}", "ok", f"Fetched {indicator.name} from the BIS central-bank policy-rate dataset via DB.nomics ({len(frame)} monthly rows)."))
-        except Exception as exc:
-            statuses.append(_status(f"dbnomics_bis_policy:{indicator.slug}", "failed", f"Could not fetch BIS policy-rate series {indicator.source_key}: {exc}"))
     return (pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()), statuses
 
 
@@ -639,3 +650,4 @@ def _theme_sentiment(theme: str, text: str) -> float:
 
 def _status(source_slug: str, status: str, message: str) -> SourceStatus:
     return SourceStatus(source_slug, status, message, datetime.now(timezone.utc).isoformat(timespec="seconds"))
+
