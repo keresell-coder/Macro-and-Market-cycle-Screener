@@ -32,11 +32,11 @@ Keyless/default live refresh includes:
 
 - World Bank Pink Sheet commodity data.
 - World Bank annual GDP growth proxies.
-- DB.nomics mirror of OECD CLI data for G20, G7, US, China, and major Europe.
-- BIS central-bank policy rates via DB.nomics for the Fed, ECB, BoE, BoJ, PBoC, BoC, RBA, SNB and Riksbank.
+- Official OECD SDMX CLI data for G20, G7, US, China, and major Europe; dated DB.nomics fallback only on primary-source failure.
+- BIS central-bank policy rates from the official BIS API for the Fed, ECB, BoE, BoJ, PBoC, BoC, RBA, SNB and Riksbank.
 - FRED public CSV for inflation, nominal/real yields, the yield curve, NFCI, financial stress, credit spreads and the broad dollar.
 - Norges Bank FX and policy-rate data.
-- Statistics Norway CPI.
+- Statistics Norway CPI, plus official BIS national-source all-items CPI indices for the UK, Japan and China.
 - US EIA petroleum inventories and the Caldara-Iacoviello Geopolitical Risk Index.
 - Selected public market-chart proxies.
 - Derived public valuation and leadership proxies.
@@ -49,7 +49,7 @@ Current schema, latest verification, known source issues, and next sprint live i
 The project is intentionally honest about missing or proxied dimensions:
 
 - The public `global_growth_proxy` is annual World Bank GDP growth, not PMI.
-- OECD direct SDMX access is blocked from this environment; DB.nomics is used as a public mirror.
+- An available endpoint can still contain stale data. Official source or mirror observations face the same publication gate.
 - Live builds exclude deterministic subsector histories. A sector phase remains evidence-gated until validated sector returns, valuation, earnings/revisions and operating data are connected.
 - Broad valuation, volatility and equal-weight leadership proxies are connected, but true global sector valuation multiples, analyst revisions, positioning and breadth are not implemented.
 - Reviewed public research facts improve subsector interpretation and caveats, but they do not override numeric scoring.
@@ -169,3 +169,4 @@ Workflow:
 Do not commit or publish credentials, `.env`, local databases, private notes, manual reports, raw licensed data, or unpublished research.
 
 Paywalled or licensed data can be used only through reviewed manual inputs or licensed feeds when the user has rights to use it. Raw restricted content must stay out of public artifacts.
+

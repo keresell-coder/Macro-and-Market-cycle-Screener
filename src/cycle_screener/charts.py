@@ -516,8 +516,6 @@ def _indicator_proxy_status(indicator: IndicatorDefinition | None, source_catego
         return "sample_build"
     if not indicator:
         return "missing"
-    if indicator.source == "dbnomics_oecd_cli":
-        return "live_public_mirror_proxy"
     if indicator.source == "world_bank_indicator":
         return "annual_background_proxy"
     if indicator.source == "yahoo_chart":
@@ -534,6 +532,9 @@ def _source_label(source_slug: str, configured_source: str) -> str:
         "world_bank_commodity": "World Bank Pink Sheet",
         "world_bank_indicator": "World Bank Indicators API",
         "dbnomics_oecd_cli": "DB.nomics mirror of OECD CLI",
+        "oecd_sdmx_cli": "OECD direct SDMX CLI",
+        "bis_policy": "BIS official central-bank policy rates",
+        "bis_cpi": "BIS national-source all-items CPI indices",
         "norges_bank": "Norges Bank CSV API",
         "norges_bank_csv": "Norges Bank CSV API",
         "ssb": "Statistics Norway API",
@@ -591,3 +592,4 @@ def _coverage_notes() -> list[dict[str, str]]:
             "note": "The report does not imply true PMI, paid market data, or restricted datasets where only proxies are available.",
         },
     ]
+

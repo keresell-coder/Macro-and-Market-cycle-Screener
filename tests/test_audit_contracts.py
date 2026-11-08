@@ -28,7 +28,7 @@ def test_critical_source_and_transform_contracts() -> None:
 
 def test_global_policy_rate_coverage_uses_bis_plus_norges_bank() -> None:
     definitions = indicator_by_slug()
-    bis_policy = [item for item in definitions.values() if item.source == "dbnomics_bis_policy"]
+    bis_policy = [item for item in definitions.values() if item.source == "bis_policy"]
 
     assert len(bis_policy) == 9
     assert {item.source_key for item in bis_policy} == {"M.US", "M.XM", "M.GB", "M.JP", "M.CN", "M.CA", "M.AU", "M.CH", "M.SE"}
@@ -102,3 +102,4 @@ def test_strict_live_guard_rejects_deterministic_sample_database() -> None:
     state = {"source_health": {"numeric": {"mode": "deterministic_sample", "sample_fallback_indicator_count": 0}}}
     with pytest.raises(RuntimeError, match="deterministic sample"):
         assert_no_numeric_sample_fallback(state)
+
